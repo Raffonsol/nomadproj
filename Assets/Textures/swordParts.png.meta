@@ -90,6 +90,7 @@ TextureImporter:
   streamingMipmaps: 0
   streamingMipmapsPriority: 0
   vTOnly: 0
+  ignoreMasterTextureLimit: 0
   grayScaleToAlpha: 0
   generateCubemap: 6
   cubemapConvolution: 0
@@ -98,9 +99,9 @@ TextureImporter:
   maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
-    filterMode: -1
-    aniso: -1
-    mipBias: -100
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
     wrapU: 1
     wrapV: 1
     wrapW: 1
@@ -628,6 +629,29 @@ TextureImporter:
     edges: []
     weights: []
     secondaryTextures: []
+    nameFileIdTable:
+      swordParts_0: 8478679095082232509
+      swordParts_19: 7024232590291317705
+      swordParts_11: 2147758283337196719
+      swordParts_12: 4641199815052790405
+      swordParts_6: 422235684963673174
+      swordParts_10: -1556819416288026249
+      swordParts_13: -213263720328701151
+      swordParts_2: -121151249828577304
+      swordParts_17: 5057428277342480914
+      swordParts_14: 1756891441771529506
+      swordParts_18: 3641576364991489233
+      swordParts_20: 6702293104084485154
+      swordParts_5: 8000390438388942262
+      swordParts_15: 9160295120888367223
+      swordParts_3: -7213253443063111385
+      swordParts_8: -4284537779186405237
+      swordParts_16: -6102431127346503390
+      swordParts_21: -733107397255295240
+      swordParts_1: -322587031286916455
+      swordParts_4: -9156976314850276288
+      swordParts_9: -6378939760839451129
+      swordParts_7: 425292178291428971
   spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0
