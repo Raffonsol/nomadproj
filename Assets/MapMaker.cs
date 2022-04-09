@@ -19,6 +19,9 @@ public class Tile
     public ConnectionPart eastCon;
     public ConnectionPart southCon;
     public ConnectionPart westCon;
+
+    public int skipChance = 0;
+
     [HideInInspector]
     public bool isRiver;
     [HideInInspector]
@@ -120,7 +123,8 @@ public class MapMaker : MonoBehaviour
         List<Tile> source = new List<Tile>(river ? RiverTiles : Tiles);
         // randomly sort array of options
         source.Shuffle();
-
+        Tile skip = new Tile();
+        bool skipped = false;
         // go through options and only accept one that matches all existing borders
         for(int i = 0; i <source.Count; i++){
             bool isValid = true;
@@ -162,11 +166,24 @@ public class MapMaker : MonoBehaviour
                 isValid = false;
             }
 
+            // now we know it's good, but we might wanna skip it
+             if (UnityEngine.Random.Range(0, 100) < source[i].skipChance) {
+                 isValid = false;
+                 if (!skipped) {
+                    skip = source[i].Clone();
+                    skipped = true;
+                 }
+             }
 
+            // otherwise go with a clone of this tile
             if (isValid) {
                 return source[i].Clone();
             }
         }
+        // now we got nothing, so let's take one that we skipped earlier if we did
+        if (skipped)return skip;
+
+        // k now we really got nothing, this bad
         Debug.LogError("No tile was found to match at " + x +", " + y);
         return null;
     }
