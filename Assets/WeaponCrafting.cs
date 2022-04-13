@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using System;
 
 
 
@@ -50,25 +51,64 @@ public class WeaponCrafting : MonoBehaviour
             image.color = color;
 
             CheckWeaponsForMatchingParts();
+            UpdateTemplateImage();
+            Player.Instance.RemovePart(item.id);
 
-            if (matchingWeapon != null) {
+            if (matchingWeapon != null && isEquippable) {
+                Player.Instance.EquipWeapon(matchingWeapon.id, itemsPlaced);
+            } else { 
+                Player.Instance.EquipWeapon(100000, itemsPlaced);
+            }
+        }
+        if (UIManager.Instance.partRemovedFromCrafting) {
+            
+            UIManager.Instance.partRemovedFromCrafting = false;
 
-                UpdateTemplateImage();
-                Player.Instance.RemovePart(item.id);
-
-                if (isEquippable) {
-                    Player.Instance.EquipWeapon(matchingWeapon.id, itemsPlaced);
+            Part item = UIManager.Instance.lastDroppedPartFC;
+                
+            for(int i = 0; i <itemsPlaced.Count; i++){
+                if (itemsPlaced[i].id == item.id) {
+                    itemsPlaced.RemoveAt(i);
+                    break;
                 }
+            }
+            Player.Instance.PickupItem(ItemType.Part, item.id);
+
+            CheckWeaponsForMatchingParts();
+            UpdateTemplateImage();
+            if (matchingWeapon != null && isEquippable) {
+                Player.Instance.EquipWeapon(matchingWeapon.id, itemsPlaced);
+            } else { 
+                Player.Instance.EquipWeapon(100000, itemsPlaced);
             }
         }
     }
     void UpdateTemplateImage() {
+        foreach (Transform child in transform) {
+           GameObject.Destroy(child.gameObject);
+        }
         for(int i = 0; i < itemsPlaced.Count; i++){
             GameObject temp = Instantiate(singleTemplate, transform);
-            temp.GetComponent<Image>().sprite = itemsPlaced[i].visual.GetComponent<SpriteRenderer>().sprite;
+            PartLooks partLook = itemsPlaced[i].partLooks.Length > 0 && matchingWeapon != null ? 
+                Array.Find(itemsPlaced[i].partLooks, look => 
+                    look.weaponId == matchingWeapon.id
+                ) :
+                null;
+
+            temp.GetComponent<Image>().sprite = partLook == null ?
+                itemsPlaced[i].visual.GetComponent<SpriteRenderer>().sprite :
+                partLook.look.GetComponent<SpriteRenderer>().sprite;
+                    
             temp.GetComponent<Image>().color = itemsPlaced[i].visual.GetComponent<SpriteRenderer>().color;
             temp.GetComponent<Transform>().localScale = itemsPlaced[i].visual.GetComponent<Transform>().localScale;
             temp.GetComponent<Image>().SetNativeSize();
+            if (partLook != null) {
+                Debug.Log("here " + itemsPlaced[i].id);
+                temp.GetComponent<PartInCrafting>().defaultPos = new Vector2(partLook.xOffset, partLook.yOffset);
+                temp.GetComponent<Transform>().localRotation = Quaternion.Euler(0, 0, partLook.zOffset);
+            }
+            
+            temp.GetComponent<PartInCrafting>().itemId = itemsPlaced[i].id;
         }
     }
     void CheckWeaponsForMatchingParts() {
@@ -87,14 +127,27 @@ public class WeaponCrafting : MonoBehaviour
                     {
                         isPartIn = true;
                         usedIds.Add(k);
+                        break;
+                    }else {
+                        isPartIn = false;
                     }
                 }
                 soFarSoGood = isPartIn;
             }
+
+            // we know that all the parts we used are matched, but now are there more?
+            if (usedIds.Count != itemsPlaced.Count) {
+                soFarSoGood = false;
+            }
+
+            // now we have to make sure there aren't any parts missing
+            if (weapon.partsNeeded.Length != itemsPlaced.Count) {
+                soFarSoGood = false;
+            }
             
             if (soFarSoGood) {
                 isEquippable = true;
-                // Debug.Log("MATCHED " + weapon.name);
+                Debug.Log("MATCHED " + weapon.name);
                 matchingWeapon = weapon;
                 return;
             } 

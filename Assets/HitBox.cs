@@ -7,6 +7,7 @@ public class HitBox : MonoBehaviour
     public float damageMin;
     public float damageMax;
     public bool hitting = false;
+    public DamageRsrcType damageRsrcType;
 
     // 0 for in group 1 for hostile
     public int faction;

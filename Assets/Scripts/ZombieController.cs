@@ -35,6 +35,7 @@ public class ZombieController : MonoBehaviour {
 	private float attackTime;
 	private float attackTimer;
 	private bool attacking = false;
+	private PolygonCollider2D hitBox;
 
 	void Start()
 	{
@@ -55,6 +56,9 @@ public class ZombieController : MonoBehaviour {
 
 		attackTime = attackCooldown;
 		attackTimer = attackTime;
+
+		hitBox = weaponObject.transform.Find(weapon.collidablePart.ToString()).gameObject.GetComponent<PolygonCollider2D>();
+		hitBox.isTrigger = true;
 	}
 
 	private bool isLClickHeld = false;
@@ -80,6 +84,7 @@ public class ZombieController : MonoBehaviour {
 
 				attacking = true;
 				Player.Instance.hitbox.hitting = true;
+				hitBox.isTrigger = false;
 			}
         }
 	}
@@ -134,6 +139,7 @@ public class ZombieController : MonoBehaviour {
 			weaponObject.transform.localRotation = Quaternion.Euler(0, 0, weapon.instance.weaponPos.z);
 			attacking = false;
 			Player.Instance.hitbox.hitting = false;
+			hitBox.isTrigger = true;
 		} else {
 			rightHand.transform.localPosition = new Vector3(attackScripts[stepToPlay].rightHandPos.x, attackScripts[stepToPlay].rightHandPos.y, -0.2f);
 			rightHand.transform.localRotation = Quaternion.Euler(0, 0, attackScripts[stepToPlay].rightHandPos.z);

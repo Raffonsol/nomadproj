@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
+// ------------------- ITEMS -------------------------------------
+
 public enum ItemType
 {
     Equipment,
@@ -12,6 +15,13 @@ public enum ItemType
     Weapon,
     Ammo,
     Placeable,
+}
+public enum DamageRsrcType
+{
+    None,
+    Axe,
+    Pickaxe,
+    Fishnet,
 }
 public enum FittablePart
 {
@@ -140,6 +150,7 @@ public class Weapon : Item
     public float cooldown;
     public FittablePart[] partsNeeded;
     public FittablePart collidablePart;
+    public DamageRsrcType damageRsrcType;
 }
 [Serializable]
 public class Part : Item
@@ -157,3 +168,46 @@ public class Consumable : Item
     public float duration;
 }
 
+
+
+// ------------------------MONSTERS ------------------------------
+public class Attack {
+    public float attackDuration;
+    public float attackSpeed;
+    
+    public float minDamage;
+    public float maxDamage;
+    public Sprite attack;
+}
+public class Brain {
+    public float patrolStopInterval;
+    private float distractionCheckTime;
+    private float desistanceCheckTime;
+}
+public class Movement {
+    public Sprite step1;
+    public Sprite step2;
+    public float runSpeed;
+    public float patrolSpeed;
+	public float turnSpeed;
+	public float feetSpeed;
+}
+[Serializable]
+public class Drop {
+    public int itemId;
+    public ItemType itemType;
+    public int chance;
+    public int maxDropped;
+}
+public class MonsterNPC {
+    
+    public Brain brain;
+    public Movement movement;
+    public Attack[] attacks;
+    public Drop[] drops;
+
+    public float maxLife;
+    
+
+    
+}

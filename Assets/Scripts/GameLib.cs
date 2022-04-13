@@ -59,7 +59,7 @@ public class GameLib : MonoBehaviour
                 }
             case (ItemType.Part):
                 {
-                    return (Item) Convert.ChangeType(GetPartById(thisId), typeof(Item)); 
+                    return (Item) GetPartById(thisId); 
                 }
         }
         return default(Item);

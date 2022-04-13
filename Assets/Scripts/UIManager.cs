@@ -30,7 +30,12 @@ public class UIManager : MonoBehaviour
     public bool draggingPart = false;
     // Last part thatw as dropped on UI
     public Part lastDroppedPart;
+    // FC = from crafting
+    public bool draggingPartFC = false;
+    // Last part thatw as dropped on UI
+    public Part lastDroppedPartFC;
     public bool partDroppedOnCrafting = false;
+    public bool partRemovedFromCrafting = false;
     
     private int UILayer;
     // Singleton stuff

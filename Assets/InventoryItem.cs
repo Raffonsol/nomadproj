@@ -64,7 +64,7 @@ public class InventoryItem : EventTrigger
         eventData.position = Input.mousePosition;
         List<RaycastResult> raycastResults = new List<RaycastResult>();
         EventSystem.current.RaycastAll(eventData, raycastResults);
-        if (raycastResults[1].gameObject.name == "CraftDraggable") {
+        if (UIHelper.UIOverlapCheck(raycastResults.ToArray(), "CraftDraggable")) {
             UIManager.Instance.partDroppedOnCrafting = true;
 
             UIManager.Instance.lastDroppedPart = GameLib.Instance.GetPartById(itemId);

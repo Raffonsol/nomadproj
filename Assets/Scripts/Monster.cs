@@ -28,6 +28,7 @@ public class Monster : Berkeley
     public float invincibilityTime = 0.3f;
 
     public float runSpeed = 1.5f;
+    public float attackSpeed = 1f;
     public float patrolSpeed = 1f;
 	public float turnSpeed = 3f;
 	public float feetSpeed = 0.5f;
@@ -240,7 +241,7 @@ public class Monster : Berkeley
             transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().color = Color.white;
 
             Vector2 target = moveDirection + currentPosition;
-            transform.position = Vector3.Lerp (currentPosition, target, runSpeed * Time.deltaTime);
+            transform.position = Vector3.Lerp (currentPosition, target, attackSpeed * Time.deltaTime);
         }
         else {
             // complete
@@ -314,13 +315,13 @@ public class Monster : Berkeley
 	{
         transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
 	}
-    void OnTriggerEnter2D(Collider2D collided)
-	{
-		if (collided.CompareTag("Hitbox"))
-		{
-			Collided(collided);
-		}
-	}
+    // void OnTriggerEnter2D(Collider2D collided)
+	// {
+	// 	if (collided.CompareTag("Hitbox"))
+	// 	{
+	// 		Collided(collided);
+	// 	}
+	// }
 	void OnCollisionStay2D(Collision2D collision)
 	{
 		if (collision.collider.CompareTag("Hitbox"))

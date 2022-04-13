@@ -152,6 +152,7 @@ public class Player : MonoBehaviour
 
         // settings on graphics
         hitbox = newWeapon.transform.Find(value.collidablePart.ToString()).GetComponent<HitBox>();
+        hitbox.damageRsrcType = value.damageRsrcType;
 
         controller.Reset();
     }
