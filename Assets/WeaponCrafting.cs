@@ -37,8 +37,23 @@ public class WeaponCrafting : MonoBehaviour
                 color.a = 0;
                 image.color = color;
             }
+        } else if (color.a != 1f) {
+            color.a = 1f;
+            image.color = color;
         }
-       
+        CheckForReset();
+        CheckDroppedItems();
+    }
+    void CheckForReset() {
+        if (UIManager.Instance.weaponNeedsUpdate) {
+            
+            UIManager.Instance.weaponNeedsUpdate = false;
+            itemsPlaced = Player.Instance.activePerson.equipped.partsBeingUsed;
+            CheckWeaponsForMatchingParts();
+            UpdateTemplateImage();
+        }
+    }
+    void CheckDroppedItems() {
         if (UIManager.Instance.partDroppedOnCrafting) {
             
             UIManager.Instance.partDroppedOnCrafting = false;
@@ -47,8 +62,6 @@ public class WeaponCrafting : MonoBehaviour
             // if (itemsPlaced.Count == 0 );
                 
             itemsPlaced.Add(item); 
-            color.a = 1f;
-            image.color = color;
 
             CheckWeaponsForMatchingParts();
             UpdateTemplateImage();
@@ -103,12 +116,12 @@ public class WeaponCrafting : MonoBehaviour
             temp.GetComponent<Transform>().localScale = itemsPlaced[i].visual.GetComponent<Transform>().localScale;
             temp.GetComponent<Image>().SetNativeSize();
             if (partLook != null) {
-                Debug.Log("here " + itemsPlaced[i].id);
                 temp.GetComponent<PartInCrafting>().defaultPos = new Vector2(partLook.xOffset, partLook.yOffset);
                 temp.GetComponent<Transform>().localRotation = Quaternion.Euler(0, 0, partLook.zOffset);
             }
             
             temp.GetComponent<PartInCrafting>().itemId = itemsPlaced[i].id;
+            temp.GetComponent<PartInCrafting>().itemType = ItemType.Part;
         }
     }
     void CheckWeaponsForMatchingParts() {
@@ -147,7 +160,6 @@ public class WeaponCrafting : MonoBehaviour
             
             if (soFarSoGood) {
                 isEquippable = true;
-                Debug.Log("MATCHED " + weapon.name);
                 matchingWeapon = weapon;
                 return;
             } 
