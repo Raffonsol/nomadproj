@@ -40,6 +40,8 @@ public class Monster : Berkeley
     public float attackDuration = 1.5f;
     public Color aboutToAttackColor;
 
+    public float giveUpDistance = 30f;
+
     [HideInInspector]
     public bool damagingOnTouch = false;
 
@@ -50,13 +52,13 @@ public class Monster : Berkeley
     private float patrolTimer;
     private Vector2 patrolTarget;
     private Vector2 moveDirection;
-    private Vector2 size;
+    private Vector2 sizes;
 
     private float moveTimer1 = 0;
 	private float moveTimer2 = 0;
 
-    private float stuckDistanceLimit = 3.4f;
-    private float stuckCheckTime = 4f;
+    private float stuckDistanceLimit = 2.4f;
+    public float stuckCheckTime = 4f;
     private float stuckCheckTimer;
 
     private float attackTimer;
@@ -71,6 +73,7 @@ public class Monster : Berkeley
     
     [HideInInspector]
     public float invincibleTimer;
+    public Drop[] drops;
 
 
     // Start is called before the first frame update
@@ -84,7 +87,7 @@ public class Monster : Berkeley
         hitScript.damageMax = maxDamage;
 
         hitBox.isTrigger = true;
-        size = transform.Find("Body").gameObject.GetComponent<Renderer>().bounds.size;
+        sizes = transform.Find("Body").gameObject.GetComponent<Renderer>().bounds.size;
         stuckCheckTimer = stuckCheckTime;
         SwitchRoutine(Routine.Patrolling);
         ResetPatrol();
@@ -132,15 +135,15 @@ public class Monster : Berkeley
 
         Vector2 currentPosition = transform.position;
 
-
-        moveDirection = patrolTarget - currentPosition;
+        Vector2 nextPoint = GameOverlord.Instance.Pathfind(currentPosition, patrolTarget);
+        moveDirection = nextPoint - currentPosition;
         moveDirection.Normalize();
         Vector2 target = moveDirection + currentPosition;
 		if (Vector3.Distance(currentPosition, patrolTarget) > 0.3f) {
 			
             RaycastHit2D hit = Physics2D.Raycast(currentPosition, moveDirection);
 
-            float blockDistance = Vector2.Distance(currentPosition, hit.point) + size.x + size.y;
+            float blockDistance = Vector2.Distance(currentPosition, hit.point) + sizes.x + sizes.y;
             
             // pathblock checking
             if (Vector2.Distance(currentPosition, patrolTarget) < blockDistance || blockDistance > 10f) {
@@ -179,33 +182,25 @@ public class Monster : Berkeley
         Vector2 currentPosition = transform.position;
         chaseTargetPosition = chaseTarget.transform.position;
 
-        moveDirection = chaseTargetPosition - currentPosition;
+        Vector2 nextPoint = GameOverlord.Instance.Pathfind(currentPosition, chaseTargetPosition);
+        moveDirection = nextPoint - currentPosition;
         moveDirection.Normalize();
         Vector2 target = moveDirection + currentPosition;
+        if (Vector3.Distance(currentPosition, chaseTargetPosition) > giveUpDistance) {SwitchRoutine(Routine.Patrolling); return;}
 		if (Vector3.Distance(currentPosition, chaseTargetPosition) > 0.73f) {
 			
-            RaycastHit2D hit = Physics2D.Raycast(currentPosition, moveDirection);
+            transform.position = Vector3.Lerp (currentPosition, target, runSpeed * Time.deltaTime);
 
-            float blockDistance = Vector2.Distance(currentPosition, hit.point) + size.x * size.y;
-            
-            // pathblock checking
-            if (Vector2.Distance(currentPosition, chaseTargetPosition) < blockDistance || blockDistance > 10f) {
-                // gonna keep going
-                transform.position = Vector3.Lerp (currentPosition, target, runSpeed * Time.deltaTime);
-
-			    float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-                transform.rotation = Quaternion.Slerp (transform.rotation, 
-		                                       Quaternion.Euler (0, 0, targetAngle + 180), 
-		                                       turnSpeed * Time.deltaTime);
-			    if (StuckCheck()) {
-                    // For now just resetting into patrol when stuck
-                    SwitchRoutine(Routine.Patrolling);
-                }
-            }
-            else {
-                // TODO: find a path
+            float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
+            transform.rotation = Quaternion.Slerp (transform.rotation, 
+                                            Quaternion.Euler (0, 0, targetAngle + 180), 
+                                            turnSpeed * Time.deltaTime);
+            if (StuckCheck()) {
+                // For now just resetting into patrol when stuck
                 SwitchRoutine(Routine.Patrolling);
             }
+            
+
             StepAnim();
 			
 		}
@@ -278,7 +273,7 @@ public class Monster : Berkeley
     {
         // TODO: use eyes to cast more rays here
         RaycastHit2D hit = Physics2D.Raycast(transform.position, moveDirection);
-        Debug.DrawRay(transform.position, moveDirection, Color.red);
+        // Debug.DrawRay(transform.position, moveDirection, Color.red);
         if (hit.transform && hit.transform.gameObject.tag == "Character"
         && Vector2.Distance(hit.point, transform.position) < alertRange){
             chaseTarget = hit.transform.gameObject;
@@ -286,7 +281,7 @@ public class Monster : Berkeley
             return true;
         }
         hit = Physics2D.Raycast(transform.position, moveDirection*alertRange);
-        Debug.DrawRay(transform.position, moveDirection*alertRange, Color.green);
+        // Debug.DrawRay(transform.position, moveDirection*alertRange, Color.green);
         if (hit.transform && hit.transform.gameObject.tag == "Character"
         && Vector2.Distance(hit.point, transform.position) < alertRange){
             chaseTarget = hit.transform.gameObject;
@@ -336,9 +331,10 @@ public class Monster : Berkeley
 		if (hitter.hitting && hitter.faction != 1 && invincibleTimer < 0) {
 			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
 			TakeDamage(damage);
+            Player.Instance.Engage(gameObject);
 
             chaseTarget = collided.transform.gameObject;
-            SwitchRoutine(Routine.Chasing);
+            if (routine!=Routine.Chasing && routine!=Routine.Attacking) SwitchRoutine(Routine.Chasing);
 		}
 
 	}
@@ -353,7 +349,27 @@ public class Monster : Berkeley
         if (life > 0) return;
         GameObject deathImage = Instantiate(GameOverlord.Instance.deathPrefab, new Vector2(transform.position.x, transform.position.y),   Quaternion.Euler(0, 0, 0));
         deathImage.transform.parent = null;
+        if (Player.Instance.engagedMonster.name == name) {
+            Player.Instance.engagementTimer = 0;
+        }
+        for(int i = 0; i <drops.Length; i++){
+            DropLoot(drops[i]);
+        }
+        // GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == transform.gameObject.name ) );
         Destroy(transform.gameObject);
+    }
+    void DropLoot(Drop drop) {
+        int dropsQ = UnityEngine.Random.Range(1, drop.maxDropped);
+        
+        for(int i = 0; i <dropsQ; i++) {
+            Vector2 pos = transform.position;
+            GameObject itemObj = Instantiate(GameOverlord.Instance.itemDropPrefab,
+                new Vector2(pos.x, pos.y), Quaternion.Euler(0,0,0));
+            itemObj.GetComponent<ItemDrop>().id = drop.itemId;
+            itemObj.GetComponent<ItemDrop>().itemType = drop.itemType;
+            itemObj.GetComponent<SpriteRenderer>().sprite = GameLib.Instance.GetItemByType(drop.itemId, drop.itemType).icon;
+
+        }
         
     }
 }
