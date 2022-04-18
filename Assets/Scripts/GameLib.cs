@@ -12,6 +12,8 @@ public class GameLib : MonoBehaviour
     public Weapon[] allWeapons;
     [SerializeField]
     public Part[] allParts;
+    [SerializeField]
+    public MonsterNPC[] allMonsters;
 
     
     
@@ -32,7 +34,7 @@ public class GameLib : MonoBehaviour
             case
                 var cls when cls == typeof(Equipment):
                 {
-                    return (T) Convert.ChangeType(GetEqupmentById(id), typeof(T)); 
+                    return (T) Convert.ChangeType(GetEquipmentById(id), typeof(T)); 
                 }
             case
                 var cls when cls == typeof(Weapon):
@@ -51,7 +53,7 @@ public class GameLib : MonoBehaviour
         switch (thisType){
             case (ItemType.Equipment):
                 {
-                    return (Item) Convert.ChangeType(GetEqupmentById(thisId), typeof(Item)); 
+                    return (Item) Convert.ChangeType(GetEquipmentById(thisId), typeof(Item)); 
                 }
             case (ItemType.Weapon):
                 {
@@ -64,7 +66,7 @@ public class GameLib : MonoBehaviour
         }
         return default(Item);
     }
-    public Equipment GetEqupmentById(int id) {
+    public Equipment GetEquipmentById(int id) {
         return Array.Find(allEquipments, equipment => equipment.id == id);
     }
     public Weapon GetWeaponById(int id) {

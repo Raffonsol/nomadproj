@@ -18,7 +18,7 @@ public class LifeMarker : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (player.life / player.maxLife >= disableOn) {
+        if (player.activePerson.life / player.activePerson.maxLife >= disableOn) {
             image.enabled = true;
         } else {
             image.enabled = false;
