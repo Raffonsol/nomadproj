@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+using TMPro;
 
 public class InventoryItem : EventTrigger 
 {
@@ -10,13 +11,14 @@ public class InventoryItem : EventTrigger
     public ItemType itemType;
     public int itemId;
     public Image icon;
-
+    public int quantity;
     private bool dragging;
     [HideInInspector]
     public Vector2 defaultPos;
     // Start is called before the first frame update
     public void LateStart()
     {
+        
         ResetImage();
         
     }
@@ -25,7 +27,7 @@ public class InventoryItem : EventTrigger
         if (!icon) return;
         switch (itemType) {
             case ItemType.Equipment:
-                icon.sprite = GameLib.Instance.GetEqupmentById(itemId).icon;
+                icon.sprite = GameLib.Instance.GetEquipmentById(itemId).icon;
                 break;
             case ItemType.Weapon:
                 icon.sprite = GameLib.Instance.GetWeaponById(itemId).icon;
@@ -35,6 +37,7 @@ public class InventoryItem : EventTrigger
                 break;
 
         }
+         transform.Find("Quantity").gameObject.GetComponent<TextMeshProUGUI>().text = quantity == 1? "" : quantity.ToString();
     }
 
     // Update is called once per frame
@@ -50,9 +53,9 @@ public class InventoryItem : EventTrigger
     }
     public override void OnPointerDown(PointerEventData eventData) {
         dragging = true;
-        if (itemType == ItemType.Part) {
+        // if (itemType == ItemType.Part) {
             UIManager.Instance.draggingPart = true;
-        }
+        // }
         
     }
 
@@ -68,6 +71,11 @@ public class InventoryItem : EventTrigger
             UIManager.Instance.partDroppedOnCrafting = true;
 
             UIManager.Instance.lastDroppedPart = GameLib.Instance.GetPartById(itemId);
+        }
+        if (UIHelper.UIOverlapCheck(raycastResults.ToArray(), "Equip")) {
+            UIManager.Instance.partDroppedOnCrafting = true;
+
+            UIManager.Instance.lastDroppedArmor = GameLib.Instance.GetEquipmentById(itemId);
         }
         // Debug.Log(raysastResults[1].gameObject.name);
 

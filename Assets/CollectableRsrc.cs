@@ -100,7 +100,7 @@ public class CollectableRsrc : Berkeley
     void DropLoot(Drop drop) {
         int dropsQ = Random.Range(1, drop.maxDropped);
         
-        for(int i = 0; i <dropsQ; i++) {Debug.Log("dropping " + drop.itemId);
+        for(int i = 0; i <dropsQ; i++) {
             Vector2 pos = transform.position;
             GameObject itemObj = Instantiate(GameOverlord.Instance.itemDropPrefab,
                 new Vector2(pos.x, pos.y), Quaternion.Euler(0,0,0));
