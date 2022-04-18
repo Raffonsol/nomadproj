@@ -27,6 +27,7 @@ public static class UIHelper
     {
         bool hit = false;
         for(int i = 0; i <raycastResults.Length; i++){
+            // GameOverlord.Instance.Log(raycastResults[i].gameObject.name);
             if (raycastResults[i].gameObject.name == tagMatch) {
                 hit = true;
             }

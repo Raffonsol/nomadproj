@@ -65,9 +65,9 @@ public enum Slot
 {
     Head,
     Chest,
-    Shoulder,
-    Hands,
-    Feet,
+    Pauldron,
+    Hand,
+    Foot,
 }
 public enum CharacterStat
 {
@@ -179,11 +179,13 @@ public class Attack {
     public float maxDamage;
     public Sprite attack;
 }
+[Serializable]
 public class Brain {
     public float patrolStopInterval;
     private float distractionCheckTime;
     private float desistanceCheckTime;
 }
+[Serializable]
 public class Movement {
     public Sprite step1;
     public Sprite step2;
@@ -199,8 +201,11 @@ public class Drop {
     public int chance;
     public int maxDropped;
 }
+[Serializable]
 public class MonsterNPC {
     
+    public int id;
+    public string name;
     public Brain brain;
     public Movement movement;
     public Attack[] attacks;
@@ -210,4 +215,96 @@ public class MonsterNPC {
     
 
     
+}
+
+// ------------------------NPC ------------------------------
+public enum Personality
+{
+    Hothead,
+    Clingy,
+    Coward,
+    Lazy,
+    Giddy,
+}
+public class Equipped
+{
+    public Equipment head;
+    public Equipment rightPauldron;
+    public Equipment leftPauldron;
+    public Equipment chest;
+    public Equipment rightFoot;
+    public Equipment leftFoot;
+    public Equipment rightHand;
+    public Equipment leftHand;
+
+    public Weapon primaryWeapon;
+    public Weapon secondaryWeapon;
+
+    public List<Part> partsBeingUsed;
+
+    public Equipped()
+    {
+        head = null;
+        rightPauldron = null;
+        leftPauldron = null;
+        chest = null;
+        rightFoot = null;
+        leftFoot = null;
+        rightHand = null;
+        leftHand = null;
+
+        partsBeingUsed = new List<Part>();
+    }
+}
+[Serializable]
+public class DistToMain {
+	public float x;
+	public float y;
+}
+[Serializable]
+public class Appearance
+{
+    public GameObject head;
+    public GameObject chest;
+    public GameObject foot;
+    public GameObject hand;
+}
+[Serializable]
+public class FriendlyChar {
+    
+    public string name;
+    public int id;
+    public bool isMale;
+    public Personality personality;
+    public DistToMain formation;
+    public ZombieController controller;
+    public float reactionTime = 1;
+    public float maxLife;
+    public float maxStamina;
+    public float maxMana;
+
+    public float maxWeight;
+
+    public float life;
+    public float stamina;
+    public float mana;
+
+    public float invincibilityTime = 0.3f;
+    public float invincibleTimer;
+
+    public int level = 0;
+    public int experience = 0;
+    public int experienceToFirstLevel = 10;
+    public int experienceIncrement = 5;
+    [SerializeField]
+    public Appearance appearance;
+
+   
+    [HideInInspector]
+    public Equipped equipped;
+    [HideInInspector]
+    public HitBox hitbox;
+    [HideInInspector]
+    public int experienceToNextLevel;
+     
 }

@@ -30,14 +30,20 @@ public class UIManager : MonoBehaviour
     public bool draggingPart = false;
     // Last part thatw as dropped on UI
     public Part lastDroppedPart;
+    public Equipment lastDroppedArmor;
     // FC = from crafting
     public bool draggingPartFC = false;
     // Last part thatw as dropped on UI
     public Part lastDroppedPartFC;
+    public Equipment lastDroppedArmorFC;
+    public bool lastDroppedArmorFCIsLeft = false;
     public bool partDroppedOnCrafting = false;
     public bool partRemovedFromCrafting = false;
+    public bool armorNeedsUpdate = false;
+    public bool weaponNeedsUpdate = false;
     
     private int UILayer;
+    public int TrasnparentLayer;
     // Singleton stuff
     private void Awake() 
     { 
@@ -53,6 +59,7 @@ public class UIManager : MonoBehaviour
     void Start()
     {
         UILayer = LayerMask.NameToLayer("UI");
+        TrasnparentLayer = LayerMask.NameToLayer("TransparentFX");
     }
 
     public void OpenMenu(Menu menu)

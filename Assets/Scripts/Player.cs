@@ -4,73 +4,24 @@ using UnityEngine;
 using UnityEditor;
 using System.Linq;
 
-public class Equipped
-{
-    public Equipment head;
-    public Equipment rightShoulder;
-    public Equipment leftShoulder;
-    public Equipment chest;
-    public Equipment rightFoot;
-    public Equipment leftFoot;
-    public Equipment rightHand;
-    public Equipment leftHand;
-
-    public Weapon primaryWeapon;
-    public Weapon secondaryWeapon;
-
-    public List<Part> partsBeingUsed;
-
-    public Equipped()
-    {
-        head = null;
-        rightShoulder = null;
-        leftShoulder = null;
-        chest = null;
-        rightFoot = null;
-        leftFoot = null;
-        rightHand = null;
-        leftHand = null;
-
-        partsBeingUsed = new List<Part>();
-    }
-}
-
 public class Player : MonoBehaviour
 {
     public static Player Instance { get; private set; }
     public ZombieController controller;
+    public int activeCharId = 0;
+    public List<FriendlyChar> characters;
 
-    public float maxLife;
-    public float maxStamina;
-    public float maxMana;
-
-    public float maxWeight;
-
-    public float life;
-    public float stamina;
-    public float mana;
-
-    public float carryingWeight;
-    public float invincibilityTime = 0.3f;
-
-    public int level = 0;
-    public int experience = 0;
-    public int experienceToFirstLevel = 10;
-    public int experienceIncrement = 5;
-    
-
-    [HideInInspector]
-    public Equipped equipped;
-    [HideInInspector]
-    public HitBox hitbox;
-    [HideInInspector]
-    public float invincibleTimer;
-    [HideInInspector]
-    public int experienceToNextLevel;
+    public FriendlyChar activePerson;
 
     public List<Equipment> equipments;
     public List<Weapon> weapons;
     public List<Part> parts;
+
+    public float carryingWeight;
+
+    public GameObject engagedMonster;
+    private float engagementTime = 6f;
+    public float engagementTimer;
 
     // Singleton stuff
     private void Awake() 
@@ -86,81 +37,170 @@ public class Player : MonoBehaviour
     }
     void Start()
 	{
-		ResetStats();
+        ResetContol();
         CalculateNextLevel();
-        equipped = new Equipped();
+        for(int i = 0; i <characters.Count; i++){
+            characters[i].equipped = new Equipped();
+            ResetStats(characters[i]);
+        }
+    
 	}
+    public void ResetContol() {
+        activePerson = characters[activeCharId];
+        controller = activePerson.controller;
+    }
+    public void LeaderDied() {
+        if (characters.Count > 0) {
+            characters[0].controller.BecomeLeader();
+        } else {
+            // TODO: Gameover
+        }
+    }
     void Update()
     {
-        if (invincibleTimer > -1f) {
-            invincibleTimer -= Time.deltaTime;
+        for(int i = 0; i <characters.Count; i++){
+            if (characters[i].invincibleTimer >= 0) {
+                characters[i].invincibleTimer -= Time.deltaTime;
+            }
         }
+        
+        
+        if (engagementTimer > 0) {
+            engagementTimer -= Time.deltaTime;
+        } else if (engagedMonster !=null) engagedMonster = null;
     }
     public void CalculateNextLevel()
     {
-        experienceToNextLevel = experienceToFirstLevel + (experienceIncrement * level);
+        activePerson.experienceToNextLevel = activePerson.experienceToFirstLevel + (activePerson.experienceIncrement * activePerson.level);
     }
-    public void ResetStats()
+    public void ResetStats(FriendlyChar person)
     {
-        invincibleTimer = invincibilityTime;
-        life = maxLife;
-        stamina = maxStamina;
-        mana = maxMana;
+        person.invincibleTimer = activePerson.invincibilityTime;
+        person.life = activePerson.maxLife;
+        person.stamina = activePerson.maxStamina;
+        person.mana = activePerson.maxMana;
         
     }
-    public void EquipArmor(int itemId, string slotName)
+    public void EquipArmor(Equipment equipment, bool left = false)
     {
-        Equipment value = GameLib.Instance.GetEqupmentById(itemId);
-        // settings
-        var propInfo = equipped.GetType().GetProperty(slotName);
-        if (propInfo != null)
-        {
-            propInfo.SetValue(equipped, value, null);
+
+        if (equipment.slot == Slot.Pauldron ) {
+            if (left) activePerson.equipped.leftPauldron = equipment; else activePerson.equipped.rightPauldron  = equipment;
+        } else if (equipment.slot == Slot.Foot) {
+            if (left) activePerson.equipped.leftFoot = equipment; else activePerson.equipped.rightFoot  = equipment;
+        } else if (equipment.slot == Slot.Hand) {
+            if (left) activePerson.equipped.leftHand = equipment; else activePerson.equipped.rightHand  = equipment;
+        } else if (equipment.slot == Slot.Chest) {
+            activePerson.equipped.chest = equipment;
+        } else if (equipment.slot == Slot.Head) {
+            activePerson.equipped.head = equipment;
+        }
+        // graphs
+        GameObject current = controller.gameObject.transform.Find("Player/Body/" +SlotToBodyPosition(equipment.slot, left)).gameObject;
+        current.GetComponent<SpriteRenderer>().sprite = equipment.visual.GetComponent<SpriteRenderer>().sprite;
+        current.GetComponent<SpriteRenderer>().color = equipment.visual.GetComponent<SpriteRenderer>().color;
+        current.transform.localScale = equipment.visual.transform.localScale;
+ 
+    }
+    public void Unequip(Slot slot, bool left = false) {
+        GameObject bod = controller.gameObject.transform.Find("Player/Body/" +SlotToBodyPosition(slot, left)).gameObject;
+        switch (slot) {
+            case (Slot.Head):
+                AddEquipment(activePerson.equipped.head.id);
+                activePerson.equipped.head = null;
+                
+                bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.head.GetComponent<SpriteRenderer>().sprite;
+                bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.head.GetComponent<SpriteRenderer>().color;
+                break;
+            case (Slot.Chest):
+                AddEquipment(activePerson.equipped.chest.id);
+                activePerson.equipped.chest = null;
+                bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.chest.GetComponent<SpriteRenderer>().sprite;
+                bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.chest.GetComponent<SpriteRenderer>().color;
+                break;
+            case (Slot.Pauldron):
+                if (left) {
+                    AddEquipment(activePerson.equipped.leftPauldron.id);
+                    activePerson.equipped.leftPauldron = null;
+                }else {
+                     AddEquipment(activePerson.equipped.rightPauldron.id);
+                    activePerson.equipped.rightPauldron = null;
+                }
+                bod.GetComponent<SpriteRenderer>().sprite = null;
+                
+                break;
+            case (Slot.Foot):
+                if (left) {
+                    AddEquipment(activePerson.equipped.leftFoot.id);
+                    activePerson.equipped.leftFoot = null;
+                }else {
+                     AddEquipment(activePerson.equipped.rightFoot.id);
+                    activePerson.equipped.rightFoot = null;
+                }
+                bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.foot.GetComponent<SpriteRenderer>().sprite;
+                bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.foot.GetComponent<SpriteRenderer>().color;
+                
+                break;
+            case (Slot.Hand):
+                if (left) {
+                    AddEquipment(activePerson.equipped.leftHand.id);
+                    activePerson.equipped.leftHand = null;
+                }else {
+                     AddEquipment(activePerson.equipped.rightHand.id);
+                    activePerson.equipped.rightHand = null;
+                }
+                bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.hand.GetComponent<SpriteRenderer>().sprite;
+                bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.hand.GetComponent<SpriteRenderer>().color;
+                
+                break;
         }
     }
-    public void EquipWeapon(int itemId, List<Part> partsUsed)
+    public void EquipWeapon(int itemId, List<Part> partsUsed, int charId = -1)
     {
+        if (charId == -1) charId = activeCharId;
+        FriendlyChar person = characters[charId];
         Weapon value = GameLib.Instance.GetWeaponById(itemId);
 
         // settings
-        if (equipped is null)        
-        equipped = new Equipped();
-        equipped.primaryWeapon = value;
-        equipped.partsBeingUsed = partsUsed;
+        if (person.equipped is null)        
+        person.equipped = new Equipped();
+        person.equipped.primaryWeapon = value;
+        person.equipped.partsBeingUsed = partsUsed;
         
         /* graphics */
         // -- Weapon
-        Destroy(transform.Find("Body/Instance/PrimaryWeapon").gameObject);
+        Destroy(person.controller.gameObject.transform.Find("Player/Body/Instance/PrimaryWeapon").gameObject);
         GameObject newWeapon = Instantiate(value.visual);
         newWeapon.name = "PrimaryWeapon";
-        newWeapon.transform.parent = transform.Find("Body/Instance");
+        newWeapon.transform.parent = person.controller.gameObject.transform.Find("Player/Body/Instance");
         newWeapon.transform.localPosition = new Vector3(value.instance.weaponPos.x, value.instance.weaponPos.y, -9.3f);
         newWeapon.transform.localRotation =  Quaternion.Euler(0, 0, value.instance.weaponPos.z);
-        GameObject.FindGameObjectsWithTag("Character")[0].GetComponent<ZombieController>().weaponObject = newWeapon;
+        person.controller.gameObject.GetComponent<ZombieController>().weaponObject = newWeapon;
         // -- Parts
         WeaponGraphicsUpdater.UpdateWeaponGraphic(value, partsUsed, newWeapon);
         // -- RightHand
-        GameObject rHand = transform.Find("Body/Instance/RHand").gameObject;
+        GameObject rHand = person.controller.gameObject.transform.Find("Player/Body/Instance/RHand").gameObject;
         rHand.transform.localPosition = new Vector3(value.instance.rightHandPos.x, value.instance.rightHandPos.y, -0.2f);
         rHand.transform.localRotation = Quaternion.Euler(0, 0, value.instance.rightHandPos.z);
         // -- LeftHand
-        GameObject lHand = transform.Find("Body/Instance/LHand").gameObject;
+        GameObject lHand = person.controller.gameObject.transform.Find("Player/Body/Instance/LHand").gameObject;
         lHand.transform.localPosition = new Vector3(value.instance.leftHandPos.x, value.instance.leftHandPos.y, -0.2f);
         lHand.transform.localRotation = Quaternion.Euler(0, 0, value.instance.leftHandPos.z);
         // hide hidden
-        // TODO: ME
 
         // settings on graphics
-        hitbox = newWeapon.transform.Find(value.collidablePart.ToString()).GetComponent<HitBox>();
-        hitbox.damageRsrcType = value.damageRsrcType;
+        person.hitbox = newWeapon.transform.Find(value.collidablePart.ToString()).GetComponent<HitBox>();
+        person.hitbox.damageRsrcType = value.damageRsrcType;
 
-        controller.Reset();
+        person.controller.Reset();
     }
-    public void TakeDamage(float damage) {
-        if (invincibleTimer < 0) {
-           life -= damage;
-            invincibleTimer = invincibilityTime; 
-            GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, transform);
+    public void TakeDamage(float damage, int tarId = -1) {
+        if (tarId == -1) tarId = activeCharId;
+        FriendlyChar person = characters[tarId];
+        if (person.invincibleTimer < 0) {
+            person.life -= damage;
+            person.invincibleTimer = person.invincibilityTime; 
+            GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, person.controller.gameObject.transform);
             DamageText.GetComponent<DamageText>().textToDisplay = damage.ToString("0.00");
         }
         
@@ -198,6 +238,10 @@ public class Player : MonoBehaviour
     }
     public void AddEquipment(int id)
     {
+        Equipment eqpmt = GameLib.Instance.GetEquipmentById(id);
+        carryingWeight += eqpmt.weight;
+        equipments.Add(eqpmt);
+        
         UIManager.Instance.tabRefresh = true;
     }
     public void AddWeapon(int id)
@@ -213,10 +257,18 @@ public class Player : MonoBehaviour
     }
      public void RemoveEquipment(int id)
     {
+        Equipment equip = GameLib.Instance.GetEquipmentById(id);
+        carryingWeight -= equip.weight;
+        for(int i = 0; i <equipments.Count; i++){
+            if (equipments[i].id == id) {
+                equipments.RemoveAt(i);
+                break;
+            }
+        }
         UIManager.Instance.tabRefresh = true;
     }
     public void RemoveWeapon(int id)
-    {
+    {   
         UIManager.Instance.tabRefresh = true;
     }
     public void RemovePart(int id)
@@ -238,5 +290,27 @@ public class Player : MonoBehaviour
         carryingWeight -= part.weight;
         parts.RemoveAt(i);
         UIManager.Instance.tabRefresh = true;
+    }
+    public string SlotToBodyPosition(Slot slot, bool left) {
+        string pos = "";
+        if (slot == Slot.Pauldron )
+        {
+            pos = left? "L" :"R";
+        } else if (slot == Slot.Foot) {
+            pos = left? "L" :"R";
+        } else if (slot == Slot.Hand) {
+            pos = left? "Instance/L" :"Instance/R";
+        } else if (slot == Slot.Chest) {
+            pos = "Chest/";
+        } else if (slot == Slot.Head) {
+            
+        }
+        pos = pos + slot.ToString();
+        return pos;
+    }
+
+    public void Engage(GameObject enemy) {
+        engagedMonster = enemy;
+        engagementTimer = engagementTime;
     }
 }
