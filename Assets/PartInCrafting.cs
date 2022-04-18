@@ -7,6 +7,8 @@ using UnityEngine.UI;
 public class PartInCrafting : EventTrigger
 {
     public int itemId;
+    public ItemType itemType;
+    public bool isLeft;
     private bool dragging;
     [HideInInspector]
     public Vector2 defaultPos;
@@ -43,8 +45,11 @@ public class PartInCrafting : EventTrigger
 
         if (!(UIHelper.UIOverlapCheck(raycastResults.ToArray(), "CraftDraggable"))) {
             UIManager.Instance.partRemovedFromCrafting = true;
-
+            if (itemType == ItemType.Part)
             UIManager.Instance.lastDroppedPartFC = GameLib.Instance.GetPartById(itemId);
+            if (itemType == ItemType.Equipment)
+            UIManager.Instance.lastDroppedArmorFC = GameLib.Instance.GetEquipmentById(itemId);
+            UIManager.Instance.lastDroppedArmorFCIsLeft = isLeft;
         }
         // Debug.Log(raysastResults[1].gameObject.name);
 

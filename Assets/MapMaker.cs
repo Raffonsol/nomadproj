@@ -50,11 +50,12 @@ public class MapMaker : MonoBehaviour
 
     public float tileLength = 16.8f;
     public int riverLength;
+    public int mapHeight = 100;
 
     private Tile[][] tileMap;
     void Start()
     {
-        tileMap = new Tile[100][];
+        tileMap = new Tile[mapHeight][];
         MapRiver();
         GenerateFirstTile();
     }
@@ -72,7 +73,7 @@ public class MapMaker : MonoBehaviour
 
             bool lastUp = up;
             if (tileMap[xPos] == null) 
-                tileMap[xPos] = new Tile[130];
+                tileMap[xPos] = new Tile[100];
             // 1/6 to change direction
             if (UnityEngine.Random.Range(0, 5) == 1) up =!up;
 
@@ -190,6 +191,8 @@ public class MapMaker : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        if (BerkeleyManager.Instance.mapBounds == 0)
+        BerkeleyManager.Instance.mapBounds = mapHeight * tileLength;
         // player at a given tile. Generate the ones arend it
         int playerX = (int)Math.Round(Camera.main.transform.position.x/tileLength);
         int playerY = (int)Math.Round(Camera.main.transform.position.y/tileLength);
