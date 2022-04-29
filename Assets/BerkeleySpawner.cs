@@ -11,9 +11,9 @@ public class BerkeleySpawner : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        for(int i = 0; i <spawnables.Count; i++){
-            spawnables[i].spawnTimer = spawnables[i].spawnTime;
-        }
+        // for(int i = 0; i <spawnables.Count; i++){
+        //     spawnables[i].spawnTimer = spawnables[i].spawnTime;
+        // }
     }
 
     // Update is called once per frame

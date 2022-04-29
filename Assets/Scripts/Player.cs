@@ -56,6 +56,33 @@ public class Player : MonoBehaviour
             // TODO: Gameover
         }
     }
+    public void GainExperience(int exp) {
+        int remainingExp = exp;
+        while (remainingExp >0) {
+            for(int i = 0; i <characters.Count; i++){
+                characters[i].experienceToNextLevel = characters[i].experienceToFirstLevel + characters[i].level* characters[i].experienceIncrement;
+                characters[i].experience+=1;
+                remainingExp -=1;
+                if (characters[i].controller.leader) {
+                        characters[i].experience+=Random.Range(0,1);
+                }
+
+                if (characters[i].experience >= characters[i].experienceToNextLevel) {
+                    LevelUpChar(i);
+                    characters[i].experienceToNextLevel = characters[i].experienceToFirstLevel + characters[i].level* characters[i].experienceIncrement;
+                }
+            }
+        }
+    }
+    public void LevelUpChar(int charId) {
+        characters[charId].level++;
+        characters[charId].experience = 0;
+        characters[charId].life = characters[charId].maxLife;
+        characters[charId].controller.Reset();
+        GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, characters[charId].controller.transform);
+        DamageText.GetComponent<DamageText>().textToDisplay = "^";
+        // TODO:  Play some fun animation here
+    }
     void Update()
     {
         for(int i = 0; i <characters.Count; i++){

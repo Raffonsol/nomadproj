@@ -56,13 +56,48 @@ public class MapMaker : MonoBehaviour
     void Start()
     {
         tileMap = new Tile[mapHeight][];
-        MapRiver();
+        // MapRiver();
+        
+        MapLine(100, ConnectionPart.Street, false, 0, 30);
+        MapLine(riverLength, ConnectionPart.River, true, 0, 0);
+        MapLine(riverLength, ConnectionPart.River, true, 0, 20);
         GenerateFirstTile();
     }
     void LateStart() {
        // this is not a thing 
     }
 
+
+    void MapLine(int length, ConnectionPart conP, bool isRiver, int startX, int startY) {
+
+        int xPos = startX;
+        int yPos = startY;
+        bool up = UnityEngine.Random.Range(0, 1) == 0;
+
+        for(int i = 0; i <length; i++){
+
+            bool lastUp = up;
+            if (tileMap[xPos] == null) 
+                tileMap[xPos] = new Tile[100];
+            else if (tileMap[xPos][yPos]!=null && tileMap[xPos][yPos].isRiver) return;
+            // 1/6 to change direction
+            if (UnityEngine.Random.Range(0, 5) == 1) up =!up;
+
+            tileMap[xPos][yPos] = new Tile();
+            if (up) tileMap[xPos][yPos].northCon = conP;
+            if (lastUp) tileMap[xPos][yPos].southCon = conP;
+            if (!up) tileMap[xPos][yPos].eastCon = conP;
+            if (!lastUp) tileMap[xPos][yPos].westCon = conP;
+            if (isRiver)tileMap[xPos][yPos].isRiver = isRiver;
+
+        
+            // move
+            if (up) yPos++; else xPos++;
+
+            
+        }
+        
+    }
     void MapRiver() {
 
         int xPos = 0;
@@ -159,10 +194,10 @@ public class MapMaker : MonoBehaviour
             }
             // make sure the already mapped parts are there
             if (tileMap[x] != null && tileMap[x][y] != null && (
-            (tileMap[x][y].northCon != ConnectionPart.Void && tileMap[x][y].northCon != source[i].northCon) ||
-            (tileMap[x][y].eastCon != ConnectionPart.Void && tileMap[x][y].eastCon != source[i].eastCon) ||
-            (tileMap[x][y].southCon != ConnectionPart.Void && tileMap[x][y].southCon != source[i].southCon) ||
-            (tileMap[x][y].westCon != ConnectionPart.Void && tileMap[x][y].westCon != source[i].westCon)
+            (tileMap[x][y].northCon != null && tileMap[x][y].northCon != ConnectionPart.Void && tileMap[x][y].northCon != source[i].northCon) ||
+            (tileMap[x][y].eastCon != null && tileMap[x][y].eastCon != ConnectionPart.Void && tileMap[x][y].eastCon != source[i].eastCon) ||
+            (tileMap[x][y].southCon != null && tileMap[x][y].southCon != ConnectionPart.Void && tileMap[x][y].southCon != source[i].southCon) ||
+            (tileMap[x][y].westCon != null && tileMap[x][y].westCon != ConnectionPart.Void && tileMap[x][y].westCon != source[i].westCon)
             )) {
                 isValid = false;
             }

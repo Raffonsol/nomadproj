@@ -52,11 +52,13 @@ public class ZombieController : MonoBehaviour {
 	{
 		Player.Instance.EquipWeapon(100000, new List<Part>(), charId);
 		shadow = transform.Find("Player/shadow").gameObject;
-		shadowColor = shadow.GetComponent<SpriteRenderer>().color;
+		shadowColor = Color.black;
+		shadowColor.a = 0.2f;
 		selectionColor = Color.white;
 		Reset();
 	}
 	public void Reset() {
+		lastClick = transform.position;
 		self = Player.Instance.characters[charId];
 		reactingTime = self.reactionTime;
 		moveTimer1 = feetSpeed;
@@ -282,8 +284,11 @@ public class ZombieController : MonoBehaviour {
     }
 	void OnMouseExit()
     {
-        hovering = false;
 		shadow.GetComponent<SpriteRenderer>().color = shadowColor;
+		Task.Delay(1000).ContinueWith(t=> {
+			hovering = false;
+			
+		});
     }
 
 	void PerformAi(Personality tempPersonality) {

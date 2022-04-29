@@ -74,10 +74,6 @@ public enum CharacterStat
     Life,
     Stamina,
     Mana,
-    Level,
-    Experience,
-    Buffs,
-    Debuffs,
 
     MeleeDamage,
     RangedDamage,
@@ -269,6 +265,15 @@ public class Appearance
     public GameObject foot;
     public GameObject hand;
 }
+[Serializable]
+public class CurrentCharStat
+{
+    public CharacterStat stat;
+    public int id;
+    public int value;
+    public GameObject hand;
+}
+
 [Serializable]
 public class FriendlyChar {
     

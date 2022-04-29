@@ -55,6 +55,15 @@ public class ItemDrop : Berkeley
 			Collided(collided);
 		}
 	}
+	void OnTriggerStay2D(Collider2D collided)
+	{
+		// Debug.Log(collided.CompareTag("Hitbox"));
+		if (collided.CompareTag("Character"))
+		{
+			Collided(collided);
+		}
+	}
+
 	private void OnCollisionStay2D(Collision2D collision)
 	{
 		if (collision.collider.CompareTag("Character"))

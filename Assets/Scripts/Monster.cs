@@ -29,6 +29,8 @@ public class Monster : Berkeley
 
     public float runSpeed = 1.5f;
     public float attackSpeed = 1f;
+    public float attackDistance = 0.73f;
+    public float attackCooldown = 1f;
     public float patrolSpeed = 1f;
 	public float turnSpeed = 3f;
 	public float feetSpeed = 0.5f;
@@ -45,10 +47,14 @@ public class Monster : Berkeley
     [HideInInspector]
     public bool damagingOnTouch = false;
 
+    public int minExpGiven = 1;
+    public int maxExpGiven = 3;
+
     private Routine routine;
 
     private float life;
 
+    private float cooldownTimer;
     private float patrolTimer;
     private Vector2 patrolTarget;
     private Vector2 moveDirection;
@@ -85,6 +91,7 @@ public class Monster : Berkeley
         hitScript = transform.Find("HitBox").gameObject.GetComponent<HitBox>();
         hitScript.damageMin = minDamage;
         hitScript.damageMax = maxDamage;
+        cooldownTimer = attackCooldown;
 
         hitBox.isTrigger = true;
         sizes = transform.Find("Body").gameObject.GetComponent<Renderer>().bounds.size;
@@ -115,6 +122,10 @@ public class Monster : Berkeley
          if (invincibleTimer > -1f) {
             invincibleTimer -= Time.deltaTime;
         }
+        if (cooldownTimer >= 0) {
+            cooldownTimer -= Time.deltaTime;
+        }
+        Die();
         switch (routine) {
         case (Routine.Patrolling):
             Patrol();
@@ -126,7 +137,6 @@ public class Monster : Berkeley
             Attack();
             break;
         }
-        Die();
         
     }
     void Patrol()
@@ -187,7 +197,7 @@ public class Monster : Berkeley
         moveDirection.Normalize();
         Vector2 target = moveDirection + currentPosition;
         if (Vector3.Distance(currentPosition, chaseTargetPosition) > giveUpDistance) {SwitchRoutine(Routine.Patrolling); return;}
-		if (Vector3.Distance(currentPosition, chaseTargetPosition) > 0.73f) {
+		if (Vector3.Distance(currentPosition, chaseTargetPosition) > attackDistance || cooldownTimer > 0) {
 			
             transform.position = Vector3.Lerp (currentPosition, target, runSpeed * Time.deltaTime);
 
@@ -246,6 +256,7 @@ public class Monster : Berkeley
             
             transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
             
+            cooldownTimer = attackCooldown;
             SwitchRoutine(Routine.Chasing);
         }
 
@@ -349,12 +360,15 @@ public class Monster : Berkeley
         if (life > 0) return;
         GameObject deathImage = Instantiate(GameOverlord.Instance.deathPrefab, new Vector2(transform.position.x, transform.position.y),   Quaternion.Euler(0, 0, 0));
         deathImage.transform.parent = null;
-        if (Player.Instance.engagedMonster.name == name) {
+        if (Player.Instance.engagedMonster!=null &&
+            Player.Instance.engagedMonster.name == name) {
             Player.Instance.engagementTimer = 0;
         }
         for(int i = 0; i <drops.Length; i++){
             DropLoot(drops[i]);
         }
+        int exp = UnityEngine.Random.Range(minExpGiven, maxExpGiven);
+        Player.Instance.GainExperience(exp);
         // GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == transform.gameObject.name ) );
         Destroy(transform.gameObject);
     }

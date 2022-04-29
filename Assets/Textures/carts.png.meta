@@ -1,21 +1,7 @@
 fileFormatVersion: 2
-guid: 2706beb9ed4c54d77820b401a9f5db5d
-labels:
-- Character
+guid: f18280765ae51254284cc7192d9a2835
 TextureImporter:
-  internalIDToNameTable:
-  - first:
-      213: -5782521184205631276
-    second: zombie_0
-  - first:
-      213: 7424166911509628443
-    second: zombie_1
-  - first:
-      213: -2758051070605636368
-    second: zombie_2
-  - first:
-      213: 8344143291265281608
-    second: zombie_3
+  internalIDToNameTable: []
   externalObjects: {}
   serializedVersion: 11
   mipmaps:
@@ -43,8 +29,8 @@ TextureImporter:
   generateCubemap: 6
   cubemapConvolution: 0
   seamlessCubemap: 0
-  textureFormat: -1
-  maxTextureSize: 1024
+  textureFormat: 1
+  maxTextureSize: 2048
   textureSettings:
     serializedVersion: 2
     filterMode: 1
@@ -76,11 +62,11 @@ TextureImporter:
   compressionQualitySet: 0
   textureFormatSet: 0
   ignorePngGamma: 0
-  applyGammaDecoding: 1
+  applyGammaDecoding: 0
   platformSettings:
   - serializedVersion: 3
     buildTarget: DefaultTexturePlatform
-    maxTextureSize: 1024
+    maxTextureSize: 2048
     resizeAlgorithm: 0
     textureFormat: -1
     textureCompression: 1
@@ -91,100 +77,154 @@ TextureImporter:
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   - serializedVersion: 3
-    buildTarget: iPhone
-    maxTextureSize: 1024
+    buildTarget: Standalone
+    maxTextureSize: 2048
     resizeAlgorithm: 0
-    textureFormat: 2
+    textureFormat: -1
     textureCompression: 1
     compressionQuality: 50
     crunchedCompression: 0
     allowsAlphaSplitting: 0
-    overridden: 1
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
     androidETC2FallbackOverride: 0
     forceMaximumCompressionQuality_BC6H_BC7: 0
   spriteSheet:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: zombie_0
+      name: carts_0
       rect:
         serializedVersion: 2
-        x: 4
-        y: 0
-        width: 146
-        height: 102
+        x: 326
+        y: 754
+        width: 111
+        height: 111
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 4d0904dbe9b50cfa0800000000000000
-      internalID: -5782521184205631276
+      spriteID: c4d5e6d9681f5044b94f3d059d7ba131
+      internalID: -1892902868
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zombie_1
+      name: carts_1
       rect:
         serializedVersion: 2
-        x: 163
-        y: 0
-        width: 146
-        height: 102
+        x: 479
+        y: 536
+        width: 228
+        height: 433
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: b168db99870f70760800000000000000
-      internalID: 7424166911509628443
+      spriteID: 16714abb955e8f64c824d6616e07c086
+      internalID: -958948114
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zombie_2
+      name: carts_2
       rect:
         serializedVersion: 2
-        x: 321
-        y: 0
-        width: 148
-        height: 102
+        x: 290
+        y: 587
+        width: 111
+        height: 111
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 0fc4a200a2f69b9d0800000000000000
-      internalID: -2758051070605636368
+      spriteID: 452fe963f1baae04088cc57018e481f8
+      internalID: -1863698414
       vertices: []
       indices: 
       edges: []
       weights: []
     - serializedVersion: 2
-      name: zombie_3
+      name: carts_5
       rect:
         serializedVersion: 2
-        x: 471
-        y: 0
-        width: 157
-        height: 100
+        x: 288
+        y: 405
+        width: 111
+        height: 111
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
       outline: []
       physicsShape: []
-      tessellationDetail: -1
+      tessellationDetail: 0
       bones: []
-      spriteID: 84e63de3d1a5cc370800000000000000
-      internalID: 8344143291265281608
+      spriteID: d257093cb75216749849ff00c67964b9
+      internalID: -234632885
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: carts_6
+      rect:
+        serializedVersion: 2
+        x: 481
+        y: 54
+        width: 228
+        height: 434
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 5b648550b31f3b34394c08582890d709
+      internalID: -1496012705
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: carts_9
+      rect:
+        serializedVersion: 2
+        x: 292
+        y: 176
+        width: 111
+        height: 111
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 7695951213053cb46a540473c086f5ae
+      internalID: -500197032
       vertices: []
       indices: 
       edges: []
@@ -192,7 +232,7 @@ TextureImporter:
     outline: []
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 5e97eb03825dee720800000000000000
     internalID: 0
     vertices: []
     indices: 
@@ -200,11 +240,20 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     nameFileIdTable:
-      zombie_3: 8344143291265281608
-      zombie_2: -2758051070605636368
-      zombie_1: 7424166911509628443
-      zombie_0: -5782521184205631276
-  spritePackingTag: topdown
+      carts_0: -1892902868
+      carts_4: -732410056
+      carts_1: -958948114
+      carts_3: 713818890
+      carts_12: -1502890653
+      carts_5: -234632885
+      carts_9: -500197032
+      carts_10: -1823762568
+      carts_7: 367019457
+      carts_8: 574733421
+      carts_11: 1467664040
+      carts_2: -1863698414
+      carts_6: -1496012705
+  spritePackingTag: 
   pSDRemoveMatte: 0
   pSDShowRemoveMatteOption: 0
   userData: 

@@ -53,7 +53,7 @@ public class GameLib : MonoBehaviour
         switch (thisType){
             case (ItemType.Equipment):
                 {
-                    return (Item) Convert.ChangeType(GetEquipmentById(thisId), typeof(Item)); 
+                    return (Item) GetEquipmentById(thisId); 
                 }
             case (ItemType.Weapon):
                 {
