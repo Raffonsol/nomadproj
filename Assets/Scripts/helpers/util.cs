@@ -36,3 +36,19 @@ public static class UIHelper
     }
 
 }
+public static class Util
+{
+    public static int TagToFaction(string tag)
+    {
+        switch (tag) {
+            case ("Charcter"):
+            return 0;
+            case ("Monster"):
+            return 1;
+            case ("Neutral"):
+            return 2;
+        }
+        return 0;
+    }
+
+}

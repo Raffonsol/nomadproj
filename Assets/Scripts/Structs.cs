@@ -23,6 +23,12 @@ public enum DamageRsrcType
     Pickaxe,
     Fishnet,
 }
+public enum DamageType
+{
+    Melee,
+    Ranged,
+    Magic
+}
 public enum FittablePart
 {
     LongStick,
@@ -69,23 +75,28 @@ public enum Slot
     Hand,
     Foot,
 }
+public enum ConsumableType
+{
+    Potion,
+    Arrow,
+    Bolt,
+    Scroll,
+    Food,
+}
 public enum CharacterStat
 {
-    Life,
-    Stamina,
-    Mana,
-
-    MeleeDamage,
-    RangedDamage,
-    MagicDamage,
-    
     MaxLife,
     MaxStamina,
     MaxMana,
+    MeleeDamage,
+    RangedDamage,
+    MagicDamage,
+    Life,
+    Stamina,
+    Mana,
     LifeRegen,
     StaminaRegen,
     ManaRegen,
-
     Armor,
     MovementSpeed,
     
@@ -94,7 +105,7 @@ public enum CharacterStat
 public class PowerUp
 {
     public CharacterStat affectedStat;
-    public float offset;
+    public int offset;
 }
 [Serializable]
 public class PartLooks
@@ -106,6 +117,15 @@ public class PartLooks
     public float xOffset;
     // rotation
     public float zOffset;
+}
+
+[Serializable]
+public class Projectile
+{
+    public float speed;
+    public float minDamage;
+    public float maxDamage;
+    public float maxDistance;
 }
 
 [Serializable]
@@ -146,7 +166,10 @@ public class Weapon : Item
     public float cooldown;
     public FittablePart[] partsNeeded;
     public FittablePart collidablePart;
+    public DamageType damageType;
     public DamageRsrcType damageRsrcType;
+
+    public ConsumableType ammo;
 }
 [Serializable]
 public class Part : Item
@@ -154,6 +177,7 @@ public class Part : Item
     public FittablePart fittablePart;
     public PlatingMaterial material;
     public PartLooks[] partLooks;
+    public PowerUp[] statEffects;
 }
 
 [Serializable]
@@ -162,6 +186,8 @@ public class Consumable : Item
     public PowerUp[] modifiers;
     // 0 makes it permanent
     public float duration;
+    public ConsumableType consumableType;
+    public Projectile projectileSettings;
 }
 
 
@@ -271,7 +297,6 @@ public class CurrentCharStat
     public CharacterStat stat;
     public int id;
     public int value;
-    public GameObject hand;
 }
 
 [Serializable]
@@ -283,10 +308,8 @@ public class FriendlyChar {
     public Personality personality;
     public DistToMain formation;
     public ZombieController controller;
+    public List<CurrentCharStat> stats;
     public float reactionTime = 1;
-    public float maxLife;
-    public float maxStamina;
-    public float maxMana;
 
     public float maxWeight;
 
@@ -312,4 +335,9 @@ public class FriendlyChar {
     [HideInInspector]
     public int experienceToNextLevel;
      
+}
+public class NeutralChar {
+    public string name;
+    public bool isMale;
+    public Personality personality;
 }

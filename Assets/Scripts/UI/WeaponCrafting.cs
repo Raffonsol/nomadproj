@@ -118,8 +118,9 @@ public class WeaponCrafting : MonoBehaviour
             if (partLook != null) {
                 temp.GetComponent<PartInCrafting>().defaultPos = new Vector2(partLook.xOffset, partLook.yOffset);
                 temp.GetComponent<Transform>().localRotation = Quaternion.Euler(0, 0, partLook.zOffset);
+                temp.GetComponent<Transform>().localScale = partLook.look.GetComponent<Transform>().localScale;
             }
-            
+
             temp.GetComponent<PartInCrafting>().itemId = itemsPlaced[i].id;
             temp.GetComponent<PartInCrafting>().itemType = ItemType.Part;
         }

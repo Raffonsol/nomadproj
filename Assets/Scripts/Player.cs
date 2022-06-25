@@ -16,6 +16,7 @@ public class Player : MonoBehaviour
     public List<Equipment> equipments;
     public List<Weapon> weapons;
     public List<Part> parts;
+    public List<Consumable> consumables;
 
     public float carryingWeight;
 
@@ -39,8 +40,10 @@ public class Player : MonoBehaviour
 	{
         ResetContol();
         CalculateNextLevel();
+        activePerson.stats =  GameOverlord.Instance.defaultCharacterStats;
         for(int i = 0; i <characters.Count; i++){
             characters[i].equipped = new Equipped();
+            characters[i].stats = GameOverlord.Instance.defaultCharacterStats;
             ResetStats(characters[i]);
         }
     
@@ -77,7 +80,7 @@ public class Player : MonoBehaviour
     public void LevelUpChar(int charId) {
         characters[charId].level++;
         characters[charId].experience = 0;
-        characters[charId].life = characters[charId].maxLife;
+        characters[charId].life = characters[charId].stats[0].value;
         characters[charId].controller.Reset();
         GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, characters[charId].controller.transform);
         DamageText.GetComponent<DamageText>().textToDisplay = "^";
@@ -103,9 +106,9 @@ public class Player : MonoBehaviour
     public void ResetStats(FriendlyChar person)
     {
         person.invincibleTimer = activePerson.invincibilityTime;
-        person.life = activePerson.maxLife;
-        person.stamina = activePerson.maxStamina;
-        person.mana = activePerson.maxMana;
+        person.life = activePerson.stats[0].value;
+        person.stamina = activePerson.stats[1].value;
+        person.mana = activePerson.stats[2].value;
         
     }
     public void EquipArmor(Equipment equipment, bool left = false)
@@ -127,12 +130,21 @@ public class Player : MonoBehaviour
         current.GetComponent<SpriteRenderer>().sprite = equipment.visual.GetComponent<SpriteRenderer>().sprite;
         current.GetComponent<SpriteRenderer>().color = equipment.visual.GetComponent<SpriteRenderer>().color;
         current.transform.localScale = equipment.visual.transform.localScale;
+
+        //stats
+        for(int i = 0; i <equipment.modifiers.Length; i++){
+            activePerson.stats[(int)equipment.modifiers[i].affectedStat].value += equipment.modifiers[i].offset;
+        }
+        
+        
  
     }
     public void Unequip(Slot slot, bool left = false) {
         GameObject bod = controller.gameObject.transform.Find("Player/Body/" +SlotToBodyPosition(slot, left)).gameObject;
+        Equipment equipment = activePerson.equipped.chest;
         switch (slot) {
             case (Slot.Head):
+                equipment = activePerson.equipped.head;            
                 AddEquipment(activePerson.equipped.head.id);
                 activePerson.equipped.head = null;
                 
@@ -140,6 +152,7 @@ public class Player : MonoBehaviour
                 bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.head.GetComponent<SpriteRenderer>().color;
                 break;
             case (Slot.Chest):
+                equipment = activePerson.equipped.chest; 
                 AddEquipment(activePerson.equipped.chest.id);
                 activePerson.equipped.chest = null;
                 bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.chest.GetComponent<SpriteRenderer>().sprite;
@@ -147,10 +160,12 @@ public class Player : MonoBehaviour
                 break;
             case (Slot.Pauldron):
                 if (left) {
+                    equipment = activePerson.equipped.leftPauldron; 
                     AddEquipment(activePerson.equipped.leftPauldron.id);
                     activePerson.equipped.leftPauldron = null;
                 }else {
-                     AddEquipment(activePerson.equipped.rightPauldron.id);
+                    equipment = activePerson.equipped.rightPauldron; 
+                    AddEquipment(activePerson.equipped.rightPauldron.id);
                     activePerson.equipped.rightPauldron = null;
                 }
                 bod.GetComponent<SpriteRenderer>().sprite = null;
@@ -158,9 +173,11 @@ public class Player : MonoBehaviour
                 break;
             case (Slot.Foot):
                 if (left) {
+                    equipment = activePerson.equipped.leftFoot; 
                     AddEquipment(activePerson.equipped.leftFoot.id);
                     activePerson.equipped.leftFoot = null;
                 }else {
+                    equipment = activePerson.equipped.rightFoot; 
                      AddEquipment(activePerson.equipped.rightFoot.id);
                     activePerson.equipped.rightFoot = null;
                 }
@@ -170,9 +187,11 @@ public class Player : MonoBehaviour
                 break;
             case (Slot.Hand):
                 if (left) {
+                    equipment = activePerson.equipped.leftHand; 
                     AddEquipment(activePerson.equipped.leftHand.id);
                     activePerson.equipped.leftHand = null;
                 }else {
+                    equipment = activePerson.equipped.rightHand; 
                      AddEquipment(activePerson.equipped.rightHand.id);
                     activePerson.equipped.rightHand = null;
                 }
@@ -180,6 +199,12 @@ public class Player : MonoBehaviour
                 bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.hand.GetComponent<SpriteRenderer>().color;
                 
                 break;
+        }
+
+        //stats
+        for(int i = 0; i <equipment.modifiers.Length; i++){
+            Debug.Log((int)equipment.modifiers[i].affectedStat);
+            activePerson.stats[(int)equipment.modifiers[i].affectedStat].value -= equipment.modifiers[i].offset;
         }
     }
     public void EquipWeapon(int itemId, List<Part> partsUsed, int charId = -1)
@@ -215,17 +240,66 @@ public class Player : MonoBehaviour
         lHand.transform.localRotation = Quaternion.Euler(0, 0, value.instance.leftHandPos.z);
         // hide hidden
 
-        // settings on graphics
-        person.hitbox = newWeapon.transform.Find(value.collidablePart.ToString()).GetComponent<HitBox>();
-        person.hitbox.damageRsrcType = value.damageRsrcType;
+        // calculate damage
+        float dmg = CalculateDamage(person.id);
 
+        // settings on graphics
+        if (value.damageType == DamageType.Melee) {
+            person.hitbox = newWeapon.transform.Find(value.collidablePart.ToString()).GetComponent<HitBox>();
+            person.hitbox.damageRsrcType = value.damageRsrcType;
+            person.hitbox.damageMin = dmg;
+            person.hitbox.damageMax = dmg * 1.5f;
+        }
+    }
+    // Adds parts back to inventory and equips disarmed
+    public void UnequipWeapon(int charId = -1) {
+        if (charId == -1) charId = activeCharId;
+        FriendlyChar person = characters[charId];
+        for(int i = 0; i <person.equipped.partsBeingUsed.Count; i++){
+            AddPart(person.equipped.partsBeingUsed[i].id);
+        }
+        EquipWeapon(100000, new List<Part>(), charId);
+    }
+    public float CalculateDamage(int charId = -1) {
+        if (charId == -1) charId = activeCharId;
+        FriendlyChar person = characters[charId];
+        List<Part> partsUsed = person.equipped.partsBeingUsed;
+        Weapon value = person.equipped.primaryWeapon;
+        
+        float dmg = 0; int slot = 3; // slot  is for the damage type, using hardcoded indexes
+        for(int i = 0; i <partsUsed.Count; i++){
+            for(int j = 0; j <partsUsed[i].statEffects.Length; j++){
+                // melee
+                if (partsUsed[i].statEffects[j].affectedStat == CharacterStat.MeleeDamage && value.damageType == DamageType.Melee) {
+                    dmg += partsUsed[i].statEffects[j].offset; slot = 3;
+                }
+                // ranged
+                if (partsUsed[i].statEffects[j].affectedStat == CharacterStat.RangedDamage && value.damageType == DamageType.Ranged) {
+                    dmg += partsUsed[i].statEffects[j].offset; slot = 4;
+                }
+                // magic
+                if (partsUsed[i].statEffects[j].affectedStat == CharacterStat.MagicDamage && value.damageType == DamageType.Magic) {
+                    dmg += partsUsed[i].statEffects[j].offset; slot = 5;
+                }
+            }
+        }
+        if (dmg == 0) dmg = 1;
+        // TODO: add modifiers
+
+        // STATSET
+        person.stats[slot].value = (int)System.Math.Floor(dmg);
         person.controller.Reset();
+
+        return dmg;
     }
     public void TakeDamage(float damage, int tarId = -1) {
         if (tarId == -1) tarId = activeCharId;
         FriendlyChar person = characters[tarId];
         if (person.invincibleTimer < 0) {
-            person.life -= damage;
+            // TODO: localize [12 = armor]
+            float minDmg = damage - person.stats[12].value;
+            if (minDmg < 0) minDmg = 0;
+            person.life -= Random.Range(minDmg,damage);
             person.invincibleTimer = person.invincibilityTime; 
             GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, person.controller.gameObject.transform);
             DamageText.GetComponent<DamageText>().textToDisplay = damage.ToString("0.00");
@@ -280,6 +354,13 @@ public class Player : MonoBehaviour
         Part part = GameLib.Instance.GetPartById(id);
         carryingWeight += part.weight;
         parts.Add(part);
+        UIManager.Instance.tabRefresh = true;
+    }
+    public void AddConsumable(int id)
+    {
+        Consumable co = GameLib.Instance.GetConsumableById(id);
+        carryingWeight += co.weight;
+        consumables.Add(co);
         UIManager.Instance.tabRefresh = true;
     }
      public void RemoveEquipment(int id)
@@ -339,5 +420,16 @@ public class Player : MonoBehaviour
     public void Engage(GameObject enemy) {
         engagedMonster = enemy;
         engagementTimer = engagementTime;
+    }
+    public List<Consumable> GetConsumablesByType(ConsumableType type) {
+        List<Consumable> list = new List<Consumable>();
+        
+        for(int i = 0; i <consumables.Count; i++){
+            if (consumables[i].consumableType == type) {
+                list.Add(consumables[i]);
+            }
+        }
+        
+        return list;
     }
 }

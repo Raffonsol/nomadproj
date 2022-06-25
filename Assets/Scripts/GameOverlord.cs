@@ -12,6 +12,7 @@ public class GameOverlord : MonoBehaviour
     public List<GameObject> nearbyMonsters;
     public Sprite maleChest;
     public Sprite femaleChest;
+    public List<CurrentCharStat> defaultCharacterStats;
 
     private string[] excludeTags = new string[]{"Character", "Monster", "Hitbox"};
 
@@ -45,6 +46,8 @@ public class GameOverlord : MonoBehaviour
         Player.Instance.AddPart(900003);
         Player.Instance.AddPart(900001);
         Player.Instance.AddPart(900000);
+        Player.Instance.AddPart(900004);
+        Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);
         // Player.Instance.AddPart(900002);
         // Player.Instance.AddPart(900003);
     }

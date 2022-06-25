@@ -47,6 +47,7 @@ public class ZombieController : MonoBehaviour {
 	private Color shadowColor;
 	private Color selectionColor;
 	private GameObject shadow;
+	private DamageType attackDamageType;
 
 	void Start()
 	{
@@ -75,8 +76,12 @@ public class ZombieController : MonoBehaviour {
 		attackTime = attackCooldown;
 		attackTimer = attackTime;
 
-		hitBox = weaponObject.transform.Find(weapon.collidablePart.ToString()).gameObject.GetComponent<PolygonCollider2D>();
-		hitBox.isTrigger = true;
+		attackDamageType = weapon.damageType;
+		if (attackDamageType == DamageType.Melee) {
+			hitBox = weaponObject.transform.Find(weapon.collidablePart.ToString()).gameObject.GetComponent<PolygonCollider2D>();
+			hitBox.isTrigger = true;
+		}
+		
 	}
 
 	private bool isLClickHeld = false;
@@ -109,8 +114,32 @@ public class ZombieController : MonoBehaviour {
 			attackTimer = attackTime;
 
 			attacking = true;
-			Player.Instance.characters[charId].hitbox.hitting = true;
-			hitBox.isTrigger = false;
+			
+			if (attackDamageType == DamageType.Melee) {
+				Player.Instance.characters[charId].hitbox.hitting = true;
+				hitBox.isTrigger = false;
+			} else if (attackDamageType == DamageType.Ranged) {
+				if (Player.Instance.GetConsumablesByType(weapon.ammo).Count > 0) {
+					Consumable item = Player.Instance.consumables.First( s => s.consumableType == weapon.ammo);
+					Player.Instance.consumables.Remove(item);
+					// Create arrow projectile and give it damage
+					// STATSET
+					GameObject arrow = Instantiate(item.visual,transform.position, transform.rotation);
+					Projectile newSettings = item.projectileSettings;
+					float dmg = Player.Instance.CalculateDamage(self.id);
+					newSettings.minDamage = dmg;
+					newSettings.maxDamage = dmg * 1.5f;
+					arrow.gameObject.GetComponent<ProjectileItem>().projectileSettings = item.projectileSettings;
+					arrow.gameObject.GetComponent<ProjectileItem>().faction = 0;
+					arrow.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
+					arrow.gameObject.GetComponent<ProjectileItem>().Go();
+				} else {
+					Debug.Log("no arrows");
+					if (!leader) {
+						Player.Instance.UnequipWeapon(self.id);
+					}
+				}
+			}
 		}
 	}
 
@@ -159,7 +188,7 @@ public class ZombieController : MonoBehaviour {
 		moveDirection = nextPoint - currentPosition;
 		moveDirection.Normalize();
 		if (!leader)PerformAi(self.personality);
-		if (isLClickHeld || boredTimer > 0) {
+		else if (isLClickHeld || boredTimer > 0) {
 			Vector2 target = moveDirection + currentPosition;
 			if (Vector3.Distance(transform.position, lastClick) > 0.2f) {
 				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
@@ -178,7 +207,7 @@ public class ZombieController : MonoBehaviour {
 			PerformAi(self.personality);
 		}
 	}
-	void TakeDamage(){
+	void TakeDamage() {
 		// TODO: knockback
 	}
 
@@ -200,7 +229,7 @@ public class ZombieController : MonoBehaviour {
 			weaponObject.transform.localRotation = Quaternion.Euler(0, 0, weapon.instance.weaponPos.z);
 			attacking = false;
 			Player.Instance.characters[charId].hitbox.hitting = false;
-			hitBox.isTrigger = true;
+			if (attackDamageType == DamageType.Melee) hitBox.isTrigger = true;
 		} else {
 			rightHand.transform.localPosition = new Vector3(attackScripts[stepToPlay].rightHandPos.x, attackScripts[stepToPlay].rightHandPos.y, -0.2f);
 			rightHand.transform.localRotation = Quaternion.Euler(0, 0, attackScripts[stepToPlay].rightHandPos.z);
@@ -250,6 +279,7 @@ public class ZombieController : MonoBehaviour {
 	}
 	private void OnCollisionStay2D(Collision2D collision)
 	{
+		// Debug.Log(collision.collider.CompareTag("Hitbox"));
 		if (collision.collider.CompareTag("Hitbox"))
 		{
 			Collided(collision.collider);
@@ -291,6 +321,9 @@ public class ZombieController : MonoBehaviour {
 		});
     }
 
+	/**
+	* don't overthink the arg name	
+	*/
 	void PerformAi(Personality tempPersonality) {
 		
 		Vector2 target;
@@ -305,9 +338,16 @@ public class ZombieController : MonoBehaviour {
 			target = moveDirection + currentPosition;
 
 			float dist = Vector3.Distance(transform.position, threateningTar);
-			float monsterSize = engage.GetComponent<Monster>().size;
+			float monsterSize;
+			try {
+				monsterSize = engage.GetComponent<Monster>().size;
+			} catch (NullReferenceException) {
+				monsterSize = engage.GetComponent<Neutral>().size;
+			}
+			if (weapon.damageType == DamageType.Ranged) monsterSize += 300f;
 			if (dist < monsterSize)AttemptAttack();
-			if (dist > monsterSize*0.3f) {
+			if (dist > monsterSize * 0.5f) {
+				Debug.Log(dist);
 				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
 				StepAnim();
 			}
@@ -332,9 +372,15 @@ public class ZombieController : MonoBehaviour {
 					target = moveDirection + currentPosition;
 					
 					float dist = Vector3.Distance(transform.position, angryTar);
-					float monsterSize = monster.GetComponent<Monster>().size;
+					float monsterSize;
+					try {
+						monsterSize = monster.GetComponent<Monster>().size;
+					} catch (NullReferenceException) {
+						monsterSize = monster.GetComponent<Neutral>().size;
+					}
+					if (weapon.damageType == DamageType.Ranged) monsterSize += 200f;
 					if (dist < monsterSize)AttemptAttack();
-					if (dist > monsterSize*0.3f) {
+					if (dist > monsterSize* 0.5) {
 						transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
 						StepAnim();
 					}

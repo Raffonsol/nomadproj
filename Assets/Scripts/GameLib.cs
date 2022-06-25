@@ -11,7 +11,10 @@ public class GameLib : MonoBehaviour
     [SerializeField]
     public Weapon[] allWeapons;
     [SerializeField]
+    public Consumable[] allConsumables;
+    [SerializeField]
     public Part[] allParts;
+    
     [SerializeField]
     public MonsterNPC[] allMonsters;
 
@@ -74,6 +77,9 @@ public class GameLib : MonoBehaviour
     }
     public Part GetPartById(int id) {
         return Array.Find(allParts, part => part.id == id);
+    }
+    public Consumable GetConsumableById(int id) {
+        return Array.Find(allConsumables, co => co.id == id);
     }
 
 }

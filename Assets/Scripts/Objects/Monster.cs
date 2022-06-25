@@ -17,6 +17,9 @@ public enum Routine
 public class Monster : Berkeley
 {
 
+    public int faction = 1;
+    public int[] hatesFactions;
+
     public Sprite step1;
     public Sprite step2;
     public Sprite attack;
@@ -190,7 +193,13 @@ public class Monster : Berkeley
         if (chaseTarget == null) SwitchRoutine(Routine.Patrolling);
         
         Vector2 currentPosition = transform.position;
-        chaseTargetPosition = chaseTarget.transform.position;
+        try {
+            chaseTargetPosition = chaseTarget.transform.position;
+        } catch (MissingReferenceException) {
+            // meaning they don't exist anymore
+            chaseTarget = null;
+            SwitchRoutine(Routine.Patrolling);
+        }
 
         Vector2 nextPoint = GameOverlord.Instance.Pathfind(currentPosition, chaseTargetPosition);
         moveDirection = nextPoint - currentPosition;
@@ -285,20 +294,13 @@ public class Monster : Berkeley
         // TODO: use eyes to cast more rays here
         RaycastHit2D hit = Physics2D.Raycast(transform.position, moveDirection);
         // Debug.DrawRay(transform.position, moveDirection, Color.red);
-        if (hit.transform && hit.transform.gameObject.tag == "Character"
+        if (hit.transform && Array.IndexOf(hatesFactions, Util.TagToFaction(hit.transform.gameObject.tag)) > -1
         && Vector2.Distance(hit.point, transform.position) < alertRange){
             chaseTarget = hit.transform.gameObject;
             Debug.Log("Huh?");
             return true;
         }
-        hit = Physics2D.Raycast(transform.position, moveDirection*alertRange);
-        // Debug.DrawRay(transform.position, moveDirection*alertRange, Color.green);
-        if (hit.transform && hit.transform.gameObject.tag == "Character"
-        && Vector2.Distance(hit.point, transform.position) < alertRange){
-            chaseTarget = hit.transform.gameObject;
-            Debug.Log("Hugh?");
-            return true;
-        }
+        
         return false;
     }
     void StepAnim()
@@ -321,31 +323,57 @@ public class Monster : Berkeley
 	{
         transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
 	}
-    // void OnTriggerEnter2D(Collider2D collided)
-	// {
-	// 	if (collided.CompareTag("Hitbox"))
-	// 	{
-	// 		Collided(collided);
-	// 	}
-	// }
+    void OnTriggerEnter2D(Collider2D collided)
+	{
+		if (collided.CompareTag("Projectile"))
+		{
+			Shot(collided);
+		}
+	}
 	void OnCollisionStay2D(Collision2D collision)
 	{
 		if (collision.collider.CompareTag("Hitbox"))
 		{
 			Collided(collision.collider);
 		}
+        if (collision.collider.CompareTag("Projectile"))
+		{
+			Shot(collision.collider);
+		}
 	}
 	void Collided(Collider2D collided)
 	{
 		GameObject target = collided.gameObject;
+
 		HitBox hitter = target.GetComponent<HitBox>();
-		if (hitter.hitting && hitter.faction != 1 && invincibleTimer < 0) {
+		if (hitter.hitting && hitter.faction != faction && invincibleTimer < 0) {
 			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
 			TakeDamage(damage);
             Player.Instance.Engage(gameObject);
 
             chaseTarget = collided.transform.gameObject;
             if (routine!=Routine.Chasing && routine!=Routine.Attacking) SwitchRoutine(Routine.Chasing);
+		}
+
+	}
+    void Shot(Collider2D collided)
+	{
+		GameObject target = collided.gameObject;
+
+		ProjectileItem hitter = target.GetComponent<ProjectileItem>();
+		if (hitter.faction != faction && invincibleTimer < 0) {
+			float damage = UnityEngine.Random.Range(hitter.projectileSettings.minDamage, hitter.projectileSettings.maxDamage);
+			TakeDamage(damage);
+            Player.Instance.Engage(gameObject);
+            Destroy(target);
+
+            try {
+                chaseTarget = hitter.shooter;
+                if (routine!=Routine.Chasing && routine!=Routine.Attacking) SwitchRoutine(Routine.Chasing);
+            } catch (NullReferenceException) {
+                // TODO: search in the direction projectile came from
+            }
+            
 		}
 
 	}

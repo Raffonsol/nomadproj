@@ -13,18 +13,27 @@ public class WeaponGraphicsUpdater
             //      Debug.Log(partsUsed[i].partLooks[0].weaponId+ "---" +  weapon.id);
             //       Debug.Log( Array.Find(partsUsed[i].partLooks, look => look.weaponId == weapon.id).weaponId);
             // }
-            GameObject newPartObj = 
+            GameObject newPartObj;
+            try {
+                // try to use part from part looks. If that doesnt work..
+                newPartObj = 
                 partsUsed[i].partLooks.Length > 0 &&
                 weapon!=null ?
                     Array.Find(partsUsed[i].partLooks, look => look.weaponId == weapon.id).look :
                     partsUsed[i].visual;
+            } catch (NullReferenceException) {
+                // means part is not there so just use visual property
+                newPartObj = partsUsed[i].visual;
+            }
             try {
+                // try to get existing part and make it look how it should
                 GameObject partObj = weapObj.transform.Find(partsUsed[i].fittablePart.ToString()).gameObject;
-            
+
                 partObj.GetComponent<SpriteRenderer>().sprite = newPartObj.GetComponent<SpriteRenderer>().sprite;
                 partObj.GetComponent<SpriteRenderer>().color = newPartObj.GetComponent<SpriteRenderer>().color;
                 partObj.transform.localScale = newPartObj.transform.localScale;
             } catch (NullReferenceException) {
+                // if couldnt find part then we need to instantiate it
                 GameObject.Instantiate(newPartObj, weapObj.transform);
             }
             

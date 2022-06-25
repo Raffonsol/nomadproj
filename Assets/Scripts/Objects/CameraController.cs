@@ -28,6 +28,14 @@ public class CameraController : MonoBehaviour {
 	{
 		if (collided.CompareTag("Monster"))
 		{
+			// HARDCODED 1 = angry faction
+			if (collided.gameObject.GetComponent<Monster>().faction == 1)
+			GameOverlord.Instance.nearbyMonsters.Add(collided.transform.gameObject);
+		}
+		if (collided.CompareTag("Npc"))
+		{
+			// HARDCODED 1 = angry faction
+			if (collided.gameObject.GetComponent<Neutral>().faction == 1)
 			GameOverlord.Instance.nearbyMonsters.Add(collided.transform.gameObject);
 		}
 	}
@@ -35,6 +43,12 @@ public class CameraController : MonoBehaviour {
 	{
 		if (collided.CompareTag("Monster"))
 		{
+			if (collided.gameObject.GetComponent<Monster>().faction == 1)
+			GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == collided.transform.gameObject.name ) );
+		}
+		if (collided.CompareTag("Npc"))
+		{
+			if (collided.gameObject.GetComponent<Neutral>().faction == 1)
 			GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == collided.transform.gameObject.name ) );
 		}
 	}
