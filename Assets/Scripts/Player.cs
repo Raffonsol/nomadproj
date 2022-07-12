@@ -1,4 +1,5 @@
 using System.Collections;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -24,6 +25,9 @@ public class Player : MonoBehaviour
     private float engagementTime = 6f;
     public float engagementTimer;
 
+    [HideInInspector]
+    public bool isTeamHovered = false;
+
     // Singleton stuff
     private void Awake() 
     { 
@@ -36,7 +40,7 @@ public class Player : MonoBehaviour
             Instance = this; 
         } 
     }
-    void Start()
+    public void DoStart()
 	{
         ResetContol();
         CalculateNextLevel();
@@ -67,7 +71,7 @@ public class Player : MonoBehaviour
                 characters[i].experience+=1;
                 remainingExp -=1;
                 if (characters[i].controller.leader) {
-                        characters[i].experience+=Random.Range(0,1);
+                        characters[i].experience+=UnityEngine.Random.Range(0,1);
                 }
 
                 if (characters[i].experience >= characters[i].experienceToNextLevel) {
@@ -78,11 +82,11 @@ public class Player : MonoBehaviour
         }
     }
     public void LevelUpChar(int charId) {
-        characters[charId].level++;
-        characters[charId].experience = 0;
-        characters[charId].life = characters[charId].stats[0].value;
-        characters[charId].controller.Reset();
-        GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, characters[charId].controller.transform);
+        GetCharById(charId).level++;
+        GetCharById(charId).experience = 0;
+        GetCharById(charId).life = GetCharById(charId).stats[0].value;
+        GetCharById(charId).controller.Reset();
+        GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, GetCharById(charId).controller.transform);
         DamageText.GetComponent<DamageText>().textToDisplay = "^";
         // TODO:  Play some fun animation here
     }
@@ -97,7 +101,7 @@ public class Player : MonoBehaviour
         
         if (engagementTimer > 0) {
             engagementTimer -= Time.deltaTime;
-        } else if (engagedMonster !=null) engagedMonster = null;
+        } else engagedMonster = null;
     }
     public void CalculateNextLevel()
     {
@@ -111,36 +115,38 @@ public class Player : MonoBehaviour
         person.mana = activePerson.stats[2].value;
         
     }
-    public void EquipArmor(Equipment equipment, bool left = false)
+    public void EquipArmor(Equipment equipment, bool left = false, int charId = -1)
     {
+        if (charId == -1) charId = activeCharId;
+        FriendlyChar person = GetCharById(charId);
 
         if (equipment.slot == Slot.Pauldron ) {
-            if (left) activePerson.equipped.leftPauldron = equipment; else activePerson.equipped.rightPauldron  = equipment;
+            if (left) person.equipped.leftPauldron = equipment; else person.equipped.rightPauldron  = equipment;
         } else if (equipment.slot == Slot.Foot) {
-            if (left) activePerson.equipped.leftFoot = equipment; else activePerson.equipped.rightFoot  = equipment;
+            if (left) person.equipped.leftFoot = equipment; else person.equipped.rightFoot  = equipment;
         } else if (equipment.slot == Slot.Hand) {
-            if (left) activePerson.equipped.leftHand = equipment; else activePerson.equipped.rightHand  = equipment;
+            if (left) person.equipped.leftHand = equipment; else person.equipped.rightHand  = equipment;
         } else if (equipment.slot == Slot.Chest) {
-            activePerson.equipped.chest = equipment;
+            person.equipped.chest = equipment;
         } else if (equipment.slot == Slot.Head) {
-            activePerson.equipped.head = equipment;
+            person.equipped.head = equipment;
         }
         // graphs
-        GameObject current = controller.gameObject.transform.Find("Player/Body/" +SlotToBodyPosition(equipment.slot, left)).gameObject;
+        GameObject current = person.controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(equipment.slot, left)).gameObject;
         current.GetComponent<SpriteRenderer>().sprite = equipment.visual.GetComponent<SpriteRenderer>().sprite;
         current.GetComponent<SpriteRenderer>().color = equipment.visual.GetComponent<SpriteRenderer>().color;
         current.transform.localScale = equipment.visual.transform.localScale;
 
         //stats
         for(int i = 0; i <equipment.modifiers.Length; i++){
-            activePerson.stats[(int)equipment.modifiers[i].affectedStat].value += equipment.modifiers[i].offset;
+            person.stats[(int)equipment.modifiers[i].affectedStat].value += equipment.modifiers[i].offset;
         }
         
         
  
     }
     public void Unequip(Slot slot, bool left = false) {
-        GameObject bod = controller.gameObject.transform.Find("Player/Body/" +SlotToBodyPosition(slot, left)).gameObject;
+        GameObject bod = controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(slot, left)).gameObject;
         Equipment equipment = activePerson.equipped.chest;
         switch (slot) {
             case (Slot.Head):
@@ -155,7 +161,7 @@ public class Player : MonoBehaviour
                 equipment = activePerson.equipped.chest; 
                 AddEquipment(activePerson.equipped.chest.id);
                 activePerson.equipped.chest = null;
-                bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.chest.GetComponent<SpriteRenderer>().sprite;
+                bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.clothing.GetComponent<SpriteRenderer>().sprite;
                 bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.chest.GetComponent<SpriteRenderer>().color;
                 break;
             case (Slot.Pauldron):
@@ -203,14 +209,13 @@ public class Player : MonoBehaviour
 
         //stats
         for(int i = 0; i <equipment.modifiers.Length; i++){
-            Debug.Log((int)equipment.modifiers[i].affectedStat);
             activePerson.stats[(int)equipment.modifiers[i].affectedStat].value -= equipment.modifiers[i].offset;
         }
     }
     public void EquipWeapon(int itemId, List<Part> partsUsed, int charId = -1)
     {
         if (charId == -1) charId = activeCharId;
-        FriendlyChar person = characters[charId];
+        FriendlyChar person = GetCharById(charId);
         Weapon value = GameLib.Instance.GetWeaponById(itemId);
 
         // settings
@@ -221,7 +226,12 @@ public class Player : MonoBehaviour
         
         /* graphics */
         // -- Weapon
-        Destroy(person.controller.gameObject.transform.Find("Player/Body/Instance/PrimaryWeapon").gameObject);
+        try {
+            Destroy(person.controller.gameObject.transform.Find("Player/Body/Instance/PrimaryWeapon").gameObject);
+        } catch (NullReferenceException) {
+            // sweat not, there is no weapon
+        }
+        
         GameObject newWeapon = Instantiate(value.visual);
         newWeapon.name = "PrimaryWeapon";
         newWeapon.transform.parent = person.controller.gameObject.transform.Find("Player/Body/Instance");
@@ -254,7 +264,7 @@ public class Player : MonoBehaviour
     // Adds parts back to inventory and equips disarmed
     public void UnequipWeapon(int charId = -1) {
         if (charId == -1) charId = activeCharId;
-        FriendlyChar person = characters[charId];
+        FriendlyChar person = GetCharById(charId);
         for(int i = 0; i <person.equipped.partsBeingUsed.Count; i++){
             AddPart(person.equipped.partsBeingUsed[i].id);
         }
@@ -262,7 +272,7 @@ public class Player : MonoBehaviour
     }
     public float CalculateDamage(int charId = -1) {
         if (charId == -1) charId = activeCharId;
-        FriendlyChar person = characters[charId];
+        FriendlyChar person = GetCharById(charId);
         List<Part> partsUsed = person.equipped.partsBeingUsed;
         Weapon value = person.equipped.primaryWeapon;
         
@@ -299,7 +309,7 @@ public class Player : MonoBehaviour
             // TODO: localize [12 = armor]
             float minDmg = damage - person.stats[12].value;
             if (minDmg < 0) minDmg = 0;
-            person.life -= Random.Range(minDmg,damage);
+            person.life -= UnityEngine.Random.Range(minDmg,damage);
             person.invincibleTimer = person.invincibilityTime; 
             GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, person.controller.gameObject.transform);
             DamageText.GetComponent<DamageText>().textToDisplay = damage.ToString("0.00");
@@ -399,23 +409,7 @@ public class Player : MonoBehaviour
         parts.RemoveAt(i);
         UIManager.Instance.tabRefresh = true;
     }
-    public string SlotToBodyPosition(Slot slot, bool left) {
-        string pos = "";
-        if (slot == Slot.Pauldron )
-        {
-            pos = left? "L" :"R";
-        } else if (slot == Slot.Foot) {
-            pos = left? "L" :"R";
-        } else if (slot == Slot.Hand) {
-            pos = left? "Instance/L" :"Instance/R";
-        } else if (slot == Slot.Chest) {
-            pos = "Chest/";
-        } else if (slot == Slot.Head) {
-            
-        }
-        pos = pos + slot.ToString();
-        return pos;
-    }
+
 
     public void Engage(GameObject enemy) {
         engagedMonster = enemy;
@@ -431,5 +425,10 @@ public class Player : MonoBehaviour
         }
         
         return list;
+    }
+
+    public FriendlyChar GetCharById(int id) {
+        int index = Array.FindIndex(characters.ToArray(), c => c.id == id);
+        return characters[index];
     }
 }

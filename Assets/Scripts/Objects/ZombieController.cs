@@ -49,28 +49,33 @@ public class ZombieController : MonoBehaviour {
 	private GameObject shadow;
 	private DamageType attackDamageType;
 
-	void Start()
+	public void DoStart()
 	{
 		Player.Instance.EquipWeapon(100000, new List<Part>(), charId);
 		shadow = transform.Find("Player/shadow").gameObject;
 		shadowColor = Color.black;
 		shadowColor.a = 0.2f;
 		selectionColor = Color.white;
+		
+		ResetAppearance();
 		Reset();
+        EquipStartingGear();
 	}
 	public void Reset() {
+		
 		lastClick = transform.position;
-		self = Player.Instance.characters[charId];
+		self = Player.Instance.GetCharById(charId);
+
 		reactingTime = self.reactionTime;
 		moveTimer1 = feetSpeed;
 		feetY = leftFoot.transform.position.y;
 		feetX = leftFoot.transform.position.x;
 		feetZ = leftFoot.transform.position.z;
 
-		weapon = Player.Instance.characters[charId].equipped.primaryWeapon;
+		weapon = self.equipped.primaryWeapon;
 
 		// finding player's attack cooldown from their weapon
-		attackCooldown = Player.Instance.characters[charId].equipped.primaryWeapon.cooldown;
+		attackCooldown = self.equipped.primaryWeapon.cooldown;
 		attackCooldownTimer = attackCooldown;
 
 		attackTime = attackCooldown;
@@ -80,6 +85,53 @@ public class ZombieController : MonoBehaviour {
 		if (attackDamageType == DamageType.Melee) {
 			hitBox = weaponObject.transform.Find(weapon.collidablePart.ToString()).gameObject.GetComponent<PolygonCollider2D>();
 			hitBox.isTrigger = true;
+		}
+		
+	}
+	 void EquipStartingGear() {
+        if (self.equippedOnLoad.Length > 0) {
+			bool left = false;
+			for(int i = 0; i <self.equippedOnLoad.Length; i++){
+				Equipment gear = GameLib.Instance.GetEquipmentById(self.equippedOnLoad[i]);
+				Player.Instance.EquipArmor(
+					gear,
+					left,
+					charId
+				);
+				left = (!left && Array.IndexOf( new[] { Slot.Hand, Slot.Foot, Slot.Pauldron }, gear.slot) > -1 );
+			}
+			UIManager.Instance.armorNeedsUpdate = true;
+		}
+		List<Part> partsUsed = new List<Part>();
+		if (self.weaponOnLoadParts.Length > 0) {
+			for(int i = 0; i <self.weaponOnLoadParts.Length; i++){
+				partsUsed.Add(GameLib.Instance.GetPartById(self.weaponOnLoadParts[i]));
+			}
+		}
+		if (self.weaponOnLoad != 0) {
+			Player.Instance.EquipWeapon(self.weaponOnLoad, partsUsed, charId );
+			UIManager.Instance.weaponNeedsUpdate = true;
+		}
+    }
+
+	private void ResetAppearance() {
+		bool left = false;
+		for(int i = 0; i <self.appearance.bodyLooks.Length; i++){
+			// setting appearance looks
+			BodyLook look = GameLib.Instance.GetBodyPartById(self.appearance.bodyLooks[i]);
+			// don't overwrite armor
+			if (look.slot == Slot.Clothing && self.equipped.chest != null) continue;
+
+			GameObject current = gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(look.slot, left, true)).gameObject;
+			current.GetComponent<SpriteRenderer>().sprite = look.look;
+			if (look.slot != Slot.Clothing) // don't change clothing color
+			current.GetComponent<SpriteRenderer>().color = GameLib.Instance.skinColorPresets[self.appearance.skinColor];
+
+			// save object of part
+			self.appearance.SetPartObject(current, look.slot);
+
+			// if it is a hand or a foot, next will be the same and lets make it left
+			left = (!left && Array.IndexOf( new[] { Slot.Hand, Slot.Foot }, look.slot) > -1 );
 		}
 		
 	}
@@ -116,7 +168,8 @@ public class ZombieController : MonoBehaviour {
 			attacking = true;
 			
 			if (attackDamageType == DamageType.Melee) {
-				Player.Instance.characters[charId].hitbox.hitting = true;
+				Player.Instance.GetCharById(charId).hitbox.hitting = true;
+				Player.Instance.GetCharById(charId).hitbox.playerParty = true;
 				hitBox.isTrigger = false;
 			} else if (attackDamageType == DamageType.Ranged) {
 				if (Player.Instance.GetConsumablesByType(weapon.ammo).Count > 0) {
@@ -132,6 +185,7 @@ public class ZombieController : MonoBehaviour {
 					arrow.gameObject.GetComponent<ProjectileItem>().projectileSettings = item.projectileSettings;
 					arrow.gameObject.GetComponent<ProjectileItem>().faction = 0;
 					arrow.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
+					arrow.gameObject.GetComponent<ProjectileItem>().playerParty = true;
 					arrow.gameObject.GetComponent<ProjectileItem>().Go();
 				} else {
 					Debug.Log("no arrows");
@@ -167,7 +221,8 @@ public class ZombieController : MonoBehaviour {
 		// }
 		Vector2 currentPosition = transform.position;
 		float speed = leader ? moveSpeed : moveSpeed + 0.1f*(float)Math.Pow(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x), 2);
-		if (Input.GetButtonDown("Fire1") && !UIManager.Instance.IsPointerOverUIElement()) isLClickHeld = true;
+		if (Input.GetButtonDown("Fire1") && !UIManager.Instance.IsPointerOverUIElement() && !Player.Instance.isTeamHovered) 
+			isLClickHeld = true;
 		if (Input.GetButtonUp("Fire1")) isLClickHeld = false;
 		if (isLClickHeld) {
 			boredTimer = boredTime;
@@ -228,7 +283,7 @@ public class ZombieController : MonoBehaviour {
 			weaponObject.transform.localPosition = new Vector3(weapon.instance.weaponPos.x, weapon.instance.weaponPos.y, -9.3f);
 			weaponObject.transform.localRotation = Quaternion.Euler(0, 0, weapon.instance.weaponPos.z);
 			attacking = false;
-			Player.Instance.characters[charId].hitbox.hitting = false;
+			Player.Instance.GetCharById(charId).hitbox.hitting = false;
 			if (attackDamageType == DamageType.Melee) hitBox.isTrigger = true;
 		} else {
 			rightHand.transform.localPosition = new Vector3(attackScripts[stepToPlay].rightHandPos.x, attackScripts[stepToPlay].rightHandPos.y, -0.2f);
@@ -289,7 +344,7 @@ public class ZombieController : MonoBehaviour {
 	{
 		GameObject target = collided.gameObject;
 		HitBox hitter = target.GetComponent<HitBox>();
-		if (hitter.hitting && hitter.faction != 0  && Player.Instance.characters[charId].invincibleTimer <= 0) {
+		if (hitter.hitting && hitter.faction != 0  && Player.Instance.GetCharById(charId).invincibleTimer <= 0) {
 			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
 			Player.Instance.TakeDamage(damage, charId);
 		}
@@ -310,15 +365,14 @@ public class ZombieController : MonoBehaviour {
 	void OnMouseOver()
     {
 		hovering = true;
+		Player.Instance.isTeamHovered = true;
 		if(!leader)shadow.GetComponent<SpriteRenderer>().color = selectionColor;
     }
 	void OnMouseExit()
     {
+		hovering = false;
+		Player.Instance.isTeamHovered = false;
 		shadow.GetComponent<SpriteRenderer>().color = shadowColor;
-		Task.Delay(1000).ContinueWith(t=> {
-			hovering = false;
-			
-		});
     }
 
 	/**
@@ -347,7 +401,6 @@ public class ZombieController : MonoBehaviour {
 			if (weapon.damageType == DamageType.Ranged) monsterSize += 300f;
 			if (dist < monsterSize)AttemptAttack();
 			if (dist > monsterSize * 0.5f) {
-				Debug.Log(dist);
 				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
 				StepAnim();
 			}

@@ -9,6 +9,7 @@ public class ProjectileItem : MonoBehaviour
     public int faction;
     // mark who shot so they can be picked up by enemies
     public GameObject shooter;
+    public bool playerParty = false;
 
     private bool going = false;
     private Vector3 firingPoint;

@@ -44,6 +44,7 @@ public class Tile
 
 public class MapMaker : MonoBehaviour
 {
+    public GameObject debugMarker;
     [SerializeField]
     public List<Tile> Tiles;
     public List<Tile> RiverTiles;
@@ -63,10 +64,6 @@ public class MapMaker : MonoBehaviour
         MapLine(riverLength, ConnectionPart.River, true, 0, 20);
         GenerateFirstTile();
     }
-    void LateStart() {
-       // this is not a thing 
-    }
-
 
     void MapLine(int length, ConnectionPart conP, bool isRiver, int startX, int startY) {
 
@@ -159,7 +156,8 @@ public class MapMaker : MonoBehaviour
         List<Tile> source = new List<Tile>(river ? RiverTiles : Tiles);
         // randomly sort array of options
         source.Shuffle();
-        Tile skip = new Tile();
+        Tile skip = null;
+        skip = new Tile();
         bool skipped = false;
         // go through options and only accept one that matches all existing borders
         for(int i = 0; i <source.Count; i++){
@@ -217,8 +215,10 @@ public class MapMaker : MonoBehaviour
             }
         }
         // now we got nothing, so let's take one that we skipped earlier if we did
-        if (skipped)return skip;
-
+        if (skipped){
+            Instantiate(debugMarker, new Vector2(x*tileLength, y*tileLength), transform.rotation);
+            return skip;
+        }
         // k now we really got nothing, this bad
         Debug.LogError("No tile was found to match at " + x +", " + y);
         return null;
@@ -239,14 +239,42 @@ public class MapMaker : MonoBehaviour
         if (!(tileMap[playerX] != null && tileMap[playerX][playerY] !=null && tileMap[playerX][playerY].hasGenerated)) {
             // Debug.Log("Mapping around " + playerX + ", " + playerY);
             if (tileMap[playerX] == null) tileMap[playerX] = new Tile[100];
-            if (tileMap[playerX][playerY] == null) {
+            // if (tileMap[playerX][playerY] == null) {
                 MapTile(playerX, playerY);
-            }
+            // }
             tileMap[playerX][playerY].hasGenerated = true;
             MapTile(playerX, playerY + 1);
             MapTile(playerX, playerY - 1);
             MapTile(playerX + 1, playerY);
             MapTile(playerX - 1, playerY);
+
+            MapTile(playerX + 1, playerY + 1);
+            MapTile(playerX - 1, playerY - 1);
+
+            MapTile(playerX + 1, playerY -1);
+            MapTile(playerX - 1, playerY +1);
+
+            // -- 
+            MapTile(playerX, playerY + 2);
+            MapTile(playerX + 1, playerY + 2);
+            MapTile(playerX + 2, playerY + 2);
+            MapTile(playerX + -1, playerY + 2);
+            MapTile(playerX + -2, playerY + 2);
+
+            MapTile(playerX, playerY - 2);
+            MapTile(playerX + 1, playerY - 2);
+            MapTile(playerX + 2, playerY - 2);
+            MapTile(playerX + -1, playerY - 2);
+            MapTile(playerX + -2, playerY - 2);
+
+            MapTile(playerX + 2, playerY);
+            MapTile(playerX - 2, playerY);
+
+            MapTile(playerX + 2, playerY -1);
+            MapTile(playerX - 2, playerY -1);
+
+            MapTile(playerX + 2, playerY + 1);
+            MapTile(playerX - 2, playerY + 1);
         }
         
         

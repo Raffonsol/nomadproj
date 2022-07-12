@@ -13,8 +13,6 @@ public enum ItemType
     Material,
     Part,
     Weapon,
-    Ammo,
-    Placeable,
 }
 public enum DamageRsrcType
 {
@@ -40,7 +38,7 @@ public enum FittablePart
     HammerHead,
     ArrowHead,
     Bowstring,
-    Hand,
+    Hand // Leave this here, its for unarmed
 }
 public enum PlatingMaterial
 {
@@ -74,6 +72,7 @@ public enum Slot
     Pauldron,
     Hand,
     Foot,
+    Clothing,
 }
 public enum ConsumableType
 {
@@ -189,6 +188,12 @@ public class Consumable : Item
     public ConsumableType consumableType;
     public Projectile projectileSettings;
 }
+[Serializable]
+public class Material : Item
+{
+    public int minQuality;
+    public int maxQuality;
+}
 
 
 
@@ -248,6 +253,12 @@ public enum Personality
     Lazy,
     Giddy,
 }
+[Serializable]
+public class BodyLook {
+    public int id;
+    public Sprite look;
+    public Slot slot;
+}
 public class Equipped
 {
     public Equipment head;
@@ -282,14 +293,65 @@ public class Equipped
 public class DistToMain {
 	public float x;
 	public float y;
+
+    public DistToMain(float x, float y) {
+        this.x = x;
+        this.y = y;
+    }
 }
 [Serializable]
 public class Appearance
-{
+{   
+    public int skinColor;
+    // should have 5
+    public int[] bodyLooks;
+    
+    // for in game usage
     public GameObject head;
     public GameObject chest;
     public GameObject foot;
     public GameObject hand;
+    public GameObject clothing;
+
+    public void SetPartObject(GameObject obj, Slot slot) {
+        GameObject addObj = new GameObject();
+        switch (slot) {
+
+            case (Slot.Head):
+                this.head = addObj;
+                this.head.AddComponent<SpriteRenderer>();
+                this.head.GetComponent<SpriteRenderer>().sprite = obj.GetComponent<SpriteRenderer>().sprite;
+                this.head.GetComponent<SpriteRenderer>().color = obj.GetComponent<SpriteRenderer>().color;
+
+                break;
+            case (Slot.Clothing):
+                this.clothing = addObj;
+                this.clothing.AddComponent<SpriteRenderer>();
+                this.clothing.GetComponent<SpriteRenderer>().sprite = obj.GetComponent<SpriteRenderer>().sprite;
+                this.clothing.GetComponent<SpriteRenderer>().color = obj.GetComponent<SpriteRenderer>().color;
+                break;
+            case (Slot.Chest):
+                this.chest = addObj;
+                this.chest.AddComponent<SpriteRenderer>();
+                this.chest.GetComponent<SpriteRenderer>().sprite = obj.GetComponent<SpriteRenderer>().sprite;
+                this.chest.GetComponent<SpriteRenderer>().color = obj.GetComponent<SpriteRenderer>().color;
+                break;
+            case (Slot.Foot):
+                this.foot = addObj;
+                this.foot.AddComponent<SpriteRenderer>();
+                this.foot.GetComponent<SpriteRenderer>().sprite = obj.GetComponent<SpriteRenderer>().sprite;
+                this.foot.GetComponent<SpriteRenderer>().color = obj.GetComponent<SpriteRenderer>().color;
+                break;
+            case (Slot.Hand):
+                this.hand = addObj;
+                this.hand.AddComponent<SpriteRenderer>();
+                this.hand.GetComponent<SpriteRenderer>().sprite = obj.GetComponent<SpriteRenderer>().sprite;
+                this.hand.GetComponent<SpriteRenderer>().color = obj.GetComponent<SpriteRenderer>().color;
+                break;
+            
+        }
+        addObj.SetActive(false);
+    }
 }
 [Serializable]
 public class CurrentCharStat
@@ -327,7 +389,13 @@ public class FriendlyChar {
     [SerializeField]
     public Appearance appearance;
 
-   
+    [HideInInspector]
+    public int[] equippedOnLoad = new int[0];
+    [HideInInspector]
+    public int weaponOnLoad = 0;
+    [HideInInspector]
+    public int[] weaponOnLoadParts = new int[0];
+
     [HideInInspector]
     public Equipped equipped;
     [HideInInspector]
@@ -340,4 +408,78 @@ public class NeutralChar {
     public string name;
     public bool isMale;
     public Personality personality;
+}
+//  ----------------------- Caravan ----
+
+public class Horse {
+    public string name;
+    public int id;
+    public GameObject instance;
+}
+public class CraftRecipe {
+    public Material[] materials;
+    public ItemType productType;
+    public int productId;
+    public int lvlRequired;
+}
+public class CraftingTable {
+    public int id;
+    public CraftRecipe[] recipes;
+    public Sprite visual;
+}
+public class Cart {
+    public Horse leadingHorse;
+    public int id;
+    public GameObject instance;
+    // 4 item array | -1 means empty | numbers = CraftingTable ids
+    public int[] tableSlots;
+}
+
+// ----------------- City ----------------------
+
+public enum PreSceneRoomType
+{
+    Empty,
+    Farm,
+    House,
+    Yard
+}
+[Serializable]
+public class PreSceneRoom {
+    // all the types that this room can be oocupied with
+    public PreSceneRoomType[] types;
+    public bool occupied = false;
+    public int row;
+    public int col;
+
+    public PreSceneRoom Clone()
+    {
+        return (PreSceneRoom)this.MemberwiseClone();
+    }
+}
+[Serializable]
+public class PreSceneOccupant {
+    public PreSceneRoomType type;
+    public GameObject visual;
+}
+[Serializable] // to be used as property of prescene only
+public class PreSceneAvailableTypes {
+    public PreSceneRoomType type;
+    public int quantity;
+
+    public PreSceneAvailableTypes Clone()
+    {
+        return (PreSceneAvailableTypes)this.MemberwiseClone();
+    }
+}
+[Serializable]
+public class PreScene {
+    // each prescene must have all its avalable types fit somewhere
+    public PreSceneAvailableTypes[] availableTypes;
+    public PreSceneRoom[] rooms;
+    public float spacePerRoom = 30f;
+    // 4, 9, or 25
+    public int gridCells;
+
+    public int adults = 2;
 }

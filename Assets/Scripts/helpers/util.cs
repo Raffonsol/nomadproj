@@ -48,7 +48,28 @@ public static class Util
             case ("Neutral"):
             return 2;
         }
-        return 0;
+        return -1;
+    }
+    public static string SlotToBodyPosition(Slot slot, bool left, bool bare = false) {
+        string pos = "";
+        if (slot == Slot.Pauldron )
+        {
+            pos = left? "L" :"R";
+        } else if (slot == Slot.Foot) {
+            pos = left? "L" :"R";
+        } else if (slot == Slot.Hand) {
+            pos = left? "Instance/L" :"Instance/R";
+        } else if (slot == Slot.Chest) {
+            if (!bare)
+            pos = "Chest/";
+        } else if (slot == Slot.Head) {
+            
+        }
+        pos = pos + slot.ToString();
+        if (slot == Slot.Clothing) {
+            pos = "Chest/Chest";
+        }
+        return pos;
     }
 
 }

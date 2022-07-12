@@ -14,6 +14,11 @@ public class GameLib : MonoBehaviour
     public Consumable[] allConsumables;
     [SerializeField]
     public Part[] allParts;
+
+
+    [SerializeField]
+    public BodyLook[] allBodyParts;
+    public Color[] skinColorPresets;
     
     [SerializeField]
     public MonsterNPC[] allMonsters;
@@ -80,6 +85,11 @@ public class GameLib : MonoBehaviour
     }
     public Consumable GetConsumableById(int id) {
         return Array.Find(allConsumables, co => co.id == id);
+    }
+
+
+    public BodyLook GetBodyPartById(int id) {
+        return Array.Find(allBodyParts, bp => bp.id == id);
     }
 
 }
