@@ -258,6 +258,8 @@ public class BodyLook {
     public int id;
     public Sprite look;
     public Slot slot;
+    // 1 = for male, 2 = for female, 0 = for either, 3+ = conditional
+    public int xChromossomes;
 }
 public class Equipped
 {
@@ -294,6 +296,8 @@ public class DistToMain {
 	public float x;
 	public float y;
 
+    public bool taken = false;
+
     public DistToMain(float x, float y) {
         this.x = x;
         this.y = y;
@@ -302,6 +306,7 @@ public class DistToMain {
 [Serializable]
 public class Appearance
 {   
+    public bool isMale;
     public int skinColor;
     // should have 5
     public int[] bodyLooks;
@@ -408,6 +413,7 @@ public class NeutralChar {
     public string name;
     public bool isMale;
     public Personality personality;
+    public Appearance appearance;
 }
 //  ----------------------- Caravan ----
 

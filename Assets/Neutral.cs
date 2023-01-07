@@ -8,6 +8,10 @@ using UnityEngine;
 public class Neutral : Combatant
 {
 
+    public string name;
+    [SerializeField]
+    public Appearance appearance;
+
     public int startingWeaponId;
     public int[] startingWeaponParts;
     public int arrowId;
@@ -22,15 +26,23 @@ public class Neutral : Combatant
     public DamageType attackDamageType;
 
     private float attackTime;
-    private Weapon weapon;
+    public Weapon weapon;
     private HitBox weaponHitBox;
     
+	private GameObject shadow;
+	private Color shadowColor;
+	private Color selectionColor;
 
 	private float feetY;
 	private float feetX;
 	private float feetZ;
 
     private bool attacking = false;
+	private bool hovering = false;
+
+    void Update() {
+        ListenForClick();
+    }
 
     // Start is called before the first frame update
     void Start()
@@ -48,9 +60,21 @@ public class Neutral : Combatant
         for(int i = 0; i <startingWeaponParts.Length; i++){
             parts.Add(GameLib.Instance.GetPartById(startingWeaponParts[i]));
         }
+        shadow = transform.Find("Player/shadow").gameObject;
+        shadowColor = Color.black;
+		shadowColor.a = 0.2f;
+		selectionColor = Color.white;
         
         Equip(startingWeaponId, parts);
     }
+
+    public void ListenForClick() {
+        // Debug.Log(hovering, Input.GetButtonUp("Fire1"));
+		if (Input.GetButtonUp("Fire1") && hovering) {
+            Debug.Log("convert");
+            Player.Instance.ConvertNeutral(gameObject);
+		}
+	}
 
     protected override void Attack()
     {
@@ -173,5 +197,16 @@ public class Neutral : Combatant
         rightFoot.transform.localPosition = new Vector3(0.3f, 0.13f, feetZ);
 		leftFoot.transform.localPosition =  new Vector3(-0.3f, 0.13f, feetZ);
 	}
+
+    void OnMouseOver()
+    {
+		hovering = true;
+		shadow.GetComponent<SpriteRenderer>().color = selectionColor;
+    }
+	void OnMouseExit()
+    {
+		hovering = false;
+		shadow.GetComponent<SpriteRenderer>().color = shadowColor;
+    }
 }
     

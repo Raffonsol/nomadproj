@@ -59,7 +59,7 @@ public class MapMaker : MonoBehaviour
         tileMap = new Tile[mapHeight][];
         // MapRiver();
         
-        MapLine(100, ConnectionPart.Street, false, 0, 30);
+        // MapLine(100, ConnectionPart.Street, false, 0, 30);
         MapLine(riverLength, ConnectionPart.River, true, 0, 0);
         MapLine(riverLength, ConnectionPart.River, true, 0, 20);
         GenerateFirstTile();
@@ -95,44 +95,44 @@ public class MapMaker : MonoBehaviour
         }
         
     }
-    void MapRiver() {
+    // void MapRiver() {
 
-        int xPos = 0;
-        int yPos = 0;
-        bool up = UnityEngine.Random.Range(0, 1) == 0;
+    //     int xPos = 0;
+    //     int yPos = 0;
+    //     bool up = UnityEngine.Random.Range(0, 1) == 0;
 
-        for(int i = 0; i <riverLength; i++){
+    //     for(int i = 0; i <riverLength; i++){
 
-            bool lastUp = up;
-            if (tileMap[xPos] == null) 
-                tileMap[xPos] = new Tile[100];
-            // 1/6 to change direction
-            if (UnityEngine.Random.Range(0, 5) == 1) up =!up;
+    //         bool lastUp = up;
+    //         if (tileMap[xPos] == null) 
+    //             tileMap[xPos] = new Tile[100];
+    //         // 1/6 to change direction
+    //         if (UnityEngine.Random.Range(0, 5) == 1) up =!up;
 
-            tileMap[xPos][yPos] = new Tile();
-            tileMap[xPos][yPos].northCon = up ? ConnectionPart.River : ConnectionPart.Void;
-            tileMap[xPos][yPos].southCon = lastUp ? ConnectionPart.River : ConnectionPart.Void;
-            tileMap[xPos][yPos].eastCon = !up ? ConnectionPart.River : ConnectionPart.Void;
-            tileMap[xPos][yPos].westCon = !lastUp ? ConnectionPart.River : ConnectionPart.Void;
-            tileMap[xPos][yPos].isRiver = true;
-            try {
-                tileMap[-1* xPos][-1*yPos] = new Tile();
-                tileMap[-1* xPos][-1*yPos].northCon = up ? ConnectionPart.River : ConnectionPart.Void;
-                tileMap[-1* xPos][-1*yPos].southCon = up ? ConnectionPart.River : ConnectionPart.Void;
-                tileMap[-1* xPos][-1*yPos].eastCon = !up ? ConnectionPart.River : ConnectionPart.Void;
-                tileMap[-1* xPos][-1*yPos].westCon = !up ? ConnectionPart.River : ConnectionPart.Void;
-                tileMap[xPos][yPos].isRiver = true;
-            } catch {
-                // just whatever
-            }
+    //         tileMap[xPos][yPos] = new Tile();
+    //         tileMap[xPos][yPos].northCon = up ? ConnectionPart.River : ConnectionPart.Void;
+    //         tileMap[xPos][yPos].southCon = lastUp ? ConnectionPart.River : ConnectionPart.Void;
+    //         tileMap[xPos][yPos].eastCon = !up ? ConnectionPart.River : ConnectionPart.Void;
+    //         tileMap[xPos][yPos].westCon = !lastUp ? ConnectionPart.River : ConnectionPart.Void;
+    //         tileMap[xPos][yPos].isRiver = true;
+    //         try {
+    //             tileMap[-1* xPos][-1*yPos] = new Tile();
+    //             tileMap[-1* xPos][-1*yPos].northCon = up ? ConnectionPart.River : ConnectionPart.Void;
+    //             tileMap[-1* xPos][-1*yPos].southCon = up ? ConnectionPart.River : ConnectionPart.Void;
+    //             tileMap[-1* xPos][-1*yPos].eastCon = !up ? ConnectionPart.River : ConnectionPart.Void;
+    //             tileMap[-1* xPos][-1*yPos].westCon = !up ? ConnectionPart.River : ConnectionPart.Void;
+    //             tileMap[xPos][yPos].isRiver = true;
+    //         } catch {
+    //             // just whatever
+    //         }
         
-            // move
-            if (up) yPos++; else xPos++;
+    //         // move
+    //         if (up) yPos++; else xPos++;
 
             
-        }
+    //     }
         
-    }
+    // }
     
     // Expects no tile to have graphics yet, but rivers will be allocated
     void GenerateFirstTile() {
@@ -156,8 +156,7 @@ public class MapMaker : MonoBehaviour
         List<Tile> source = new List<Tile>(river ? RiverTiles : Tiles);
         // randomly sort array of options
         source.Shuffle();
-        Tile skip = null;
-        skip = new Tile();
+        Tile skip = new Tile();
         bool skipped = false;
         // go through options and only accept one that matches all existing borders
         for(int i = 0; i <source.Count; i++){
@@ -201,7 +200,7 @@ public class MapMaker : MonoBehaviour
             }
 
             // now we know it's good, but we might wanna skip it
-             if (UnityEngine.Random.Range(0, 100) < source[i].skipChance) {
+             if (isValid && UnityEngine.Random.Range(0, 100) < source[i].skipChance) {
                  isValid = false;
                  if (!skipped) {
                     skip = source[i].Clone();

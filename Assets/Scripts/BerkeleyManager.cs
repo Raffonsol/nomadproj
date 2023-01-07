@@ -20,12 +20,13 @@ public class BerkeleyManager : MonoBehaviour
 {
     public static BerkeleyManager Instance { get; private set; }
     public float mapBounds = 0;
-    public float disappearDistance = 100f;
+    public float disappearDistance = 80f;
     public bool berkeleyCapped;
     public bool monsterCapped;
     public bool rsrcCapped;
     public bool npcCapped;
     public int monsterGoingId = 0;
+    public int friendlyGoingId = 4;
 
     [SerializeField]
     List<BerkeleySpawnable> spawnables;
@@ -118,5 +119,10 @@ public class BerkeleyManager : MonoBehaviour
 
         Instantiate(obj, new Vector2(x, y), Quaternion.Euler(0,0,UnityEngine.Random.Range(0,360)));
         // Debug.Log("Spawning tree at " +x +","+y);
+    }
+
+    public int LatestFriendId() {
+        friendlyGoingId++;
+        return friendlyGoingId;
     }
 }

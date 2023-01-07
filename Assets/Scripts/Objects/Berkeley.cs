@@ -9,7 +9,10 @@ public class Berkeley : MonoBehaviour
 
     private float disappearDistance = 0;
     private float checkTimer = 3f;
-
+    
+    void Start() {
+        Check();
+    }
 
     // Update is called once per frame
     void FixedUpdate()
@@ -22,10 +25,19 @@ public class Berkeley : MonoBehaviour
         if (checkTimer > 0) 
         checkTimer -= Time.deltaTime;
         else {
-            checkTimer = 3f;
-            if (Physics2D.OverlapCircle(transform.position, size, unMatchable)) Destroy(gameObject);
+            Check();
         }
     }
+
+    void Check() {
+        checkTimer = 3f;
+        if (Physics2D.OverlapCircle(transform.position, size, unMatchable) && 
+            Physics2D.OverlapCircle(transform.position, size, unMatchable).gameObject.name != gameObject.name){
+                Destroy(gameObject);
+        }
+    
+    }
+
     void OnTriggerEnter2D(Collider2D collided)
 	{
 		if (collided.CompareTag("Berkeley") || collided.CompareTag("Rsrc"))

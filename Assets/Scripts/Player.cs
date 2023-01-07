@@ -53,7 +53,9 @@ public class Player : MonoBehaviour
     
 	}
     public void ResetContol() {
-        activePerson = characters[activeCharId];
+        int index = Array.FindIndex(characters.ToArray(), c => c.id == activeCharId);
+        activePerson = characters[index];
+
         controller = activePerson.controller;
     }
     public void LeaderDied() {
@@ -71,7 +73,7 @@ public class Player : MonoBehaviour
                 characters[i].experience+=1;
                 remainingExp -=1;
                 if (characters[i].controller.leader) {
-                        characters[i].experience+=UnityEngine.Random.Range(0,1);
+                        characters[i].experience+=UnityEngine.Random.Range(0,2);
                 }
 
                 if (characters[i].experience >= characters[i].experienceToNextLevel) {
@@ -304,7 +306,8 @@ public class Player : MonoBehaviour
     }
     public void TakeDamage(float damage, int tarId = -1) {
         if (tarId == -1) tarId = activeCharId;
-        FriendlyChar person = characters[tarId];
+        int index = Array.FindIndex(characters.ToArray(), c => c.id == tarId);
+        FriendlyChar person = characters[index];
         if (person.invincibleTimer < 0) {
             // TODO: localize [12 = armor]
             float minDmg = damage - person.stats[12].value;
@@ -430,5 +433,43 @@ public class Player : MonoBehaviour
     public FriendlyChar GetCharById(int id) {
         int index = Array.FindIndex(characters.ToArray(), c => c.id == id);
         return characters[index];
+    }
+    public void ConvertNeutral(GameObject neutral) {
+        ZombieController controller = neutral.AddComponent<ZombieController>();
+        Neutral neutralScript = neutral.GetComponent<Neutral>();
+
+        // Create friendlyChar
+        FriendlyChar newFriend = new FriendlyChar();
+        newFriend.name = neutralScript.name;
+        newFriend.id = BerkeleyManager.Instance.LatestFriendId();
+        newFriend.experience = 0;
+        newFriend.level = 0;
+        newFriend.life = neutralScript.maxLife;
+        newFriend.appearance = neutralScript.appearance;
+        newFriend.controller = controller;
+        newFriend.stats =  GameOverlord.Instance.defaultCharacterStats;
+
+        newFriend.formation = GameLib.Instance.TakeAvailableFormtion();
+
+        // newFriend.weaponOnLoad = neutralScript.weapon.id;
+        // newFriend.weaponOnLoadParts = neutralScript.partsUsed;
+
+        
+        // settings on player script
+        this.characters.Add(newFriend);
+
+        // Settings on component
+        controller.charId = newFriend.id;
+        controller.moveSpeed = 1.6f; // TODO: Unhardcode
+        controller.turnSpeed = 5f; // TODO: Unhardcode
+        controller.feetSpeed = 0.5f; // TODO: Unhardcode
+        controller.DoStart();
+
+        // Settings on GameObject
+        neutral.tag = "Character";
+
+
+        neutral.GetComponent<Berkeley>().enabled = false;
+        neutralScript.enabled = false;
     }
 }

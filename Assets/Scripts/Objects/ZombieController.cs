@@ -57,14 +57,18 @@ public class ZombieController : MonoBehaviour {
 		shadowColor.a = 0.2f;
 		selectionColor = Color.white;
 		
-		ResetAppearance();
 		Reset();
+		ResetAppearance();
         EquipStartingGear();
 	}
 	public void Reset() {
 		
 		lastClick = transform.position;
 		self = Player.Instance.GetCharById(charId);
+		leftFoot = transform.Find("Player/Body/LFoot").gameObject;
+		rightFoot = transform.Find("Player/Body/RFoot").gameObject;
+		rightHand = transform.Find("Player/Body/Instance/RHand").gameObject;
+		leftHand = transform.Find("Player/Body/Instance/LHand").gameObject;
 
 		reactingTime = self.reactionTime;
 		moveTimer1 = feetSpeed;
@@ -82,7 +86,7 @@ public class ZombieController : MonoBehaviour {
 		attackTimer = attackTime;
 
 		attackDamageType = weapon.damageType;
-		if (attackDamageType == DamageType.Melee) {
+		if (weaponObject && attackDamageType == DamageType.Melee) {
 			hitBox = weaponObject.transform.Find(weapon.collidablePart.ToString()).gameObject.GetComponent<PolygonCollider2D>();
 			hitBox.isTrigger = true;
 		}
@@ -232,11 +236,9 @@ public class ZombieController : MonoBehaviour {
 				moveTowards.x+=self.formation.x;
 				moveTowards.y+=self.formation.y;
 			}
-			
-			if (leader)
+			// Leader goes straight to click, non-leader has a chance to ignore, resulting in delay to match move position. This is here to simulate reaction time of ofllowers
+			if (leader || UnityEngine.Random.Range(0, 52) > 50)
 			lastClick = moveTowards;
-			else
-			Task.Delay((int)Math.Round(reactingTime*1000)).ContinueWith(t=> lastClick = moveTowards);
 			
 		}
 		nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);

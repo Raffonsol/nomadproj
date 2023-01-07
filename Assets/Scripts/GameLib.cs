@@ -23,6 +23,10 @@ public class GameLib : MonoBehaviour
     [SerializeField]
     public MonsterNPC[] allMonsters;
 
+
+    [SerializeField]
+    public DistToMain[] mainFormations;
+
     
     
     // Singleton stuff
@@ -90,6 +94,26 @@ public class GameLib : MonoBehaviour
 
     public BodyLook GetBodyPartById(int id) {
         return Array.Find(allBodyParts, bp => bp.id == id);
+    }
+
+    public void MakeFormtionAvailable(DistToMain lostFormation) {
+        for(int i = 0; i <mainFormations.Length; i++){
+            if (mainFormations[i].x == lostFormation.x 
+            && mainFormations[i].y == lostFormation.y) {
+                mainFormations[i].taken = false;
+            }
+        }
+        
+    }
+    public DistToMain TakeAvailableFormtion() {
+        for(int i = 0; i <mainFormations.Length; i++){
+            if (!mainFormations[i].taken) {
+                mainFormations[i].taken = true;
+                return mainFormations[i];
+            }
+        }
+        Debug.LogError("No more available formations");
+        return new DistToMain(0, 0);
     }
 
 }

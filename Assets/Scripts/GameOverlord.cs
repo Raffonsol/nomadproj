@@ -51,9 +51,6 @@ public class GameOverlord : MonoBehaviour
         // Player.Instance.AddPart(900002);
         // Player.Instance.AddPart(900003);
     }
-    public void Log(string log) {
-        Debug.Log(log);
-    }
     public Vector2 Pathfind(Vector2 from, Vector2 target, bool capDist = true) {
         float dist = Vector2.Distance(from, target);
         if (capDist && dist > 150) dist = 150;
