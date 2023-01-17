@@ -9,6 +9,7 @@ public class CollectableRsrc : Berkeley
     // these should only drop on successful harvest
     public Drop[] sfcDrops;
     public int life;
+    public float shakeStrength = 0.2f;
 
     private int currentLife;
 
@@ -124,8 +125,8 @@ public class CollectableRsrc : Berkeley
             shakeTimer = shakeTime;
 
             Vector3 newPos = new Vector3(nPosition.x, nPosition.y, nPosition.z);
-            newPos.x += Random.Range(-0.2f, 0.2f);
-            newPos.y += Random.Range(-0.2f, 0.2f);
+            newPos.x += Random.Range(-shakeStrength, shakeStrength);
+            newPos.y += Random.Range(-shakeStrength, shakeStrength);
             transform.position = newPos;
             try {
                 transform.Find("shadow").transform.position = nPosition;

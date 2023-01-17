@@ -7,6 +7,7 @@ public class ProjectileItem : MonoBehaviour
     public Projectile projectileSettings;
     // 0 for in group 1 for hostile
     public int faction;
+    public int consumableId;
     // mark who shot so they can be picked up by enemies
     public GameObject shooter;
     public bool playerParty = false;

@@ -42,7 +42,7 @@ public class ZombieController : MonoBehaviour {
 	private float boredTimer;
 	private PolygonCollider2D hitBox;
 	private bool hovering = false;
-	private FriendlyChar self;
+	public FriendlyChar self;
 	private float reactingTime;
 	private Color shadowColor;
 	private Color selectionColor;
@@ -60,11 +60,13 @@ public class ZombieController : MonoBehaviour {
 		Reset();
 		ResetAppearance();
         EquipStartingGear();
+		LoadBonuses();
 	}
 	public void Reset() {
 		
 		lastClick = transform.position;
 		self = Player.Instance.GetCharById(charId);
+
 		leftFoot = transform.Find("Player/Body/LFoot").gameObject;
 		rightFoot = transform.Find("Player/Body/RFoot").gameObject;
 		rightHand = transform.Find("Player/Body/Instance/RHand").gameObject;
@@ -136,6 +138,17 @@ public class ZombieController : MonoBehaviour {
 
 			// if it is a hand or a foot, next will be the same and lets make it left
 			left = (!left && Array.IndexOf( new[] { Slot.Hand, Slot.Foot }, look.slot) > -1 );
+
+			if (left) i--;
+		}
+		
+	}
+
+	private void LoadBonuses() {
+		self.bonuses = new List<Bonus>();
+		self.ownedAbilities = new List<PassiveAbility>();
+		for(int i = 0; i <self.bonusOnLoad.Length; i++){
+			Player.Instance.ApplyBonus(self.id, GameLib.Instance.allBonuses[self.bonusOnLoad[i]]);
 		}
 		
 	}
@@ -149,6 +162,7 @@ public class ZombieController : MonoBehaviour {
 		Attack();
 		TakeDamage();
 		Die();
+		Regen();
 	}
 
 	void Attack()
@@ -164,7 +178,7 @@ public class ZombieController : MonoBehaviour {
 	}
 	void AttemptAttack() {
 		if (attackCooldownTimer <= 0) {
-			// Attack confirmed
+			// Attack confirmed (but it might be ranged with no arrows)
 			boredTimer = boredTime;
 			attackCooldownTimer = attackCooldown;
 			attackTimer = attackTime;
@@ -177,7 +191,15 @@ public class ZombieController : MonoBehaviour {
 				hitBox.isTrigger = false;
 			} else if (attackDamageType == DamageType.Ranged) {
 				if (Player.Instance.GetConsumablesByType(weapon.ammo).Count > 0) {
+					// turn towards mouse
+					Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+					moveDirection = moveTowards - (Vector2)transform.position;
+					moveDirection.Normalize();
+					float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
+					transform.rotation = Quaternion.Euler (0, 0, targetAngle + 180);
+					
 					Consumable item = Player.Instance.consumables.First( s => s.consumableType == weapon.ammo);
+					int itemId = item.id;
 					Player.Instance.consumables.Remove(item);
 					// Create arrow projectile and give it damage
 					// STATSET
@@ -190,11 +212,14 @@ public class ZombieController : MonoBehaviour {
 					arrow.gameObject.GetComponent<ProjectileItem>().faction = 0;
 					arrow.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
 					arrow.gameObject.GetComponent<ProjectileItem>().playerParty = true;
+					arrow.gameObject.GetComponent<ProjectileItem>().consumableId = itemId;
 					arrow.gameObject.GetComponent<ProjectileItem>().Go();
 				} else {
 					Debug.Log("no arrows");
 					if (!leader) {
 						Player.Instance.UnequipWeapon(self.id);
+						// TODO autoequip
+						// TODO make it not equip bow if there are no arrows
 					}
 				}
 			}
@@ -350,7 +375,6 @@ public class ZombieController : MonoBehaviour {
 			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
 			Player.Instance.TakeDamage(damage, charId);
 		}
-
 	}
 
 	void Die() {
@@ -361,7 +385,48 @@ public class ZombieController : MonoBehaviour {
 		if (leader) {
 			Player.Instance.LeaderDied();
 		}
+
+		// run drop abilities
+		for(int i = 0; i <self.ownedAbilities.Count; i++){
+			if (self.ownedAbilities[i] == PassiveAbility.DropWeaponOnDeath) {
+				for(int j = 0; j <self.equipped.partsBeingUsed.Count; j++){
+					Player.Instance.AddPart(self.equipped.partsBeingUsed[j].id);
+				}
+			}
+			if (self.ownedAbilities[i] == PassiveAbility.DropArmorOnDeath) {
+				if (self.equipped.head != null){
+					Player.Instance.AddEquipment(self.equipped.head.id);
+				}
+				if (self.equipped.chest != null){
+					Player.Instance.AddEquipment(self.equipped.chest.id);
+				}
+				if (self.equipped.rightPauldron != null){
+					Player.Instance.AddEquipment(self.equipped.rightPauldron.id);
+				}
+				if (self.equipped.leftPauldron != null){
+					Player.Instance.AddEquipment(self.equipped.leftPauldron.id);
+				}
+				if (self.equipped.rightHand != null){
+					Player.Instance.AddEquipment(self.equipped.rightHand.id);
+				}
+				if (self.equipped.leftHand != null){
+					Player.Instance.AddEquipment(self.equipped.leftHand.id);
+				}
+				if (self.equipped.rightFoot != null){
+					Player.Instance.AddEquipment(self.equipped.rightFoot.id);
+				}
+				if (self.equipped.leftFoot != null){
+					Player.Instance.AddEquipment(self.equipped.leftFoot.id);
+				}
+			}
+		}
+
+		// make formation available again
+		GameLib.Instance.MakeFormtionAvailable(self.formation);
+
 		Destroy(transform.gameObject);
+		
+		
 	}
 
 	void OnMouseOver()
@@ -471,6 +536,23 @@ public class ZombieController : MonoBehaviour {
 			else {
 				StopAnim();
 			}
+		}
+	}
+	float regenTimer = 5f;
+	void Regen() {
+		if (regenTimer > 0) {
+			regenTimer -=Time.deltaTime;
+		} else {
+			regenTimer = 5f;
+			// stat 9 is regen, so healing that much
+			Heal(self.stats[9].value);
+		}
+	}
+	void Heal (float value){
+		self.life += value;
+		// stat 0 is maxLife, so capping life at max
+		if (self.life > self.stats[0].value) {
+			self.life = self.stats[0].value;
 		}
 	}
 

@@ -288,6 +288,11 @@ public class Combatant : Berkeley
 
 		ProjectileItem hitter = target.GetComponent<ProjectileItem>();
 		if (hitter.faction != faction && invincibleTimer < 0) {
+            // drop arrow
+            if (hitter.shooter.GetComponent<ZombieController>().self.ownedAbilities.Contains(PassiveAbility.ArrowRecovery)
+                && UnityEngine.Random.Range(0, 2) == 1) {
+                DropItem(ItemType.Consumable, hitter.consumableId);
+            }
 			float damage = UnityEngine.Random.Range(hitter.projectileSettings.minDamage, hitter.projectileSettings.maxDamage);
 			TakeDamage(damage);
             if (hitter.playerParty) Player.Instance.Engage(gameObject);
@@ -330,14 +335,18 @@ public class Combatant : Berkeley
         int dropsQ = UnityEngine.Random.Range(1, drop.maxDropped);
         
         for(int i = 0; i <dropsQ; i++) {
-            Vector2 pos = transform.position;
-            GameObject itemObj = Instantiate(GameOverlord.Instance.itemDropPrefab,
-                new Vector2(pos.x, pos.y), Quaternion.Euler(0,0,0));
-            itemObj.GetComponent<ItemDrop>().id = drop.itemId;
-            itemObj.GetComponent<ItemDrop>().itemType = drop.itemType;
-            itemObj.GetComponent<SpriteRenderer>().sprite = GameLib.Instance.GetItemByType(drop.itemId, drop.itemType).icon;
-
+            DropItem(drop.itemType, drop.itemId);
+           
         }
         
+    }
+    void DropItem(ItemType dropType, int dropId) {
+         Vector2 pos = transform.position;
+        GameObject itemObj = Instantiate(GameOverlord.Instance.itemDropPrefab,
+            new Vector2(pos.x, pos.y), Quaternion.Euler(0,0,0));
+        itemObj.GetComponent<ItemDrop>().id = dropId;
+        itemObj.GetComponent<ItemDrop>().itemType = dropType;
+        itemObj.GetComponent<SpriteRenderer>().sprite = GameLib.Instance.GetItemByType(dropId, dropType).icon;
+
     }
 }

@@ -21,12 +21,17 @@ public class GameLib : MonoBehaviour
     public Color[] skinColorPresets;
     
     [SerializeField]
+    public Bonus[] allBonuses;
+
+    [SerializeField]
     public MonsterNPC[] allMonsters;
 
 
     [SerializeField]
     public DistToMain[] mainFormations;
 
+    [SerializeField]
+    public NamePart[] nameParts;
     
     
     // Singleton stuff
@@ -115,5 +120,34 @@ public class GameLib : MonoBehaviour
         Debug.LogError("No more available formations");
         return new DistToMain(0, 0);
     }
+
+    public string GenerateName(bool isMale) {
+        nameParts.Shuffle();
+        
+        int j = 0;
+        NamePart part = nameParts[j];
+        while (!(isMale && part.worksForMen) && !(!isMale && part.worksForWomen)) {
+            j++;
+            part = nameParts[j];
+        }
+        if (part.type == NamePartType.FullName) {
+            return part.value;
+        }
+        bool needFirstPart = part.type == NamePartType.LastPart;
+        for(int i = 0; i <nameParts.Length; i++){
+            if (
+                ((isMale && nameParts[i].worksForMen) || (!isMale && nameParts[i].worksForWomen))
+                &&( (needFirstPart && nameParts[i].type == NamePartType.FirstPart) || (!needFirstPart && nameParts[i].type == NamePartType.LastPart))
+            ) {
+                if (needFirstPart) {
+                    return nameParts[i].value+part.value;
+                } else {
+                    return part.value+nameParts[i].value;
+                }
+            }
+        }
+        return "Rafi";
+        
+    } 
 
 }

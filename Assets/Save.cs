@@ -4,6 +4,21 @@ using UnityEngine;
 using System.IO;
 using System;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Linq;
+
+// configurations
+ [System.Serializable]
+ public class ConfigData
+ {
+    public bool autoEquipping;
+
+    public ConfigData(
+        bool autoEquipping
+    )
+    {
+        this.autoEquipping = autoEquipping;
+    }
+ }
 
 // inventory
  [System.Serializable]
@@ -47,6 +62,7 @@ using System.Runtime.Serialization.Formatters.Binary;
     public int[] equipped;
     public int equippedWeapon;
     public int[] partsUsed;
+    public int[] bonuses;
 
     public CharData(
         int id,
@@ -60,7 +76,8 @@ using System.Runtime.Serialization.Formatters.Binary;
         DistToMain formation,
         int[] equipped,
         int equippedWeapon,
-        int[] partsUsed
+        int[] partsUsed,
+        int[] bonuses
     )
     {
         this.id = id;
@@ -75,22 +92,26 @@ using System.Runtime.Serialization.Formatters.Binary;
         this.equipped = equipped;
         this.equippedWeapon = equippedWeapon;
         this.partsUsed = partsUsed;
+        this.bonuses = bonuses;
     }
  }
 
 [System.Serializable]
 public class GameData
 {
+    public ConfigData config;
     public CharData[] party;
     public int activeCharIndex;
     public InvData inventory;
  
     public GameData(
+        ConfigData config,
         CharData[] party, 
         int activeCharIndex,
         InvData inventory
         )
     {
+        this.config = config;
         this.party = party;
         this.activeCharIndex = activeCharIndex;
         this.inventory = inventory;
@@ -104,15 +125,18 @@ public class Save : MonoBehaviour
     private float saveTimer = 2;
     void Start()
      {
-        //  LoadFile();
+         LoadFile();
          
          Player.Instance.DoStart();
         // start all characters to make them right
         for(int i = 0; i <Player.Instance.characters.Count; i++){
             Player.Instance.characters[i].controller.DoStart();
         }
+        // give everyone their bonuses
 
-         SaveFile();
+        // update going id for recruiting
+        BerkeleyManager.Instance.friendlyGoingId = Player.Instance.characters[Player.Instance.characters.Count -1].id;
+        SaveFile();
      }
      void Update() {
         if (saveTimer > 0) {
@@ -155,6 +179,7 @@ public class Save : MonoBehaviour
             for(int j = 0; j <chara.equipped.partsBeingUsed.Count; j++){
                 partsUsed.Add(chara.equipped.partsBeingUsed[j].id);
             }
+            int[] bonuses = chara.bonuses.Select( x => x.id).ToArray();
             
             CharData charData = new CharData(
                 chara.id,
@@ -168,7 +193,8 @@ public class Save : MonoBehaviour
                 chara.formation,
                 equipped.ToArray(),
                 chara.equipped.primaryWeapon.id,
-                partsUsed.ToArray()
+                partsUsed.ToArray(),
+                bonuses
             );
             party.Add(charData);
         }
@@ -191,8 +217,10 @@ public class Save : MonoBehaviour
 
         InvData inventory = new InvData(parts.ToArray(), consumables.ToArray(), equipments.ToArray());
         
+        ConfigData config = new ConfigData(UIManager.Instance.autoEquipping);
     
          GameData data = new GameData(
+            config,
             party.ToArray(),
             plInst.activeCharId,
             inventory
@@ -224,6 +252,9 @@ public class Save : MonoBehaviour
          GameData data = (GameData) bf.Deserialize(file);
          file.Close();
 
+         // configs
+         UIManager.Instance.autoEquipping = data.config.autoEquipping;
+
         // put loaded data where it needs to be
 
          // leader setting
@@ -249,10 +280,12 @@ public class Save : MonoBehaviour
             chara.weaponOnLoad = cd.equippedWeapon;
             chara.weaponOnLoadParts = cd.partsUsed;
 
-            GameObject inst = Instantiate(characterObject, new Vector2(cd.formation.x, cd.formation.y), transform.rotation);
+            GameObject inst = Instantiate(characterObject, new Vector2(800 + cd.formation.x, 800 + cd.formation.y), transform.rotation);
+            inst.name = cd.name;
             chara.controller = inst.gameObject.GetComponent<ZombieController>();
             chara.controller.charId = cd.id;
             
+            chara.bonusOnLoad = cd.bonuses;
             
             // leader setting
             if (data.activeCharIndex == cd.id) {
@@ -264,6 +297,7 @@ public class Save : MonoBehaviour
             // lastly add the char to array
             Player.Instance.characters.Add(chara);
         }
+        
        
         // inventory settings
         List<Part> parts = new List<Part>();

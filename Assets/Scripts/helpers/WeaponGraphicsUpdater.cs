@@ -32,6 +32,7 @@ public class WeaponGraphicsUpdater
                 partObj.GetComponent<SpriteRenderer>().sprite = newPartObj.GetComponent<SpriteRenderer>().sprite;
                 partObj.GetComponent<SpriteRenderer>().color = newPartObj.GetComponent<SpriteRenderer>().color;
                 partObj.transform.localScale = newPartObj.transform.localScale;
+                partObj.transform.localPosition = newPartObj.transform.localPosition;
             } catch (NullReferenceException) {
                 // if couldnt find part then we need to instantiate it
                 GameObject.Instantiate(newPartObj, weapObj.transform);

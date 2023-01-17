@@ -19,7 +19,7 @@ public class Berkeley : MonoBehaviour
     {   
         if (disappearDistance == 0)disappearDistance = BerkeleyManager.Instance.disappearDistance;
         // If we are too far, delete us. Get it? Berkeley..
-        if (disappearDistance != null && Vector3.Distance(transform.position, Camera.main.transform.position) > disappearDistance) {
+        if (Vector3.Distance(transform.position, Camera.main.transform.position) > disappearDistance) {
             Destroy(gameObject);
         }
         if (checkTimer > 0) 
@@ -38,19 +38,20 @@ public class Berkeley : MonoBehaviour
     
     }
 
-    void OnTriggerEnter2D(Collider2D collided)
-	{
-		if (collided.CompareTag("Berkeley") || collided.CompareTag("Rsrc"))
-		{
-            Debug.Log("Death "+collided.gameObject.name);
-			Destroy(collided.gameObject);
-		}
-	}
+    // void OnTriggerEnter2D(Collider2D collided)
+	// {
+	// 	if (collided.CompareTag("Berkeley") || collided.CompareTag("Rsrc"))
+	// 	{
+    //         Debug.Log("Death "+collided.gameObject.name);
+	// 		Destroy(collided.gameObject);
+	// 	}
+	// }
 	void OnCollisionStay2D(Collision2D collision)
 	{
-		if (collision.collider.CompareTag("Berkeley") || collision.collider.CompareTag("Rsrc"))
+		if ( (gameObject.tag == "Berkeley" || gameObject.tag == "Rsrc") && 
+            (collision.collider.CompareTag("Berkeley") || collision.collider.CompareTag("Rsrc")))
 		{
-            Debug.Log("death "+collision.collider.gameObject.name);
+            Debug.Log("death "+collision.collider.gameObject.name + " hit me, the " +gameObject.name);
 			Destroy(collision.collider.gameObject);
 		}
 	}

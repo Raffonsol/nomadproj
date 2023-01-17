@@ -9,6 +9,7 @@ public class ItemListPopulator : MonoBehaviour
     public ItemType itemType;
     public GameObject itemPrefab;
     public Tab tab;
+    public Tab secondaryTab;
     // Start is called before the first frame update
     void Start()
     {
@@ -19,7 +20,7 @@ public class ItemListPopulator : MonoBehaviour
     void Update()
     {
         // TODO: Add check that this is the active populator
-        if (UIManager.Instance.tabRefresh && UIManager.Instance.openTab==tab) {
+        if (UIManager.Instance.tabRefresh && (UIManager.Instance.openTab==tab || UIManager.Instance.openTab==secondaryTab)) {
             UIManager.Instance.tabRefresh = false;
             ResetList();
         }   

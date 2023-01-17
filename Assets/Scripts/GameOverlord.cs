@@ -50,6 +50,12 @@ public class GameOverlord : MonoBehaviour
         Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);
         // Player.Instance.AddPart(900002);
         // Player.Instance.AddPart(900003);
+        
+    }
+    void Update() {
+        if (Input.GetKeyDown(KeyCode.L)) {
+            Player.Instance.GainExperience(20);
+        }
     }
     public Vector2 Pathfind(Vector2 from, Vector2 target, bool capDist = true) {
         float dist = Vector2.Distance(from, target);

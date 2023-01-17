@@ -70,6 +70,7 @@ public class WeaponCrafting : MonoBehaviour
             if (matchingWeapon != null && isEquippable) {
                 Player.Instance.EquipWeapon(matchingWeapon.id, itemsPlaced);
             } else { 
+                // disarmed
                 Player.Instance.EquipWeapon(100000, itemsPlaced);
             }
         }

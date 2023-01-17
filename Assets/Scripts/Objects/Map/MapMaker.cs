@@ -59,9 +59,9 @@ public class MapMaker : MonoBehaviour
         tileMap = new Tile[mapHeight][];
         // MapRiver();
         
-        // MapLine(100, ConnectionPart.Street, false, 0, 30);
         MapLine(riverLength, ConnectionPart.River, true, 0, 0);
         MapLine(riverLength, ConnectionPart.River, true, 0, 20);
+        MapLine(100, ConnectionPart.Street, false, 0, 30);
         GenerateFirstTile();
     }
 

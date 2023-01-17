@@ -38,7 +38,8 @@ public enum FittablePart
     HammerHead,
     ArrowHead,
     Bowstring,
-    Hand // Leave this here, its for unarmed
+    Hand, // Leave this here, its for unarmed
+    Fiber,
 }
 public enum PlatingMaterial
 {
@@ -47,6 +48,7 @@ public enum PlatingMaterial
     Tin,
     Bronze,
     Iron,
+    Rock,
     Mythril,
     Titanium,
     Adamarium,
@@ -154,6 +156,8 @@ public class Equipment : Item
     public Slot slot;
 
     public PowerUp[] modifiers;
+    
+    public FittablePart[] partsNeeded;
 }
 
 [Serializable]
@@ -177,6 +181,7 @@ public class Part : Item
     public PlatingMaterial material;
     public PartLooks[] partLooks;
     public PowerUp[] statEffects;
+    public FittablePart[] partsNeeded;
 }
 
 [Serializable]
@@ -187,6 +192,7 @@ public class Consumable : Item
     public float duration;
     public ConsumableType consumableType;
     public Projectile projectileSettings;
+    public FittablePart[] partsNeeded;
 }
 [Serializable]
 public class Material : Item
@@ -364,6 +370,11 @@ public class CurrentCharStat
     public CharacterStat stat;
     public int id;
     public int value;
+
+    public CurrentCharStat Clone()
+    {
+        return (CurrentCharStat)this.MemberwiseClone();
+    }
 }
 
 [Serializable]
@@ -393,6 +404,8 @@ public class FriendlyChar {
     public int experienceIncrement = 5;
     [SerializeField]
     public Appearance appearance;
+    [SerializeField]
+    public List<Bonus> bonuses;
 
     [HideInInspector]
     public int[] equippedOnLoad = new int[0];
@@ -400,6 +413,8 @@ public class FriendlyChar {
     public int weaponOnLoad = 0;
     [HideInInspector]
     public int[] weaponOnLoadParts = new int[0];
+    [HideInInspector]
+    public int[] bonusOnLoad = new int[0];
 
     [HideInInspector]
     public Equipped equipped;
@@ -407,6 +422,8 @@ public class FriendlyChar {
     public HitBox hitbox;
     [HideInInspector]
     public int experienceToNextLevel;
+
+    public List<PassiveAbility> ownedAbilities;
      
 }
 public class NeutralChar {
@@ -414,6 +431,50 @@ public class NeutralChar {
     public bool isMale;
     public Personality personality;
     public Appearance appearance;
+}
+
+public enum PassiveAbility
+{
+    ArrowRecovery,
+    DropWeaponOnDeath,
+    DropArmorOnDeath,
+}
+public enum BonusType
+{
+    PowerUp,
+    PassiveAbility,
+    Loot,
+}
+[Serializable]
+public class Bonus
+{
+    public int id;
+    public int minLvl;
+    public string name;
+    public Sprite icon;
+    public string description;
+
+    public BonusType bonusType;
+    // if type = PowerUp
+    public PowerUp powerUp;
+    // if type = Loot
+    public int[] items;
+    // if passive ability
+    public PassiveAbility PassiveAbility;
+}
+public enum NamePartType
+{
+    FullName,
+    FirstPart,
+    LastPart,
+}
+[Serializable]
+public class NamePart
+{
+    public NamePartType type;
+    public string value;
+    public bool worksForMen;
+    public bool worksForWomen;
 }
 //  ----------------------- Caravan ----
 

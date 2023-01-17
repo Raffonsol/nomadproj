@@ -20,7 +20,7 @@ public class BerkeleyManager : MonoBehaviour
 {
     public static BerkeleyManager Instance { get; private set; }
     public float mapBounds = 0;
-    public float disappearDistance = 80f;
+    public float disappearDistance = 75f;
     public bool berkeleyCapped;
     public bool monsterCapped;
     public bool rsrcCapped;
@@ -55,10 +55,10 @@ public class BerkeleyManager : MonoBehaviour
     void Start()
     {
         // TODO replace with glboal settings
-        berkeleyMax = 600;
-        monsterMax = 100;
-        rsrcMax = 250;
-        npcMax = 50;
+        berkeleyMax = 300;
+        monsterMax = 30;
+        rsrcMax = 100;
+        npcMax = 20;
 
         checkTimer = checkTime;
         for(int i = 0; i <spawnables.Count; i++){

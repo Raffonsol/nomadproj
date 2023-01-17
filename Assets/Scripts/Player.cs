@@ -44,10 +44,10 @@ public class Player : MonoBehaviour
 	{
         ResetContol();
         CalculateNextLevel();
-        activePerson.stats =  GameOverlord.Instance.defaultCharacterStats;
+        activePerson.stats = GameOverlord.Instance.defaultCharacterStats.ConvertAll(stat => stat.Clone());
         for(int i = 0; i <characters.Count; i++){
             characters[i].equipped = new Equipped();
-            characters[i].stats = GameOverlord.Instance.defaultCharacterStats;
+            characters[i].stats = GameOverlord.Instance.defaultCharacterStats.ConvertAll(stat => stat.Clone());
             ResetStats(characters[i]);
         }
     
@@ -83,14 +83,17 @@ public class Player : MonoBehaviour
             }
         }
     }
-    public void LevelUpChar(int charId) {
-        GetCharById(charId).level++;
-        GetCharById(charId).experience = 0;
-        GetCharById(charId).life = GetCharById(charId).stats[0].value;
-        GetCharById(charId).controller.Reset();
-        GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, GetCharById(charId).controller.transform);
+    public void LevelUpChar(int ind) {
+        characters[ind].level++;
+        characters[ind].experience = 0;
+        characters[ind].life = characters[ind].stats[0].value;
+        characters[ind].controller.Reset();
+        GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, characters[ind].controller.transform);
         DamageText.GetComponent<DamageText>().textToDisplay = "^";
         // TODO:  Play some fun animation here
+
+        // trigger UI to show bonus prompt
+        UIManager.Instance.lvlUpQueue.Add(characters[ind].id);
     }
     void Update()
     {
@@ -118,7 +121,7 @@ public class Player : MonoBehaviour
         
     }
     public void EquipArmor(Equipment equipment, bool left = false, int charId = -1)
-    {
+    {// THIS DOES NOT REMOVE FROM INVENTORY. HAVE TO CALL REMOVE EQUIP
         if (charId == -1) charId = activeCharId;
         FriendlyChar person = GetCharById(charId);
 
@@ -230,10 +233,11 @@ public class Player : MonoBehaviour
         // -- Weapon
         try {
             Destroy(person.controller.gameObject.transform.Find("Player/Body/Instance/PrimaryWeapon").gameObject);
+                    // looks weird but keep it
+                    person.controller.gameObject.transform.Find("Player/Body/Instance/PrimaryWeapon").gameObject.name = "urgh";
         } catch (NullReferenceException) {
             // sweat not, there is no weapon
         }
-        
         GameObject newWeapon = Instantiate(value.visual);
         newWeapon.name = "PrimaryWeapon";
         newWeapon.transform.parent = person.controller.gameObject.transform.Find("Player/Body/Instance");
@@ -279,6 +283,16 @@ public class Player : MonoBehaviour
         Weapon value = person.equipped.primaryWeapon;
         
         float dmg = 0; int slot = 3; // slot  is for the damage type, using hardcoded indexes
+        // Add stat bonuses
+        if (value.damageType == DamageType.Melee) {
+            dmg += person.stats[3].value; // 3 is stat for melee damage
+        } else if (value.damageType == DamageType.Ranged) {
+            dmg += person.stats[4].value; // 4 is stat for ranged damage
+        } else if (value.damageType == DamageType.Magic) {
+            dmg += person.stats[5].value; // 5 is stat for magic damage
+        }
+
+
         for(int i = 0; i <partsUsed.Count; i++){
             for(int j = 0; j <partsUsed[i].statEffects.Length; j++){
                 // melee
@@ -325,16 +339,31 @@ public class Player : MonoBehaviour
         switch (itemType) {
             case ItemType.Equipment:
                 AddEquipment(itemId);
+                UIManager.Instance.AutoEquipSingleArmor(itemId);
                 break;
             case ItemType.Weapon:
                 AddWeapon(itemId);
                 break;
             case ItemType.Part:
                 AddPart(itemId);
+                UIManager.Instance.AutoEquipWeapons();
                 break;
 
         }
-        
+    }
+    public void PickupItem(int itemId)
+    {   
+        // this is not exactly dynamic but its fine
+        if (itemId.ToString().Length < 6) {
+            AddEquipment(itemId);
+            UIManager.Instance.AutoEquipSingleArmor(itemId);
+        }
+        else if(Int32.Parse(itemId.ToString().Substring(0,1)) == 1) {
+            AddWeapon(itemId);
+        } else if(Int32.Parse(itemId.ToString().Substring(0,1)) == 9) {
+            AddPart(itemId);
+            UIManager.Instance.AutoEquipWeapons();
+        }
     }
     public void RemoveItem(ItemType itemType, int itemId) {
         switch (itemType) {
@@ -432,6 +461,9 @@ public class Player : MonoBehaviour
 
     public FriendlyChar GetCharById(int id) {
         int index = Array.FindIndex(characters.ToArray(), c => c.id == id);
+        if (index == -1) {
+            Debug.LogError("GetCharById was called using an id that was not yet added to the characters list");
+        }
         return characters[index];
     }
     public void ConvertNeutral(GameObject neutral) {
@@ -444,10 +476,10 @@ public class Player : MonoBehaviour
         newFriend.id = BerkeleyManager.Instance.LatestFriendId();
         newFriend.experience = 0;
         newFriend.level = 0;
-        newFriend.life = neutralScript.maxLife;
         newFriend.appearance = neutralScript.appearance;
         newFriend.controller = controller;
-        newFriend.stats =  GameOverlord.Instance.defaultCharacterStats;
+        newFriend.stats =  GameOverlord.Instance.defaultCharacterStats.ConvertAll(stat => stat.Clone());
+        newFriend.life = newFriend.stats[0].value;
 
         newFriend.formation = GameLib.Instance.TakeAvailableFormtion();
 
@@ -467,9 +499,52 @@ public class Player : MonoBehaviour
 
         // Settings on GameObject
         neutral.tag = "Character";
-
+        neutral.name = neutralScript.name;
 
         neutral.GetComponent<Berkeley>().enabled = false;
         neutralScript.enabled = false;
+
+        UIManager.Instance.CheckAutoEquips();
+    }
+    // this ALSO REMOVES THEM
+    public List<Part> FindNeededParts(FittablePart[] partTypes) {
+        List<Part> shoppingList = new List<Part>();
+        List<FittablePart> goingParts = partTypes.Cast<FittablePart>().ToList();
+
+        for(int i = 0; i <parts.Count; i++){
+            if (goingParts.Contains(parts[i].fittablePart)) {
+                shoppingList.Add( parts[i]);
+                goingParts.Remove(parts[i].fittablePart);
+                parts.RemoveAt(i);
+                i--;
+            }
+        }
+        
+        return shoppingList;
+    }
+    public void ApplyBonus(int charId, Bonus bonus) {
+        int index = Array.FindIndex(characters.ToArray(), c => c.id == charId);        
+        characters[index].bonuses.Add(bonus);
+        switch (bonus.bonusType) {
+            case (BonusType.PowerUp):
+                characters[index].stats.Find(i => i.stat == bonus.powerUp.affectedStat).value += bonus.powerUp.offset;
+            break;
+            case (BonusType.Loot):
+                for(int i = 0; i <bonus.items.Length; i++){
+                    PickupItem(bonus.items[i]);
+                }
+                
+            break;
+            case (BonusType.PassiveAbility):
+                characters[index].ownedAbilities.Add(bonus.PassiveAbility);
+            break;
+        }
+    }
+    public void ClearPartsBeingUsed(int charId ){
+        FriendlyChar character = GetCharById(charId);
+        for(int i = 0; i <character.equipped.partsBeingUsed.Count; i++){
+            AddPart(character.equipped.partsBeingUsed[i].id);
+        }
+        character.equipped.partsBeingUsed = new List<Part>();
     }
 }

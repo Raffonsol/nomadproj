@@ -10,6 +10,7 @@ public class MenuPanel : MonoBehaviour
     public Menu menuType;
     public bool dependOnMenu;
     public Tab TabType;
+    public Tab secondaryTab;
     public bool dependOnTab;
     // Start is called before the first frame update
     void Start()
@@ -23,7 +24,7 @@ public class MenuPanel : MonoBehaviour
         if (content) {
             content.SetActive(
                 (!dependOnMenu || UIManager.Instance.openMenu == menuType) &&
-                (!dependOnTab || UIManager.Instance.openTab == TabType));
+                (!dependOnTab || UIManager.Instance.openTab == TabType || UIManager.Instance.openTab == secondaryTab));
         }
     }
 }

@@ -101,6 +101,7 @@ public class VillageManager : MonoBehaviour
             Neutral combatant = spawnee.GetComponent<Neutral>();
             // Randomize
             combatant.appearance.isMale = UnityEngine.Random.Range(0,2) == 1;
+            combatant.name = GameLib.Instance.GenerateName(combatant.appearance.isMale);
             
             // parts
             int head, chest, foot, hand, clothing;
