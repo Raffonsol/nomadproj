@@ -93,97 +93,101 @@ public class VillageManager : MonoBehaviour
         // now spawn population
         // adults
         for(int i = 0; i <workingScene.adults; i++){
-            GameObject spawnee = Instantiate(neutralTemplate, new Vector2(
-                UnityEngine.Random.Range(x - 20f, x + 20f),
-                UnityEngine.Random.Range(y - 20f, y + 20f)),
-                transform.rotation);
-
-            Neutral combatant = spawnee.GetComponent<Neutral>();
-            // Randomize
-            combatant.appearance.isMale = UnityEngine.Random.Range(0,2) == 1;
-            combatant.name = GameLib.Instance.GenerateName(combatant.appearance.isMale);
-            
-            // parts
-            int head, chest, foot, hand, clothing;
-            head = chest = foot = hand = clothing = -1;
-
-            BodyLook[] parts = GameLib.Instance.allBodyParts; 
-            #region "Selecting all the part indexes"
-            while (chest == -1) {
-                int index = UnityEngine.Random.Range(0, parts.Length);
-                if (parts[index].slot == Slot.Chest && (parts[index].xChromossomes == 0 ||
-                    ((combatant.appearance.isMale && parts[index].xChromossomes == 1) ||
-                    (!combatant.appearance.isMale && parts[index].xChromossomes == 2)))
-                ) {
-                    chest = index;
-                }
-            }
-            while (head == -1) {
-                int index = UnityEngine.Random.Range(0, parts.Length);
-                if (parts[index].slot == Slot.Head && (parts[index].xChromossomes == 0 ||
-                    ((combatant.appearance.isMale && parts[index].xChromossomes == 1) ||
-                    (!combatant.appearance.isMale && parts[index].xChromossomes == 2)))
-                ) {
-                    head = index;
-                }
-            }
-            while (clothing == -1) {
-                int index = UnityEngine.Random.Range(0, parts.Length);
-                if (parts[index].slot == Slot.Clothing && (parts[index].xChromossomes == 0 ||
-                    ((combatant.appearance.isMale && parts[index].xChromossomes == 1) ||
-                    (!combatant.appearance.isMale && parts[index].xChromossomes == 2)))
-                ) {
-                    clothing = index;
-                }
-            }
-            while (hand == -1) {
-                int index = UnityEngine.Random.Range(0, parts.Length);
-                if (parts[index].slot == Slot.Hand && (parts[index].xChromossomes == 0)
-                ) {
-                    hand = index;
-                }
-            }
-            while (foot == -1) {
-                int index = UnityEngine.Random.Range(0, parts.Length);
-                if (parts[index].slot == Slot.Foot && (parts[index].xChromossomes == 0)
-                ) {
-                    foot = index;
-                }
-            }
-            #endregion
-            
-            // Skin Color 
-            int cIndex = UnityEngine.Random.Range(0, GameLib.Instance.skinColorPresets.Length);
-            Color color = GameLib.Instance.skinColorPresets[cIndex];
-            combatant.appearance.skinColor = cIndex;
-            // setting everything on the game object
-            combatant.appearance.bodyLooks = new int[] {head, chest, hand, foot, clothing};
-            spawnee.transform.Find("Player/Body/Head").GetComponent<SpriteRenderer>().sprite 
-            = GameLib.Instance.allBodyParts[head].look;
-            spawnee.transform.Find("Player/Body/Head").GetComponent<SpriteRenderer>().color = color;
-
-            spawnee.transform.Find("Player/Body/LFoot").GetComponent<SpriteRenderer>().sprite 
-            = GameLib.Instance.allBodyParts[foot].look;
-            spawnee.transform.Find("Player/Body/LFoot").GetComponent<SpriteRenderer>().color = color;
-            spawnee.transform.Find("Player/Body/RFoot").GetComponent<SpriteRenderer>().sprite 
-            = GameLib.Instance.allBodyParts[foot].look;
-            spawnee.transform.Find("Player/Body/RFoot").GetComponent<SpriteRenderer>().color = color;
-
-            spawnee.transform.Find("Player/Body/Chest").GetComponent<SpriteRenderer>().sprite 
-            = GameLib.Instance.allBodyParts[chest].look;
-            spawnee.transform.Find("Player/Body/Chest").GetComponent<SpriteRenderer>().color = color;
-            spawnee.transform.Find("Player/Body/Chest/Chest").GetComponent<SpriteRenderer>().sprite 
-            = GameLib.Instance.allBodyParts[clothing].look;
-
-            spawnee.transform.Find("Player/Body/Instance/LHand").GetComponent<SpriteRenderer>().sprite 
-            = GameLib.Instance.allBodyParts[hand].look;
-            spawnee.transform.Find("Player/Body/Instance/LHand").GetComponent<SpriteRenderer>().color = color;
-            spawnee.transform.Find("Player/Body/Instance/RHand").GetComponent<SpriteRenderer>().sprite 
-            = GameLib.Instance.allBodyParts[hand].look;
-            spawnee.transform.Find("Player/Body/Instance/RHand").GetComponent<SpriteRenderer>().color = color;
+            SpawnNpc(x, y);
         }
         
         
         
+    }
+    public void SpawnNpc(float x, float y) {
+        GameObject spawnee = Instantiate(neutralTemplate, new Vector2(
+            UnityEngine.Random.Range(x - 20f, x + 20f),
+            UnityEngine.Random.Range(y - 20f, y + 20f)),
+            transform.rotation
+        );
+
+        Neutral combatant = spawnee.GetComponent<Neutral>();
+        // Randomize
+        combatant.appearance.isMale = UnityEngine.Random.Range(0,2) == 1;
+        combatant.name = GameLib.Instance.GenerateName(combatant.appearance.isMale);
+        
+        // parts
+        int head, chest, foot, hand, clothing;
+        head = chest = foot = hand = clothing = -1;
+
+        BodyLook[] parts = GameLib.Instance.allBodyParts; 
+        #region "Selecting all the part indexes"
+        while (chest == -1) {
+            int index = UnityEngine.Random.Range(0, parts.Length);
+            if (parts[index].slot == Slot.Chest && (parts[index].xChromossomes == 0 ||
+                ((combatant.appearance.isMale && parts[index].xChromossomes == 1) ||
+                (!combatant.appearance.isMale && parts[index].xChromossomes == 2)))
+            ) {
+                chest = index;
+            }
+        }
+        while (head == -1) {
+            int index = UnityEngine.Random.Range(0, parts.Length);
+            if (parts[index].slot == Slot.Head && (parts[index].xChromossomes == 0 ||
+                ((combatant.appearance.isMale && parts[index].xChromossomes == 1) ||
+                (!combatant.appearance.isMale && parts[index].xChromossomes == 2)))
+            ) {
+                head = index;
+            }
+        }
+        while (clothing == -1) {
+            int index = UnityEngine.Random.Range(0, parts.Length);
+            if (parts[index].slot == Slot.Clothing && (parts[index].xChromossomes == 0 ||
+                ((combatant.appearance.isMale && parts[index].xChromossomes == 1) ||
+                (!combatant.appearance.isMale && parts[index].xChromossomes == 2)))
+            ) {
+                clothing = index;
+            }
+        }
+        while (hand == -1) {
+            int index = UnityEngine.Random.Range(0, parts.Length);
+            if (parts[index].slot == Slot.Hand && (parts[index].xChromossomes == 0)
+            ) {
+                hand = index;
+            }
+        }
+        while (foot == -1) {
+            int index = UnityEngine.Random.Range(0, parts.Length);
+            if (parts[index].slot == Slot.Foot && (parts[index].xChromossomes == 0)
+            ) {
+                foot = index;
+            }
+        }
+        #endregion
+        
+        // Skin Color 
+        int cIndex = UnityEngine.Random.Range(0, GameLib.Instance.skinColorPresets.Length);
+        Color color = GameLib.Instance.skinColorPresets[cIndex];
+        combatant.appearance.skinColor = cIndex;
+        // setting everything on the game object
+        combatant.appearance.bodyLooks = new int[] {head, chest, hand, foot, clothing};
+        spawnee.transform.Find("Player/Body/Head").GetComponent<SpriteRenderer>().sprite 
+        = GameLib.Instance.allBodyParts[head].look;
+        spawnee.transform.Find("Player/Body/Head").GetComponent<SpriteRenderer>().color = color;
+
+        spawnee.transform.Find("Player/Body/LFoot").GetComponent<SpriteRenderer>().sprite 
+        = GameLib.Instance.allBodyParts[foot].look;
+        spawnee.transform.Find("Player/Body/LFoot").GetComponent<SpriteRenderer>().color = color;
+        spawnee.transform.Find("Player/Body/RFoot").GetComponent<SpriteRenderer>().sprite 
+        = GameLib.Instance.allBodyParts[foot].look;
+        spawnee.transform.Find("Player/Body/RFoot").GetComponent<SpriteRenderer>().color = color;
+
+        spawnee.transform.Find("Player/Body/Chest").GetComponent<SpriteRenderer>().sprite 
+        = GameLib.Instance.allBodyParts[chest].look;
+        spawnee.transform.Find("Player/Body/Chest").GetComponent<SpriteRenderer>().color = color;
+        spawnee.transform.Find("Player/Body/Chest/Chest").GetComponent<SpriteRenderer>().sprite 
+        = GameLib.Instance.allBodyParts[clothing].look;
+
+        spawnee.transform.Find("Player/Body/Instance/LHand").GetComponent<SpriteRenderer>().sprite 
+        = GameLib.Instance.allBodyParts[hand].look;
+        spawnee.transform.Find("Player/Body/Instance/LHand").GetComponent<SpriteRenderer>().color = color;
+        spawnee.transform.Find("Player/Body/Instance/RHand").GetComponent<SpriteRenderer>().sprite 
+        = GameLib.Instance.allBodyParts[hand].look;
+        spawnee.transform.Find("Player/Body/Instance/RHand").GetComponent<SpriteRenderer>().color = color;
     }
 }

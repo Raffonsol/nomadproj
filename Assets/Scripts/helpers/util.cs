@@ -41,7 +41,7 @@ public static class Util
     public static int TagToFaction(string tag)
     {
         switch (tag) {
-            case ("Charcter"):
+            case ("Character"):
             return 0;
             case ("Monster"):
             return 1;

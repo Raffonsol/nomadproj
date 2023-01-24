@@ -27,8 +27,12 @@ public class BerkeleySpawner : MonoBehaviour
                   ||(spawnables[i].berkeleyType == BerkeleyType.Monster && !BerkeleyManager.Instance.monsterCapped)
                   ||(spawnables[i].berkeleyType == BerkeleyType.Npc && !BerkeleyManager.Instance.npcCapped)
                   )
-                Spawn(spawnables[i].obj);
-                spawnables[i].spawnTimer = spawnables[i].spawnTime;
+                  if (spawnables[i].berkeleyType == BerkeleyType.Npc) {
+                    VillageManager.Instance.SpawnNpc(transform.position.x,transform.position.y);
+                  } else {
+                    Spawn(spawnables[i].obj);
+                  }
+                  spawnables[i].spawnTimer = spawnables[i].spawnTime;
             }
         }
     }

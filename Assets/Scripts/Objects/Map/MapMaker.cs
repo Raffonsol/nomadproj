@@ -44,6 +44,7 @@ public class Tile
 
 public class MapMaker : MonoBehaviour
 {
+    public static MapMaker Instance { get; private set; }
     public GameObject debugMarker;
     [SerializeField]
     public List<Tile> Tiles;
@@ -54,6 +55,19 @@ public class MapMaker : MonoBehaviour
     public int mapHeight = 100;
 
     private Tile[][] tileMap;
+
+    // Singleton stuff
+    private void Awake() 
+    { 
+        if (Instance != null && Instance != this) 
+        { 
+            Destroy(this); 
+        } 
+        else 
+        { 
+            Instance = this; 
+        } 
+    }
     void Start()
     {
         tileMap = new Tile[mapHeight][];
@@ -64,7 +78,9 @@ public class MapMaker : MonoBehaviour
         MapLine(100, ConnectionPart.Street, false, 0, 30);
         GenerateFirstTile();
     }
-
+    public void DeleteTileAt(int x, int y) {
+        tileMap[x][y].tileObject = null;
+    }
     void MapLine(int length, ConnectionPart conP, bool isRiver, int startX, int startY) {
 
         int xPos = startX;
@@ -215,7 +231,7 @@ public class MapMaker : MonoBehaviour
         }
         // now we got nothing, so let's take one that we skipped earlier if we did
         if (skipped){
-            Instantiate(debugMarker, new Vector2(x*tileLength, y*tileLength), transform.rotation);
+            // Instantiate(debugMarker, new Vector2(x*tileLength, y*tileLength), transform.rotation);
             return skip;
         }
         // k now we really got nothing, this bad
@@ -300,6 +316,7 @@ public class MapMaker : MonoBehaviour
         tileMap[x][y] = tile;
         tileMap[x][y].tileObject = Instantiate(tile.tileObject,
             new Vector3(x * tileLength, y * tileLength, 0), Quaternion.identity);
-        
+        TileController controller = tileMap[x][y].tileObject.AddComponent<TileController>();
+        controller.x = x; controller.y = y;
     }
 }

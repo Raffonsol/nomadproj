@@ -12,13 +12,16 @@ public class Monster : Combatant
     public Sprite attack;
 
     public float attackSpeed = 1f;
+    public int projectileId;
 
     public Color aboutToAttackColor;
 
     [HideInInspector]
     public bool damagingOnTouch = false;
+    
 
     private HitBox hitScript;
+    private bool projectileGoing = false;
     
 
     // Start is called before the first frame update
@@ -58,22 +61,40 @@ public class Monster : Combatant
         }
         else if (attackTimer > 0)
         {
-            // start damaging;
-            damagingOnTouch = true;
-            hitScript.hitting = true;
-            hitBox.isTrigger = false;
-
             transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = attack;
             transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().color = Color.white;
+             if (attackDamageType == DamageType.Melee) {
+				 // start damaging;
+                damagingOnTouch = true;
+                hitScript.hitting = true;
+                hitBox.isTrigger = false;
 
-            Vector2 target = moveDirection + currentPosition;
-            transform.position = Vector3.Lerp (currentPosition, target, attackSpeed * Time.deltaTime);
+                Vector2 target = moveDirection + currentPosition;
+                transform.position = Vector3.Lerp (currentPosition, target, attackSpeed * Time.deltaTime);
+			} else if (!projectileGoing && attackDamageType == DamageType.Ranged) {
+                
+                projectileGoing = true;
+				Consumable item = GameLib.Instance.GetConsumableById(projectileId);
+                GameObject arrow = Instantiate(item.visual,transform.position, transform.rotation);
+                Projectile newSettings = item.projectileSettings;
+                newSettings.minDamage = minDamage;
+                newSettings.maxDamage = maxDamage;
+                arrow.gameObject.GetComponent<ProjectileItem>().projectileSettings = item.projectileSettings;
+                arrow.gameObject.GetComponent<ProjectileItem>().faction = faction;
+                arrow.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
+				arrow.gameObject.GetComponent<ProjectileItem>().playerParty = false;
+				arrow.gameObject.GetComponent<ProjectileItem>().consumableId = projectileId;
+                arrow.gameObject.GetComponent<ProjectileItem>().Go();
+				
+			}
+           
         }
         else {
             // complete
             damagingOnTouch = false;
             hitScript.hitting = false;
             hitBox.isTrigger = true;
+            projectileGoing = false;
             
             transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
             

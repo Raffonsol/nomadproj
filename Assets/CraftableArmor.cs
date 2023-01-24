@@ -78,6 +78,7 @@ public class CraftableArmor : MonoBehaviour
             Player.Instance.RemoveItem(ItemType.Part, part2Id);
             Player.Instance.AddEquipment(showingItemId);
             if (!multiple)UpdateUI();
+            UIManager.Instance.AutoEquipSingleArmor(showingItemId);
             return true;
         }
         return false;

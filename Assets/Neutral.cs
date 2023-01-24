@@ -23,8 +23,6 @@ public class Neutral : Combatant
     public GameObject leftHand;
 	public GameObject weaponObject;
 
-    public DamageType attackDamageType;
-
     private float attackTime;
     public Weapon weapon;
     private HitBox weaponHitBox;

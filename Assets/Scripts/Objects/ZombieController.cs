@@ -20,6 +20,9 @@ public class ZombieController : MonoBehaviour {
 	public GameObject rightHand;
     public GameObject leftHand;
 	public GameObject weaponObject;
+	
+    public float invincibilityTime = 0.3f;
+    public float invincibleTimer;
 
 	private Vector2 moveDirection;
 	private Vector2 lastClick;
@@ -86,6 +89,7 @@ public class ZombieController : MonoBehaviour {
 
 		attackTime = attackCooldown;
 		attackTimer = attackTime;
+        invincibleTimer = invincibilityTime;
 
 		attackDamageType = weapon.damageType;
 		if (weaponObject && attackDamageType == DamageType.Melee) {
@@ -160,9 +164,14 @@ public class ZombieController : MonoBehaviour {
 		ListenForClick();
 		Walk();
 		Attack();
-		TakeDamage();
 		Die();
 		Regen();
+		CountInvincibleTimer();
+	}
+	void CountInvincibleTimer() {
+		if (invincibleTimer >= 0) {
+			invincibleTimer -= Time.deltaTime;
+		}
 	}
 
 	void Attack()
@@ -289,8 +298,18 @@ public class ZombieController : MonoBehaviour {
 			PerformAi(self.personality);
 		}
 	}
-	void TakeDamage() {
+	void TakeDamage(float damage) {
 		// TODO: knockback
+        if (invincibleTimer < 0) {
+            // TODO: localize [12 = armor]
+            float minDmg = damage - self.stats[12].value;
+            if (minDmg < 0) minDmg = 0;
+            self.life -= UnityEngine.Random.Range(minDmg,damage);
+            invincibleTimer = invincibilityTime; 
+            GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, transform);
+            DamageText.GetComponent<DamageText>().textToDisplay = damage.ToString("0.00");
+        }
+        
 	}
 
 	void SwingAnim() {
@@ -358,6 +377,11 @@ public class ZombieController : MonoBehaviour {
 		{
 			Collided(collided);
 		}
+		if (collided.CompareTag("Projectile"))
+		{
+			Debug.Log("Arrow Shot");
+			Shot(collided);
+		}
 	}
 	private void OnCollisionStay2D(Collision2D collision)
 	{
@@ -371,9 +395,18 @@ public class ZombieController : MonoBehaviour {
 	{
 		GameObject target = collided.gameObject;
 		HitBox hitter = target.GetComponent<HitBox>();
-		if (hitter.hitting && hitter.faction != 0  && Player.Instance.GetCharById(charId).invincibleTimer <= 0) {
+		if (hitter.hitting && hitter.faction != 0  && invincibleTimer <= 0) {
 			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
-			Player.Instance.TakeDamage(damage, charId);
+			TakeDamage(damage);
+		}
+	}
+	void Shot(Collider2D collided)
+	{
+		GameObject target = collided.gameObject;
+		ProjectileItem hitter = target.GetComponent<ProjectileItem>();
+		if (hitter.faction != 0  && invincibleTimer <= 0) {
+			float damage = UnityEngine.Random.Range(hitter.projectileSettings.minDamage, hitter.projectileSettings.maxDamage);
+			TakeDamage(damage);
 		}
 	}
 
@@ -450,8 +483,8 @@ public class ZombieController : MonoBehaviour {
 		Vector2 target;
 		Vector2 currentPosition = transform.position;
 		float speed = leader ? moveSpeed : moveSpeed + 0.1f*(float)(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x));
-		if ((tempPersonality != Personality.Coward && Player.Instance.engagementTimer > 0.3f) || Player.Instance.engagementTimer > 3f) {
-			GameObject engage = Player.Instance.engagedMonster;
+		if (((tempPersonality != Personality.Coward && Player.Instance.engagementTimer > 0.3f) || Player.Instance.engagementTimer > 3f) && Player.Instance.engagedMonster.Count > 0) {
+			GameObject engage = Player.Instance.engagedMonster[0];
 			Vector2 threateningTar = engage.transform.position;
 			nextPoint = GameOverlord.Instance.Pathfind(currentPosition, threateningTar);
 			moveDirection = nextPoint - currentPosition;
@@ -463,7 +496,7 @@ public class ZombieController : MonoBehaviour {
 			try {
 				monsterSize = engage.GetComponent<Monster>().size;
 			} catch (NullReferenceException) {
-				monsterSize = engage.GetComponent<Neutral>().size;
+				monsterSize = 2;
 			}
 			if (weapon.damageType == DamageType.Ranged) monsterSize += 300f;
 			if (dist < monsterSize)AttemptAttack();

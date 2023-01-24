@@ -110,11 +110,11 @@ public class BerkeleyManager : MonoBehaviour
     void Spawn(GameObject obj) {
         Vector2 CamPos = Camera.main.transform.position;
         float x = UnityEngine.Random.Range(CamPos.x-disappearDistance, CamPos.x+disappearDistance);
-        while (Math.Abs(x - Camera.main.transform.position.x) < 10) 
+        while (Math.Abs(x - Camera.main.transform.position.x) < 7) 
             x = UnityEngine.Random.Range(CamPos.x-disappearDistance, CamPos.x+disappearDistance);
         
         float y = UnityEngine.Random.Range(CamPos.y-disappearDistance, CamPos.y+disappearDistance);
-        while (Math.Abs(y - Camera.main.transform.position.y) < 10) 
+        while (Math.Abs(y - Camera.main.transform.position.y) < 7) 
             y = UnityEngine.Random.Range(CamPos.y-disappearDistance, CamPos.y+disappearDistance);
 
         Instantiate(obj, new Vector2(x, y), Quaternion.Euler(0,0,UnityEngine.Random.Range(0,360)));

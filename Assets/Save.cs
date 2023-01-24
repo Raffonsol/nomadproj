@@ -11,12 +11,18 @@ using System.Linq;
  public class ConfigData
  {
     public bool autoEquipping;
+    public bool gameOver;
+    public int progress;
 
     public ConfigData(
-        bool autoEquipping
+        bool autoEquipping,
+        bool gameOver,
+        int progress
     )
     {
         this.autoEquipping = autoEquipping;
+        this.gameOver = gameOver;
+        this.progress = progress;
     }
  }
 
@@ -145,6 +151,10 @@ public class Save : MonoBehaviour
             Debug.Log("Saving game");
             SaveFile();
             saveTimer = 20f;
+            return;
+        }
+        if (GameOverlord.Instance.gameOver) {
+            SaveFile();
         }
      }
      
@@ -153,7 +163,6 @@ public class Save : MonoBehaviour
      {
          string destination = Application.persistentDataPath + "/save.dat";
          FileStream file;
- 
          if(File.Exists(destination)) file = File.OpenWrite(destination);
          else file = File.Create(destination);
 
@@ -217,7 +226,11 @@ public class Save : MonoBehaviour
 
         InvData inventory = new InvData(parts.ToArray(), consumables.ToArray(), equipments.ToArray());
         
-        ConfigData config = new ConfigData(UIManager.Instance.autoEquipping);
+        ConfigData config = new ConfigData(
+            UIManager.Instance.autoEquipping,
+            GameOverlord.Instance.gameOver,
+            GameOverlord.Instance.progress    
+        );
     
          GameData data = new GameData(
             config,
@@ -242,17 +255,24 @@ public class Save : MonoBehaviour
             return;
         }
 
+         BinaryFormatter bf = new BinaryFormatter();
+         GameData data = (GameData) bf.Deserialize(file);
+         file.Close();
+
+         if (data.config.gameOver) {
+            Debug.Log("Last game didn't go well huh? Starting new one");
+            return;
+         }
+
         // load confirmed
         // destroy starting characters
         GameObject[] gos = GameObject.FindGameObjectsWithTag("Character");
         foreach(GameObject go in gos)
             Destroy(go);
  
-         BinaryFormatter bf = new BinaryFormatter();
-         GameData data = (GameData) bf.Deserialize(file);
-         file.Close();
 
          // configs
+         GameOverlord.Instance.progress = data.config.progress;
          UIManager.Instance.autoEquipping = data.config.autoEquipping;
 
         // put loaded data where it needs to be

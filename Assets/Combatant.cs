@@ -2,7 +2,6 @@ using System.Collections;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-
 public enum Routine
 {
     Patrolling,
@@ -11,6 +10,7 @@ public enum Routine
     Chasing,
     Attacking,
     Fleeing,
+    Searching,
 }
 
 public class Combatant : Berkeley
@@ -26,11 +26,15 @@ public class Combatant : Berkeley
 
     public float attackDistance = 0.73f;
     public float attackCooldown = 1f;
+    
+
+    public DamageType attackDamageType;
     public float patrolSpeed = 1f;
 	public float turnSpeed = 3f;
 	public float feetSpeed = 0.5f;
 
-    public float alertRange = 50f;
+    public float alertRange = 10f;
+    public float searchTimer = 20f;
     public float patrolStopInterval = 4f;
     public float giveUpDistance = 30f;
 
@@ -42,6 +46,8 @@ public class Combatant : Berkeley
     [HideInInspector]
     public float invincibleTimer;
     public Drop[] drops;
+
+    protected bool engaged = false;
 
     protected Routine routine;
     protected float life;
@@ -65,10 +71,13 @@ public class Combatant : Berkeley
     protected GameObject chaseTarget;
     protected Vector2 chaseTargetPosition;
     protected PolygonCollider2D hitBox;
+    protected Vision vision;
+    protected float visionTimer;
 
     private void Awake() 
     {
         originPosition = transform.position;
+        vision = transform.Find("Vision").GetComponent<Vision>();
     }
 
     protected void SwitchRoutine(Routine newRoutine)
@@ -83,6 +92,10 @@ public class Combatant : Berkeley
             break;
         case (Routine.Attacking):
             attackTimer = attackCooldown;
+            break;
+        case (Routine.Searching):
+            originPosition = Camera.main.transform.position;
+            GetComponent<CircleCollider2D>().isTrigger = false;
             break;
         }
         routine = newRoutine;
@@ -106,6 +119,9 @@ public class Combatant : Berkeley
             break;
         case (Routine.Attacking):
             Attack();
+            break;
+        case (Routine.Searching):
+            Search();
             break;
         }
         
@@ -155,6 +171,32 @@ public class Combatant : Berkeley
 			StopAnim();
 		}
 
+    }
+    protected void Search()
+    {
+        if (searchTimer > 0) {
+            searchTimer -= Time.deltaTime;
+        } else {
+            // searching for too long creates problems
+            Destroy(gameObject);
+        }
+        Vector2 currentPosition = transform.position;
+
+        Vector2 nextPoint = Camera.main.transform.position;
+        moveDirection = nextPoint - currentPosition;
+        moveDirection.Normalize();
+        Vector2 target = moveDirection + currentPosition;
+		if (Vector3.Distance(currentPosition, nextPoint) > alertRange*2f) {
+
+            transform.position = Vector3.Lerp (currentPosition, target, patrolSpeed * 2f * Time.deltaTime);
+
+
+        }
+		else {
+            SwitchRoutine(Routine.Patrolling);
+		}
+
+        
     }
     protected void Chase()
     {
@@ -222,23 +264,29 @@ public class Combatant : Berkeley
     }
     protected bool DetectEnemy()
     {
-        for(int i = 1; i < 4; i++){
-            RaycastHit2D hit = Physics2D.Raycast(transform.position, moveDirection);
-            if (i ==1)
-            hit = Physics2D.Raycast(transform.position, moveDirection+(Vector2)transform.up);
-            if (i == 3)
-            hit = Physics2D.Raycast(transform.position, moveDirection+(Vector2)transform.forward);
+        // only monster seek out fights for now
+        if (faction != 1) return false;
 
-            Debug.DrawRay(transform.position, moveDirection+(Vector2)transform.up);
-            Debug.DrawRay(transform.position, moveDirection);
-            Debug.DrawRay(transform.position, moveDirection+(Vector2)transform.forward);
-            if (hit.transform && Array.IndexOf(hatesFactions, Util.TagToFaction(hit.transform.gameObject.tag)) > -1
-            && Vector2.Distance(hit.point, transform.position) < alertRange){
-                chaseTarget = hit.transform.gameObject;
-                Debug.Log("Huh?" + hit.transform.gameObject.name + Util.TagToFaction(hit.transform.gameObject.tag));
+        // if very far, switch to a lower code searching script
+        if (Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*2f) {
+            SwitchRoutine(Routine.Searching);
+            // disables collision tso we dont have to pathfind
+            GetComponent<CircleCollider2D>().isTrigger = true;
+            return false;
+        } 
+        // TODO: redo
+        if (visionTimer > 0) {
+            visionTimer -= Time.deltaTime;
+        } else {
+            visionTimer = 1f;
+
+            if (vision.peopleInDetection.Count > 0 && Array.IndexOf(hatesFactions, Util.TagToFaction(vision.peopleInDetection[0].tag)) > -1){
+                chaseTarget = vision.peopleInDetection[0];
+                Debug.Log("Huh?" + vision.peopleInDetection[0].name);
                 return true;
             }
         }
+
         return false;
     }
     protected virtual void StepAnim()
@@ -275,7 +323,10 @@ public class Combatant : Berkeley
 		if (hitter.hitting && hitter.faction != faction && invincibleTimer < 0) {
 			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
 			TakeDamage(damage);
-            if (hitter.playerParty) Player.Instance.Engage(gameObject);
+            if (hitter.playerParty && !engaged){ 
+                Player.Instance.Engage(gameObject);
+                engaged = true;
+            }
 
             chaseTarget = collided.transform.gameObject;
             if (routine!=Routine.Chasing && routine!=Routine.Attacking) SwitchRoutine(Routine.Chasing);
@@ -317,11 +368,11 @@ public class Combatant : Berkeley
     }
     public void Die() {
         if (life > 0) return;
+        
         GameObject deathImage = Instantiate(GameOverlord.Instance.deathPrefab, new Vector2(transform.position.x, transform.position.y),   Quaternion.Euler(0, 0, 0));
         deathImage.transform.parent = null;
-        if (Player.Instance.engagedMonster!=null &&
-            Player.Instance.engagedMonster.name == name) {
-            Player.Instance.engagementTimer = 0;
+        if (Player.Instance.engagedMonster.Count > 0) {
+            Player.Instance.Unengage(gameObject);
         }
         for(int i = 0; i <drops.Length; i++){
             DropLoot(drops[i]);

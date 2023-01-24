@@ -395,9 +395,6 @@ public class FriendlyChar {
     public float stamina;
     public float mana;
 
-    public float invincibilityTime = 0.3f;
-    public float invincibleTimer;
-
     public int level = 0;
     public int experience = 0;
     public int experienceToFirstLevel = 10;

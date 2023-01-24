@@ -85,6 +85,8 @@ public class BonusChooser : MonoBehaviour
             if (pool[opt3].minLvl > upee.level) opt3 = -1;
         }
         // populate UI
+        transform.Find("mask/Image/name").GetComponent<TextMeshProUGUI>().text = upee.name;
+
         Transform panel1 = transform.Find("mask/BonusOption1");
         panel1.Find("name").GetComponent<TextMeshProUGUI>().text = pool[opt1].name;
         panel1.Find("description").GetComponent<TextMeshProUGUI>().text = pool[opt1].description;

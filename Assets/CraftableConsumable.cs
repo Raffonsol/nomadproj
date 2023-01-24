@@ -8,6 +8,7 @@ public class CraftableConsumable : MonoBehaviour
 {
     private float checkTimer = 0f;
     public int showingItemId;
+    public int produceQuantity = 5;
     public Sprite partNeeded1;
     public Sprite partNeeded2;
     private Consumable showingItem;
@@ -76,7 +77,10 @@ public class CraftableConsumable : MonoBehaviour
         if (part1Owned && part2Owned) {
             Player.Instance.RemoveItem(ItemType.Part, part1Id);
             Player.Instance.RemoveItem(ItemType.Part, part2Id);
-            Player.Instance.AddConsumable(showingItemId);
+            for(int i = 0; i <produceQuantity; i++){
+                Player.Instance.AddConsumable(showingItemId);
+            }
+            
             if (!multiple)UpdateUI();
             return true;
         }

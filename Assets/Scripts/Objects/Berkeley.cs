@@ -22,18 +22,25 @@ public class Berkeley : MonoBehaviour
         if (Vector3.Distance(transform.position, Camera.main.transform.position) > disappearDistance) {
             Destroy(gameObject);
         }
-        if (checkTimer > 0) 
-        checkTimer -= Time.deltaTime;
-        else {
-            Check();
-        }
+        // if (checkTimer > 0) 
+        // checkTimer -= Time.deltaTime;
+        // else {
+        //     Check();
+        // }
     }
 
     void Check() {
         checkTimer = 3f;
-        if (Physics2D.OverlapCircle(transform.position, size, unMatchable) && 
-            Physics2D.OverlapCircle(transform.position, size, unMatchable).gameObject.name != gameObject.name){
+        Collider2D potentialHit = Physics2D.OverlapCircle(transform.position, size, unMatchable);
+
+        if (potentialHit && potentialHit.gameObject.name != gameObject.name){
+            Debug.Log("destroy overlap " + Physics2D.OverlapCircle(transform.position, size, unMatchable).gameObject.name);
+           if (potentialHit.gameObject.tag == "Rsrc") {
+                // we don't want trees destroying all the structures, so if its a rsrc, destroy the rsrc instead
+                Destroy(potentialHit.gameObject);
+           } else {
                 Destroy(gameObject);
+           }
         }
     
     }

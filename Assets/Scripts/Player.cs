@@ -21,7 +21,7 @@ public class Player : MonoBehaviour
 
     public float carryingWeight;
 
-    public GameObject engagedMonster;
+    public List<GameObject> engagedMonster = new List<GameObject>();
     private float engagementTime = 6f;
     public float engagementTimer;
 
@@ -62,7 +62,7 @@ public class Player : MonoBehaviour
         if (characters.Count > 0) {
             characters[0].controller.BecomeLeader();
         } else {
-            // TODO: Gameover
+            GameOverlord.Instance.GameOver();
         }
     }
     public void GainExperience(int exp) {
@@ -97,16 +97,10 @@ public class Player : MonoBehaviour
     }
     void Update()
     {
-        for(int i = 0; i <characters.Count; i++){
-            if (characters[i].invincibleTimer >= 0) {
-                characters[i].invincibleTimer -= Time.deltaTime;
-            }
-        }
-        
         
         if (engagementTimer > 0) {
             engagementTimer -= Time.deltaTime;
-        } else engagedMonster = null;
+        } else engagedMonster = new List<GameObject>();
     }
     public void CalculateNextLevel()
     {
@@ -114,7 +108,6 @@ public class Player : MonoBehaviour
     }
     public void ResetStats(FriendlyChar person)
     {
-        person.invincibleTimer = activePerson.invincibilityTime;
         person.life = activePerson.stats[0].value;
         person.stamina = activePerson.stats[1].value;
         person.mana = activePerson.stats[2].value;
@@ -318,21 +311,6 @@ public class Player : MonoBehaviour
 
         return dmg;
     }
-    public void TakeDamage(float damage, int tarId = -1) {
-        if (tarId == -1) tarId = activeCharId;
-        int index = Array.FindIndex(characters.ToArray(), c => c.id == tarId);
-        FriendlyChar person = characters[index];
-        if (person.invincibleTimer < 0) {
-            // TODO: localize [12 = armor]
-            float minDmg = damage - person.stats[12].value;
-            if (minDmg < 0) minDmg = 0;
-            person.life -= UnityEngine.Random.Range(minDmg,damage);
-            person.invincibleTimer = person.invincibilityTime; 
-            GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, person.controller.gameObject.transform);
-            DamageText.GetComponent<DamageText>().textToDisplay = damage.ToString("0.00");
-        }
-        
-    }
     public void PickupItem(ItemType itemType, int itemId)
     {   
         // carryingItems.Concat(new int[] { itemId }).ToArray();
@@ -444,8 +422,14 @@ public class Player : MonoBehaviour
 
 
     public void Engage(GameObject enemy) {
-        engagedMonster = enemy;
+        engagedMonster.Add(enemy);
+        Debug.Log("add " + engagedMonster.Count);
         engagementTimer = engagementTime;
+    }
+    public void Unengage(GameObject enemy) {
+        Debug.Log("Remove " + engagedMonster.Count);
+        engagedMonster.Remove(enemy);
+        if (engagedMonster.Count < 1) engagementTimer = 0;
     }
     public List<Consumable> GetConsumablesByType(ConsumableType type) {
         List<Consumable> list = new List<Consumable>();
@@ -500,8 +484,12 @@ public class Player : MonoBehaviour
         // Settings on GameObject
         neutral.tag = "Character";
         neutral.name = neutralScript.name;
+        GameObject nameplate = Instantiate(GameOverlord.Instance.namePlate);
+        nameplate.transform.parent = neutral.transform;
+        nameplate.transform.localPosition = new Vector2(0.43f, 0);
 
         neutral.GetComponent<Berkeley>().enabled = false;
+        Destroy(neutral.transform.Find("Vision").gameObject);
         neutralScript.enabled = false;
 
         UIManager.Instance.CheckAutoEquips();
@@ -531,6 +519,7 @@ public class Player : MonoBehaviour
             break;
             case (BonusType.Loot):
                 for(int i = 0; i <bonus.items.Length; i++){
+                    if (UnityEngine.Random.Range(0,2) == 1) // 50-50 chance
                     PickupItem(bonus.items[i]);
                 }
                 

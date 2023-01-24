@@ -78,6 +78,7 @@ public class CraftablePart : MonoBehaviour
             Player.Instance.RemoveItem(ItemType.Part, part2Id);
             Player.Instance.AddPart(showingItemId);
             if (!multiple)UpdateUI();
+            UIManager.Instance.AutoEquipWeapons();
             return true;
         }
         return false;

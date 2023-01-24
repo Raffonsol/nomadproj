@@ -6,13 +6,16 @@ using System;
 public class GameOverlord : MonoBehaviour
 {
     public static GameOverlord Instance { get; private set; }
+    public bool gameOver = false;
     public GameObject damagePrefab;
     public GameObject itemDropPrefab;
     public GameObject deathPrefab;
+    public GameObject namePlate;
     public List<GameObject> nearbyMonsters;
     public Sprite maleChest;
     public Sprite femaleChest;
     public List<CurrentCharStat> defaultCharacterStats;
+    public int progress = 0;
 
     private string[] excludeTags = new string[]{"Character", "Monster", "Hitbox"};
 
@@ -32,29 +35,49 @@ public class GameOverlord : MonoBehaviour
     {
         
         // Player.Instance.AddPart(900001);
-        Player.Instance.AddEquipment(1);
-        Player.Instance.AddEquipment(1);
-        Player.Instance.AddEquipment(2);
-        Player.Instance.AddEquipment(3);
-        Player.Instance.AddEquipment(3);
-        Player.Instance.AddEquipment(4);
-        Player.Instance.AddEquipment(4);
-        Player.Instance.AddEquipment(5);
-        Player.Instance.AddEquipment(5);
-        Player.Instance.AddPart(900000);
-        Player.Instance.AddPart(900002);
-        Player.Instance.AddPart(900003);
-        Player.Instance.AddPart(900001);
-        Player.Instance.AddPart(900000);
-        Player.Instance.AddPart(900004);
-        Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);
+       
         // Player.Instance.AddPart(900002);
         // Player.Instance.AddPart(900003);
         
     }
     void Update() {
+        if (Input.GetKeyDown(KeyCode.I)) {
+            UIManager.Instance.OpenMenu(Menu.Inventory);
+            UIManager.Instance.SetOpenTab(Tab.Armor);
+        }
+        if (Input.GetKeyDown(KeyCode.Tab)) {
+            UIManager.Instance.OpenMenu(Menu.Inventory);
+            UIManager.Instance.SetOpenTab(Tab.Weapons);
+        }
+        if (Input.GetKeyDown(KeyCode.C)) {
+            UIManager.Instance.OpenMenu(Menu.Inventory);
+            UIManager.Instance.SetOpenTab(Tab.Crafting);
+        }
+        if (Input.GetKeyDown(KeyCode.P)) {
+            UIManager.Instance.OpenMenu(Menu.Inventory);
+            UIManager.Instance.SetOpenTab(Tab.Skills);
+        }
+        if (Input.GetKeyDown(KeyCode.Escape)) {
+            UIManager.Instance.OpenMenu(Menu.System);
+        }
         if (Input.GetKeyDown(KeyCode.L)) {
             Player.Instance.GainExperience(20);
+             Player.Instance.AddEquipment(1);
+            Player.Instance.AddEquipment(1);
+            Player.Instance.AddEquipment(2);
+            Player.Instance.AddEquipment(3);
+            Player.Instance.AddEquipment(3);
+            Player.Instance.AddEquipment(4);
+            Player.Instance.AddEquipment(4);
+            Player.Instance.AddEquipment(5);
+            Player.Instance.AddEquipment(5);
+            Player.Instance.AddPart(900000);
+            Player.Instance.AddPart(900002);
+            Player.Instance.AddPart(900003);
+            Player.Instance.AddPart(900001);
+            Player.Instance.AddPart(900000);
+            Player.Instance.AddPart(900004);
+            Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);
         }
     }
     public Vector2 Pathfind(Vector2 from, Vector2 target, bool capDist = true) {
@@ -137,5 +160,9 @@ public class GameOverlord : MonoBehaviour
       public float AngleFromVector2(Vector2 v)
      {
          return Mathf.Rad2Deg *Mathf.Atan2(v.x, v.y);
+     }
+     public void GameOver() {
+        gameOver = true;
+        // Save system catches tihs
      }
 }

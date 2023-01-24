@@ -35,6 +35,9 @@ public class WeaponGraphicsUpdater
                 partObj.transform.localPosition = newPartObj.transform.localPosition;
             } catch (NullReferenceException) {
                 // if couldnt find part then we need to instantiate it
+                
+                Debug.Log("Instantiating " + newPartObj.name);
+                Debug.Log("On wea pon " + weapObj.name);
                 GameObject.Instantiate(newPartObj, weapObj.transform);
             }
             

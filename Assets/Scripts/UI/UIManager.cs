@@ -85,6 +85,11 @@ public class UIManager : MonoBehaviour
         openTab = tab;
         tabRefresh = true;
     }
+    // makes sure menu is open on the selected tab no matter what
+    public void ShowTab(Tab tab) {
+        openMenu = Menu.Inventory;
+        SetOpenTab(tab);
+    }
 
     //Returns 'true' if we touched or hovering on Unity UI element.
     public bool IsPointerOverUIElement()
