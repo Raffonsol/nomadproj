@@ -7,7 +7,6 @@ using UnityEngine;
 
 public class Neutral : Combatant
 {
-
     public string name;
     [SerializeField]
     public Appearance appearance;
