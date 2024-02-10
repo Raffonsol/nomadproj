@@ -4,6 +4,8 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using System.Linq;
 using System;
+using UnityEngine.UI;
+using TMPro;
 
 public enum Menu
 {
@@ -52,6 +54,14 @@ public class UIManager : MonoBehaviour
     public int TrasnparentLayer;
 
     public List<int> lvlUpQueue;
+
+    public GameObject directionArrow;
+    public List<Vector2> villageLocations;
+
+    public GameObject itemAddedPanel;
+    public float newItemTimer=0f;
+    public Sprite recruitedIcon;
+
     // Singleton stuff
     private void Awake() 
     { 
@@ -63,12 +73,33 @@ public class UIManager : MonoBehaviour
         { 
             Instance = this; 
         } 
+        villageLocations = new List<Vector2>();
     }
     void Start()
     {
         lvlUpQueue = new List<int>();
         UILayer = LayerMask.NameToLayer("UI");
         TrasnparentLayer = LayerMask.NameToLayer("TransparentFX");
+        itemAddedPanel.SetActive(false);
+    }
+    void FixedUpdate()
+    {   
+        Vector2 nextPoint = villageLocations[0];
+        Vector2 moveDirection = nextPoint - (Vector2)Camera.main.transform.position;
+        moveDirection.Normalize();
+        // transform.position = Vector3.Lerp (Camera.main.transform.position, target, runSpeed * Time.deltaTime);
+
+        float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg + 80f;
+        directionArrow.transform.rotation = Quaternion.Slerp (directionArrow.transform.rotation, 
+                                        Quaternion.Euler (0, 0, targetAngle + 180), 
+                                        3f * Time.deltaTime);
+
+        if (newItemTimer > 0) {
+            newItemTimer-=Time.deltaTime;
+            if (newItemTimer <= 0) {
+                itemAddedPanel.SetActive(false);
+            }
+        }
     }
 
     public void OpenMenu(Menu menu)
@@ -278,5 +309,14 @@ public class UIManager : MonoBehaviour
         if (somethingHappened && count <4){ 
             AutoEquipWeapons(++count);
         }
+    }
+    public void ShowItemPickedUp(string itemName, Sprite icon) {
+        ShowIndicator( "+ 1 "+itemName, icon);
+    }
+    public void ShowIndicator(string text, Sprite icon) {
+        itemAddedPanel.SetActive(true);
+        itemAddedPanel.transform.Find("text").GetComponent<TextMeshProUGUI>().text = text;
+        itemAddedPanel.transform.Find("icon").GetComponent<Image>().sprite = icon;
+        newItemTimer = 5f;
     }
 }

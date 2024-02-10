@@ -19,6 +19,7 @@ public class CameraController : MonoBehaviour {
 
 	void Update () 
 	{
+		if (following == null) return;
 		newPosition = following.transform.position;
 		newPosition.z = -10;
 		transform.position = newPosition;

@@ -83,6 +83,7 @@ public enum ConsumableType
     Bolt,
     Scroll,
     Food,
+    Rock,
 }
 public enum CharacterStat
 {
@@ -127,6 +128,8 @@ public class Projectile
     public float minDamage;
     public float maxDamage;
     public float maxDistance;
+    public float knockBack;
+    public float maxLife = 60f;
 }
 
 [Serializable]
@@ -175,16 +178,6 @@ public class Weapon : Item
     public ConsumableType ammo;
 }
 [Serializable]
-public class Part : Item
-{
-    public FittablePart fittablePart;
-    public PlatingMaterial material;
-    public PartLooks[] partLooks;
-    public PowerUp[] statEffects;
-    public FittablePart[] partsNeeded;
-}
-
-[Serializable]
 public class Consumable : Item
 {
     public PowerUp[] modifiers;
@@ -194,6 +187,16 @@ public class Consumable : Item
     public Projectile projectileSettings;
     public FittablePart[] partsNeeded;
 }
+[Serializable]
+public class Part : Consumable
+{
+    public FittablePart fittablePart;
+    public PlatingMaterial material;
+    public PartLooks[] partLooks;
+    public PowerUp[] statEffects;
+}
+
+
 [Serializable]
 public class Material : Item
 {
@@ -473,6 +476,23 @@ public class NamePart
     public bool worksForMen;
     public bool worksForWomen;
 }
+// --------------- skills  -----------------
+[Serializable]
+public class MonsterSkill {
+	public Sprite channeling;
+    public Sprite impact;
+
+    public float cooldown;
+    public float cooldownTimer;
+    public float channelingTime;
+    public float impactTime;
+    
+    public float knockBack;
+    public float damageBase;
+    public GameObject impactCollision;
+
+}
+
 //  ----------------------- Caravan ----
 
 public class Horse {

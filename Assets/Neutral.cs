@@ -69,6 +69,8 @@ public class Neutral : Combatant
         // Debug.Log(hovering, Input.GetButtonUp("Fire1"));
 		if (Input.GetButtonUp("Fire1") && hovering) {
             Debug.Log("convert");
+            // 6 = hardcoded npc spawnwable index !!!!!!
+            BerkeleyManager.Instance.spawnables[6].currentQuantity--;
             Player.Instance.ConvertNeutral(gameObject);
 		}
 	}

@@ -45,6 +45,9 @@ public class GameLib : MonoBehaviour
         { 
             Instance = this; 
         } 
+        // List<Weapon> weapoi = new List<Weapon>(allWeapons);
+        // weapoi.Add(weapoi[1]);
+        // allWeapons = weapoi.ToArray();
     }
     public T GetItemById<T>(int id) {
         switch (typeof(T)){

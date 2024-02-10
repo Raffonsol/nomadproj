@@ -14,6 +14,8 @@ public class Monster : Combatant
     public float attackSpeed = 1f;
     public int projectileId;
 
+    public MonsterSkill[] skills;
+
     public Color aboutToAttackColor;
 
     [HideInInspector]
@@ -41,7 +43,31 @@ public class Monster : Combatant
         SwitchRoutine(Routine.Patrolling);
         ResetPatrol();
     }
-
+    protected override void RunSkillTimers()
+    {
+        for (int i = 0; i < skills.Length; i++)
+        {
+            if (skills[i].cooldownTimer>0) {
+                skills[i].cooldownTimer-=Time.deltaTime;
+            }
+        }
+    }
+    protected override bool CheckSkills()
+    {
+        bool oneSkillFound = false;
+        for (int i = 0; i < skills.Length; i++)
+        {
+            if (skills[i].cooldownTimer<=0.03f) {
+                oneSkillFound=true;
+                skillCastId = i;
+                skillChannelingTimer = skills[i].channelingTime;
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = skills[i].channeling;
+                SwitchRoutine(Routine.UsingSkill);
+                break;
+            }
+        }
+        return oneSkillFound;
+    }
     
     protected override void Attack()
     {
@@ -103,7 +129,55 @@ public class Monster : Combatant
         }
 
     }
-    
+    protected override void SkillCast()
+    {
+        if  (skillChannelingTimer > 0) {
+            skillChannelingTimer -= Time.deltaTime;
+        } else {
+            if (skillInImpact) {
+                if (skillImpactingTimer > 0) {
+                    skillImpactingTimer-= Time.deltaTime;
+                } else {
+                    //Impact end
+                    skillInImpact = false;
+                    transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
+               
+                    // stop damaging;
+                    // damagingOnTouch = false;
+                    // hitScript.hitting = false;
+                    // hitBox.isTrigger = true;
+
+                    skills[skillCastId].cooldownTimer = skills[skillCastId].cooldown;
+                    SwitchRoutine(Routine.Chasing);
+                }
+            } else {
+                // impact start
+                skillInImpact = true;
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = skills[skillCastId].impact;
+                skillImpactingTimer = skills[skillCastId].impactTime;
+                
+				 // start damaging;
+                // damagingOnTouch = true;
+                // hitScript.hitting = true;
+                // hitBox.isTrigger = false;
+
+                //create impact collision
+                GameObject aoe = Instantiate(skills[skillCastId].impactCollision,transform.position, transform.rotation);
+                Projectile newSettings = new Projectile();
+                newSettings.maxLife = 0.4f;
+                newSettings.minDamage = skills[skillCastId].damageBase;
+                newSettings.maxDamage = skills[skillCastId].damageBase*1.5f;
+                newSettings.knockBack = skills[skillCastId].knockBack;
+                newSettings.speed=0;
+                aoe.gameObject.GetComponent<ProjectileItem>().projectileSettings = newSettings;
+                aoe.gameObject.GetComponent<ProjectileItem>().faction = faction;
+                aoe.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
+				aoe.gameObject.GetComponent<ProjectileItem>().playerParty = false;
+                aoe.gameObject.GetComponent<ProjectileItem>().Go();
+            }
+        }
+
+    }
     protected override void StepAnim()
 	{
 		if (moveTimer1 > 0) {

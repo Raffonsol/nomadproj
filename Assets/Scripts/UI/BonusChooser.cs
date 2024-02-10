@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System.Linq;
+using System;
 using TMPro;
 
 public class BonusChooser : MonoBehaviour
@@ -51,12 +52,19 @@ public class BonusChooser : MonoBehaviour
     void Show() {
         if (showing) return;
         showing = true;
-        transform.Find("mask").gameObject.SetActive(true);
-        awaitingChoice = true;
         
         // find top of lvl up que
         List<int> queue = UIManager.Instance.lvlUpQueue; 
-        FriendlyChar upee = Player.Instance.GetCharById(queue[0]);
+        FriendlyChar upee;
+        try {
+            upee = Player.Instance.GetCharById(queue[0]);
+        } catch (ArgumentOutOfRangeException) {
+            //probably died, oh well
+            return;
+        }
+        // enabling it after all is good
+        transform.Find("mask").gameObject.SetActive(true);
+        awaitingChoice = true;
 
         // determine pool to select from
         List<Bonus> pool = new List<Bonus>();

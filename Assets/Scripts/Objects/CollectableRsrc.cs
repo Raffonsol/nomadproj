@@ -82,7 +82,7 @@ public class CollectableRsrc : Berkeley
             for(int i = 0; i <remainingDrops.Count; i++){
                 DropLoot(remainingDrops[i]);
             }
-            Destroy(gameObject);
+            GetComponent<Berkeley>().DestroyAndRecount();
         }
         
         

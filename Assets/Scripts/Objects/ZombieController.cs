@@ -52,6 +52,12 @@ public class ZombieController : MonoBehaviour {
 	private GameObject shadow;
 	private DamageType attackDamageType;
 
+	private float regenInterval = 1f;
+	private float regenTimer = 1f;
+
+    private Vector2 knockBackLandPosition;
+	private bool isBeingTossed = false;
+
 	public void DoStart()
 	{
 		Player.Instance.EquipWeapon(100000, new List<Part>(), charId);
@@ -167,6 +173,7 @@ public class ZombieController : MonoBehaviour {
 		Die();
 		Regen();
 		CountInvincibleTimer();
+		BeTossed();
 	}
 	void CountInvincibleTimer() {
 		if (invincibleTimer >= 0) {
@@ -199,13 +206,27 @@ public class ZombieController : MonoBehaviour {
 				Player.Instance.GetCharById(charId).hitbox.playerParty = true;
 				hitBox.isTrigger = false;
 			} else if (attackDamageType == DamageType.Ranged) {
-				if (Player.Instance.GetConsumablesByType(weapon.ammo).Count > 0) {
-					// turn towards mouse
-					Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-					moveDirection = moveTowards - (Vector2)transform.position;
-					moveDirection.Normalize();
-					float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-					transform.rotation = Quaternion.Euler (0, 0, targetAngle + 180);
+				if (weapon.ammo == ConsumableType.Rock && Player.Instance.GetPartsByType(weapon.ammo).Count > 0) {
+					
+					Part item = Player.Instance.parts.First( s => s.consumableType == weapon.ammo);
+					int itemId = item.id;
+					Player.Instance.RemovePart(item.id);
+					// Create arrow projectile and give it damage
+					// STATSET
+					GameObject arrow = Instantiate(item.visual,transform.position, transform.rotation);
+					Projectile newSettings = item.projectileSettings;
+					float dmg = Player.Instance.CalculateDamage(self.id);
+					newSettings.minDamage = dmg;
+					newSettings.maxDamage = dmg * 1.5f;
+					arrow.gameObject.AddComponent<ProjectileItem>();
+					arrow.gameObject.GetComponent<ProjectileItem>().projectileSettings = item.projectileSettings;
+					arrow.gameObject.GetComponent<ProjectileItem>().faction = 0;
+					arrow.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
+					arrow.gameObject.GetComponent<ProjectileItem>().playerParty = true;
+					arrow.gameObject.GetComponent<ProjectileItem>().consumableId = itemId;
+					arrow.gameObject.GetComponent<ProjectileItem>().Go();
+				}
+				else if (Player.Instance.GetConsumablesByType(weapon.ammo).Count > 0) {
 					
 					Consumable item = Player.Instance.consumables.First( s => s.consumableType == weapon.ammo);
 					int itemId = item.id;
@@ -230,7 +251,15 @@ public class ZombieController : MonoBehaviour {
 						// TODO autoequip
 						// TODO make it not equip bow if there are no arrows
 					}
+					return;
 				}
+				// turn towards mouse
+				Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+				moveDirection = moveTowards - (Vector2)transform.position;
+				moveDirection.Normalize();
+				float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
+				transform.rotation = Quaternion.Euler (0, 0, targetAngle + 180);
+					
 			}
 		}
 	}
@@ -252,6 +281,7 @@ public class ZombieController : MonoBehaviour {
 	}
 	void Walk()
 	{
+		if (isBeingTossed) return;
 		if (boredTimer > 0)boredTimer -=Time.deltaTime;
 		// if (!leader) {
 		// 	distToMain.x = transform.position.x - Player.Instance.controller.gameObject.transform.position.x;
@@ -398,6 +428,7 @@ public class ZombieController : MonoBehaviour {
 		if (hitter.hitting && hitter.faction != 0  && invincibleTimer <= 0) {
 			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
 			TakeDamage(damage);
+            KnockedBack(target, hitter.knockBack);
 		}
 	}
 	void Shot(Collider2D collided)
@@ -407,6 +438,7 @@ public class ZombieController : MonoBehaviour {
 		if (hitter.faction != 0  && invincibleTimer <= 0) {
 			float damage = UnityEngine.Random.Range(hitter.projectileSettings.minDamage, hitter.projectileSettings.maxDamage);
 			TakeDamage(damage);
+            KnockedBack(target, hitter.projectileSettings.knockBack);
 		}
 	}
 
@@ -485,6 +517,7 @@ public class ZombieController : MonoBehaviour {
 		float speed = leader ? moveSpeed : moveSpeed + 0.1f*(float)(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x));
 		if (((tempPersonality != Personality.Coward && Player.Instance.engagementTimer > 0.3f) || Player.Instance.engagementTimer > 3f) && Player.Instance.engagedMonster.Count > 0) {
 			GameObject engage = Player.Instance.engagedMonster[0];
+			if (engage == null) return;
 			Vector2 threateningTar = engage.transform.position;
 			nextPoint = GameOverlord.Instance.Pathfind(currentPosition, threateningTar);
 			moveDirection = nextPoint - currentPosition;
@@ -571,12 +604,11 @@ public class ZombieController : MonoBehaviour {
 			}
 		}
 	}
-	float regenTimer = 5f;
 	void Regen() {
 		if (regenTimer > 0) {
 			regenTimer -=Time.deltaTime;
 		} else {
-			regenTimer = 5f;
+			regenTimer = regenInterval;
 			// stat 9 is regen, so healing that much
 			Heal(self.stats[9].value);
 		}
@@ -588,5 +620,18 @@ public class ZombieController : MonoBehaviour {
 			self.life = self.stats[0].value;
 		}
 	}
-
+	void KnockedBack(GameObject source, float amount) {
+        if (amount <0.1f) return;
+        knockBackLandPosition = Vector3.MoveTowards(transform.position,source.transform.position, amount*-2f);
+        isBeingTossed = true;
+        // TODO: Implemenent knockback
+    }
+	void BeTossed() {
+		if (!isBeingTossed) return;
+		if (Vector3.Distance(transform.position, knockBackLandPosition) > 0.2f) {
+			transform.position = Vector3.Lerp (transform.position, knockBackLandPosition, 3f * Time.deltaTime);
+		} else {
+			isBeingTossed = false;
+		}
+	}
 }

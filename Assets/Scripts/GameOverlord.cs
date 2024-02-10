@@ -34,10 +34,10 @@ public class GameOverlord : MonoBehaviour
     void Start()
     {
         
-        // Player.Instance.AddPart(900001);
+        // Player.Instance.AddPart(900000);
        
         // Player.Instance.AddPart(900002);
-        // Player.Instance.AddPart(900003);
+        // Player.Instance.AddPart(900007);
         
     }
     void Update() {

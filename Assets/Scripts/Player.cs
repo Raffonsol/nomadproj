@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using System.Linq;
+using TMPro;
 
 public class Player : MonoBehaviour
 {
@@ -139,9 +140,7 @@ public class Player : MonoBehaviour
         for(int i = 0; i <equipment.modifiers.Length; i++){
             person.stats[(int)equipment.modifiers[i].affectedStat].value += equipment.modifiers[i].offset;
         }
-        
-        
- 
+        ApplyStats(charId);
     }
     public void Unequip(Slot slot, bool left = false) {
         GameObject bod = controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(slot, left)).gameObject;
@@ -209,6 +208,7 @@ public class Player : MonoBehaviour
         for(int i = 0; i <equipment.modifiers.Length; i++){
             activePerson.stats[(int)equipment.modifiers[i].affectedStat].value -= equipment.modifiers[i].offset;
         }
+        ApplyStats(activePerson.id);
     }
     public void EquipWeapon(int itemId, List<Part> partsUsed, int charId = -1)
     {
@@ -249,16 +249,16 @@ public class Player : MonoBehaviour
         lHand.transform.localRotation = Quaternion.Euler(0, 0, value.instance.leftHandPos.z);
         // hide hidden
 
-        // calculate damage
-        float dmg = CalculateDamage(person.id);
-
-        // settings on graphics
-        if (value.damageType == DamageType.Melee) {
-            person.hitbox = newWeapon.transform.Find(value.collidablePart.ToString()).GetComponent<HitBox>();
-            person.hitbox.damageRsrcType = value.damageRsrcType;
-            person.hitbox.damageMin = dmg;
-            person.hitbox.damageMax = dmg * 1.5f;
+        // calculate stats
+        for (int i = 0; i < partsUsed.Count; i++)
+        {
+            for (int j = 0; j < person.equipped.partsBeingUsed[i].modifiers.Length; j++)
+            {
+                PowerUp mod = person.equipped.partsBeingUsed[i].modifiers[j];
+                person.stats[(int)mod.affectedStat].value += mod.offset;
+            }
         }
+        ApplyStats(charId);
     }
     // Adds parts back to inventory and equips disarmed
     public void UnequipWeapon(int charId = -1) {
@@ -266,8 +266,33 @@ public class Player : MonoBehaviour
         FriendlyChar person = GetCharById(charId);
         for(int i = 0; i <person.equipped.partsBeingUsed.Count; i++){
             AddPart(person.equipped.partsBeingUsed[i].id);
+            for (int j = 0; j < person.equipped.partsBeingUsed[i].modifiers.Length; j++)
+            {
+                PowerUp mod = person.equipped.partsBeingUsed[i].modifiers[j];
+                person.stats[(int)mod.affectedStat].value -= mod.offset;
+            }
         }
         EquipWeapon(100000, new List<Part>(), charId);
+        ApplyStats(charId);
+    }
+    public void ApplyStats(int charId = -1) {
+        if (charId == -1) charId = activeCharId;
+        FriendlyChar person = GetCharById(charId);
+        Weapon value = person.equipped.primaryWeapon;
+
+        // damage
+        float dmg = CalculateDamage(person.id);
+
+        // settings on graphics
+        if (value.damageType == DamageType.Melee) {
+            person.hitbox = value.visual.transform.Find(value.collidablePart.ToString()).GetComponent<HitBox>();
+            person.hitbox.damageRsrcType = value.damageRsrcType;
+            person.hitbox.damageMin = dmg;
+            person.hitbox.damageMax = dmg * 1.5f;
+            // CHEAT (this is supposed to only go on when hitting but that is not whats happening)
+            person.hitbox.hitting=true;
+        }
+
     }
     public float CalculateDamage(int charId = -1) {
         if (charId == -1) charId = activeCharId;
@@ -324,7 +349,6 @@ public class Player : MonoBehaviour
                 break;
             case ItemType.Part:
                 AddPart(itemId);
-                UIManager.Instance.AutoEquipWeapons();
                 break;
 
         }
@@ -340,7 +364,6 @@ public class Player : MonoBehaviour
             AddWeapon(itemId);
         } else if(Int32.Parse(itemId.ToString().Substring(0,1)) == 9) {
             AddPart(itemId);
-            UIManager.Instance.AutoEquipWeapons();
         }
     }
     public void RemoveItem(ItemType itemType, int itemId) {
@@ -375,6 +398,7 @@ public class Player : MonoBehaviour
         carryingWeight += part.weight;
         parts.Add(part);
         UIManager.Instance.tabRefresh = true;
+        UIManager.Instance.ShowItemPickedUp(part.name, part.icon);
     }
     public void AddConsumable(int id)
     {
@@ -423,11 +447,11 @@ public class Player : MonoBehaviour
 
     public void Engage(GameObject enemy) {
         engagedMonster.Add(enemy);
-        Debug.Log("add " + engagedMonster.Count);
+        // Debug.Log("add " + engagedMonster.Count);
         engagementTimer = engagementTime;
     }
     public void Unengage(GameObject enemy) {
-        Debug.Log("Remove " + engagedMonster.Count);
+        // Debug.Log("Remove " + engagedMonster.Count);
         engagedMonster.Remove(enemy);
         if (engagedMonster.Count < 1) engagementTimer = 0;
     }
@@ -437,6 +461,17 @@ public class Player : MonoBehaviour
         for(int i = 0; i <consumables.Count; i++){
             if (consumables[i].consumableType == type) {
                 list.Add(consumables[i]);
+            }
+        }
+        
+        return list;
+    }
+    public List<Part> GetPartsByType(ConsumableType type) {
+        List<Part> list = new List<Part>();
+        
+        for(int i = 0; i <parts.Count; i++){
+            if (parts[i].consumableType == type) {
+                list.Add(parts[i]);
             }
         }
         
@@ -488,11 +523,11 @@ public class Player : MonoBehaviour
         nameplate.transform.parent = neutral.transform;
         nameplate.transform.localPosition = new Vector2(0.43f, 0);
 
-        neutral.GetComponent<Berkeley>().enabled = false;
         Destroy(neutral.transform.Find("Vision").gameObject);
-        neutralScript.enabled = false;
+        Destroy(neutralScript);
 
         UIManager.Instance.CheckAutoEquips();
+        UIManager.Instance.ShowIndicator(neutral.name+ " recruited!", UIManager.Instance.recruitedIcon);
     }
     // this ALSO REMOVES THEM
     public List<Part> FindNeededParts(FittablePart[] partTypes) {

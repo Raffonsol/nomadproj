@@ -86,7 +86,6 @@ public class WeaponCrafting : MonoBehaviour
                     break;
                 }
             }
-            Player.Instance.PickupItem(ItemType.Part, item.id);
 
             CheckWeaponsForMatchingParts();
             UpdateTemplateImage();
@@ -95,6 +94,7 @@ public class WeaponCrafting : MonoBehaviour
             } else { 
                 Player.Instance.EquipWeapon(100000, itemsPlaced);
             }
+            Player.Instance.PickupItem(ItemType.Part, item.id);
         }
     }
     void UpdateTemplateImage() {

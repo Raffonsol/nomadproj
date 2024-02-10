@@ -21,10 +21,16 @@ public class Vision : MonoBehaviour
         if (collided.gameObject.CompareTag("Character")) {
             peopleInDetection.Add(collided.gameObject);
         }
+        if (collided.gameObject.CompareTag("Npc")) {
+            peopleInDetection.Add(collided.gameObject);
+        }
     }
     void OnTriggerExit2D(Collider2D collided)
     {
         if (collided.gameObject.CompareTag("Character")) {
+            peopleInDetection.Remove(collided.gameObject);
+        }
+        if (collided.gameObject.CompareTag("Npc")) {
             peopleInDetection.Remove(collided.gameObject);
         }
         

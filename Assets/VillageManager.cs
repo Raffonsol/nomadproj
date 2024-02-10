@@ -14,6 +14,8 @@ public class VillageManager : MonoBehaviour
 
     public GameObject neutralTemplate;
 
+    public int sceneLimit = 6;
+    public int scenesExisting = 0;
     public float villageCheckTime = 15f;
 
     private float checkTimer;
@@ -44,7 +46,7 @@ public class VillageManager : MonoBehaviour
              checkTimer -= Time.deltaTime;
         } else {
             checkTimer = villageCheckTime;
-            if (!BerkeleyManager.Instance.npcCapped) {
+            if (!BerkeleyManager.Instance.npcCapped && scenesExisting<sceneLimit) {
                 int spawnI = UnityEngine.Random.Range(0,scenes.Length);
                 SpawnScene(spawnI);
             }
@@ -83,6 +85,7 @@ public class VillageManager : MonoBehaviour
                     PreSceneOccupant occupant = occupants.First( s => s.type == availableTypes[i].type);
                     GameObject toSpawn = occupant.visual; 
 
+                    scenesExisting++;
                     Instantiate(toSpawn, new Vector2(x + availableRooms[j].row*workingScene.spacePerRoom, y+ availableRooms[j].col*workingScene.spacePerRoom), Quaternion.Euler(0,0,UnityEngine.Random.Range(0,360)));
 
                 }
