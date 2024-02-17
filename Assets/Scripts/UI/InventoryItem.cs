@@ -5,7 +5,7 @@ using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using TMPro;
 
-public class InventoryItem : EventTrigger 
+public class InventoryItem : EventTrigger, IPointerEnterHandler, IPointerExitHandler
 {
 
     public ItemType itemType;
@@ -13,6 +13,7 @@ public class InventoryItem : EventTrigger
     public Image icon;
     public int quantity;
     private bool dragging;
+    private string itemName;
     [HideInInspector]
     public Vector2 defaultPos;
     // Start is called before the first frame update
@@ -28,12 +29,15 @@ public class InventoryItem : EventTrigger
         switch (itemType) {
             case ItemType.Equipment:
                 icon.sprite = GameLib.Instance.GetEquipmentById(itemId).icon;
+                itemName=GameLib.Instance.GetEquipmentById(itemId).name;
                 break;
             case ItemType.Weapon:
                 icon.sprite = GameLib.Instance.GetWeaponById(itemId).icon;
+                itemName=GameLib.Instance.GetWeaponById(itemId).name;
                 break;
             case ItemType.Part:
                 icon.sprite = GameLib.Instance.GetPartById(itemId).icon;
+                itemName=GameLib.Instance.GetPartById(itemId).name;
                 break;
 
         }
@@ -80,5 +84,16 @@ public class InventoryItem : EventTrigger
         // Debug.Log(raysastResults[1].gameObject.name);
 
         
+    }
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        
+        UIManager.Instance.ShowSimpleToolTip(new Vector2(transform.position.x,transform.position.y*0.93f),itemName);
+        
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        UIManager.Instance.HideToolTips();
     }
 }

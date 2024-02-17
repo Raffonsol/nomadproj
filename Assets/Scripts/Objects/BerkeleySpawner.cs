@@ -29,8 +29,9 @@ public class BerkeleySpawner : MonoBehaviour
                 if (((spawnables[i].berkeleyType == BerkeleyType.Rsrc && !BerkeleyManager.Instance.rsrcCapped)
                   ||(spawnables[i].berkeleyType == BerkeleyType.Monster && !BerkeleyManager.Instance.monsterCapped)
                   ||(spawnables[i].berkeleyType == BerkeleyType.Npc && !BerkeleyManager.Instance.npcCapped))
-                  && spawnables[i].limit > spawnables[i].currentQuantity){
-                  spawnables[i].currentQuantity++;
+                  && spawnables[i].limit > spawnables[i].currentQuantity
+                  && Player.Instance.playerLevel >=  spawnables[i].minLevel
+                  ){
                   if (spawnables[i].berkeleyType == BerkeleyType.Npc) {
                     VillageManager.Instance.SpawnNpc(transform.position.x,transform.position.y);
                   } else {

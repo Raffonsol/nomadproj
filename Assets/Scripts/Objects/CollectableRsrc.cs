@@ -23,9 +23,10 @@ public class CollectableRsrc : Berkeley
     private List<Drop> remainingDrops;
 
     private Vector3 nPosition;
+    private bool hovering = false;
 
     // Start is called before the first frame update
-    void Start()
+    protected override void ContinuedStart()
     {
         remainingDrops = new List<Drop>(drops);
         currentLife = life;
@@ -36,9 +37,10 @@ public class CollectableRsrc : Berkeley
     }
 
     // Update is called once per frame
-    void FixedUpdate()
+    protected override void ContinuedUpdate()
     {
         Shake();
+        ListenForClick();
         if (invincibleTimer > 0)
         invincibleTimer -= Time.deltaTime;
     }
@@ -146,5 +148,23 @@ public class CollectableRsrc : Berkeley
             }
         }
 
+    }
+    
+    void OnMouseOver()
+    {
+		hovering = true;
+    }
+	void OnMouseExit()
+    {
+		hovering = false;
+    }
+    void ListenForClick(){
+        if (hovering && Input.GetKey(KeyCode.Mouse0)) {
+            ZombieController attacker = Player.Instance.activePerson.controller;
+            float distance = attacker.IsRanged() ?  300f: size;
+			if (Vector3.Distance(transform.position, attacker.gameObject.transform.position) < size){
+                attacker.TriggerSkill(1);
+            }
+		}
     }
 }

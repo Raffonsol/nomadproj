@@ -30,6 +30,8 @@ public class WeaponGraphicsUpdater
                 GameObject partObj = weapObj.transform.Find(partsUsed[i].fittablePart.ToString()).gameObject;
 
                 partObj.GetComponent<SpriteRenderer>().sprite = newPartObj.GetComponent<SpriteRenderer>().sprite;
+                if(partObj.GetComponent<PolygonCollider2D>()!=null && newPartObj.GetComponent<PolygonCollider2D>()!=null)
+                partObj.GetComponent<PolygonCollider2D>().points  = newPartObj.GetComponent<PolygonCollider2D>().points;
                 partObj.GetComponent<SpriteRenderer>().color = newPartObj.GetComponent<SpriteRenderer>().color;
                 partObj.transform.localScale = newPartObj.transform.localScale;
                 partObj.transform.localPosition = newPartObj.transform.localPosition;

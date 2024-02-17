@@ -2,6 +2,7 @@ using System.Collections;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEditor;
 using System.Linq;
 using TMPro;
@@ -21,6 +22,8 @@ public class Player : MonoBehaviour
     public List<Consumable> consumables;
 
     public float carryingWeight;
+    
+    public int playerLevel = 0;
 
     public List<GameObject> engagedMonster = new List<GameObject>();
     private float engagementTime = 6f;
@@ -91,10 +94,19 @@ public class Player : MonoBehaviour
         characters[ind].controller.Reset();
         GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, characters[ind].controller.transform);
         DamageText.GetComponent<DamageText>().textToDisplay = "^";
+
+        PlayerLevelProgression(ind);
         // TODO:  Play some fun animation here
 
         // trigger UI to show bonus prompt
         UIManager.Instance.lvlUpQueue.Add(characters[ind].id);
+
+        if (characters[ind].level == 1) {
+            if (characters[ind].skills==null)characters[ind].skills = new List<CharSkill>() ;
+            // weapon skill
+            characters[ind].skills.Add(GameLib.Instance.allCharSkills[0].Clone());
+        }
+        UIManager.Instance.UpdateSkillSquare();
     }
     void Update()
     {
@@ -214,7 +226,7 @@ public class Player : MonoBehaviour
     {
         if (charId == -1) charId = activeCharId;
         FriendlyChar person = GetCharById(charId);
-        Weapon value = GameLib.Instance.GetWeaponById(itemId);
+        Weapon value = GameLib.Instance.GetWeaponById(itemId).Clone();
 
         // settings
         if (person.equipped is null)        
@@ -237,6 +249,7 @@ public class Player : MonoBehaviour
         newWeapon.transform.localPosition = new Vector3(value.instance.weaponPos.x, value.instance.weaponPos.y, -9.3f);
         newWeapon.transform.localRotation =  Quaternion.Euler(0, 0, value.instance.weaponPos.z);
         person.controller.gameObject.GetComponent<ZombieController>().weaponObject = newWeapon;
+        person.equipped.primaryWeapon.visual = newWeapon;
         // -- Parts
         WeaponGraphicsUpdater.UpdateWeaponGraphic(value, partsUsed, newWeapon);
         // -- RightHand
@@ -248,6 +261,10 @@ public class Player : MonoBehaviour
         lHand.transform.localPosition = new Vector3(value.instance.leftHandPos.x, value.instance.leftHandPos.y, -0.2f);
         lHand.transform.localRotation = Quaternion.Euler(0, 0, value.instance.leftHandPos.z);
         // hide hidden
+
+        // Skill bar
+        if (activeCharId == person.id)
+		UIManager.Instance.UpdateSkillSquare();
 
         // calculate stats
         for (int i = 0; i < partsUsed.Count; i++)
@@ -292,6 +309,9 @@ public class Player : MonoBehaviour
             // CHEAT (this is supposed to only go on when hitting but that is not whats happening)
             person.hitbox.hitting=true;
         }
+        // 12 = armor stat
+        person.controller.armorDefense = person.stats[12].value;
+        person.controller.Reset();
 
     }
     public float CalculateDamage(int charId = -1) {
@@ -329,10 +349,8 @@ public class Player : MonoBehaviour
         }
         if (dmg == 0) dmg = 1;
         // TODO: add modifiers
-
         // STATSET
         person.stats[slot].value = (int)System.Math.Floor(dmg);
-        person.controller.Reset();
 
         return dmg;
     }
@@ -364,6 +382,8 @@ public class Player : MonoBehaviour
             AddWeapon(itemId);
         } else if(Int32.Parse(itemId.ToString().Substring(0,1)) == 9) {
             AddPart(itemId);
+        } else if(Int32.Parse(itemId.ToString().Substring(0,1)) == 8) {
+            AddConsumable(itemId);
         }
     }
     public void RemoveItem(ItemType itemType, int itemId) {
@@ -504,7 +524,7 @@ public class Player : MonoBehaviour
 
         // newFriend.weaponOnLoad = neutralScript.weapon.id;
         // newFriend.weaponOnLoadParts = neutralScript.partsUsed;
-
+        // GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == neutral.name ) );
         
         // settings on player script
         this.characters.Add(newFriend);
@@ -546,7 +566,10 @@ public class Player : MonoBehaviour
         return shoppingList;
     }
     public void ApplyBonus(int charId, Bonus bonus) {
-        int index = Array.FindIndex(characters.ToArray(), c => c.id == charId);        
+        int index = Array.FindIndex(characters.ToArray(), c => c.id == charId);   
+        if (index == -1) {
+            return;
+        }     
         characters[index].bonuses.Add(bonus);
         switch (bonus.bonusType) {
             case (BonusType.PowerUp):
@@ -570,5 +593,25 @@ public class Player : MonoBehaviour
             AddPart(character.equipped.partsBeingUsed[i].id);
         }
         character.equipped.partsBeingUsed = new List<Part>();
+    }
+    public void PlayerLevelProgression(int ind, bool limited=false) {
+        if (characters[ind].level > playerLevel) playerLevel++;
+        else return;
+
+        if (playerLevel == 1) {
+            BerkeleyManager.Instance.spawnables[1].limit=3;
+            BerkeleyManager.Instance.spawnables[4].limit=3;
+            BerkeleyManager.Instance.spawnables[5].limit=2;
+        }
+        if (playerLevel == 7) {
+            BerkeleyManager.Instance.spawnables[1].limit=0; // goblin
+            BerkeleyManager.Instance.spawnables[4].limit=6; // trolls
+            BerkeleyManager.Instance.spawnables[5].limit=5;
+            BerkeleyManager.Instance.spawnables[4].spawnTime=15f;
+            BerkeleyManager.Instance.spawnables[5].spawnTime=20f;
+        }
+
+        // may still be able to level up again, but only do it twice
+        if(!limited)PlayerLevelProgression(ind, true);
     }
 }

@@ -19,16 +19,17 @@ public class ProjectileItem : MonoBehaviour
     public void Go()
     {
         transform.position += transform.right * -0.6f;
-        going = true;
         firingPoint = transform.position;
         lifeTime = projectileSettings.maxLife;
+        going = true;
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
+        if (!going) return;
         Run();
-        Destroy();
+       Destroy();
         if (lifeTime > 0) {
             lifeTime -= Time.deltaTime;
         } else {
@@ -36,7 +37,6 @@ public class ProjectileItem : MonoBehaviour
         }
     }
     private void Run () {
-        if (!going) return;
         transform.position += transform.right * -2.5f * projectileSettings.speed * Time.deltaTime;
     }
     private void Destroy() {

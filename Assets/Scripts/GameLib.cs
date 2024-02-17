@@ -32,6 +32,11 @@ public class GameLib : MonoBehaviour
 
     [SerializeField]
     public NamePart[] nameParts;
+
+    [SerializeField]
+    public CharSkill[] allCharSkills;
+    [SerializeField]
+    public CharSkill[] weaponSkills;
     
     
     // Singleton stuff
@@ -46,8 +51,11 @@ public class GameLib : MonoBehaviour
             Instance = this; 
         } 
         // List<Weapon> weapoi = new List<Weapon>(allWeapons);
-        // weapoi.Add(weapoi[1]);
+        // weapoi.Add(weapoi[6]);
         // allWeapons = weapoi.ToArray();
+        List<Part> weapoi = new List<Part>(allParts);
+        weapoi.Add(weapoi[2]);
+        allParts = weapoi.ToArray();
     }
     public T GetItemById<T>(int id) {
         switch (typeof(T)){
@@ -82,6 +90,10 @@ public class GameLib : MonoBehaviour
             case (ItemType.Part):
                 {
                     return (Item) GetPartById(thisId); 
+                }
+            case (ItemType.Consumable):
+                {
+                    return (Item) GetConsumableById(thisId); 
                 }
         }
         return default(Item);
@@ -152,5 +164,29 @@ public class GameLib : MonoBehaviour
         return "Rafi";
         
     } 
+    /**
+    Function with hardcoded weapon ids converted to their weapon skill
+     */
+    public CharSkill getWeaponsSkill(int weaponId) {
+        switch(weaponId) {
+            case (100002): // axe and pickaxe
+            case (100004): {
+                return weaponSkills[0];
+            }
+            case (100009):  // Pike and lance
+            case (100006): {
+                return weaponSkills[1];
+            }
+            case (100008): { // Dagger
+                return weaponSkills[2];
+            }
+            case (100005): // bow and sling
+            case (100007): {
+                return weaponSkills[3];
+            }
+        }
+
+        return weaponSkills[0];
+    }
 
 }

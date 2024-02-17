@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
 using System.Collections;
 using System.Linq;
+using System;
 
 public class CameraController : MonoBehaviour {
 
@@ -45,7 +46,11 @@ public class CameraController : MonoBehaviour {
 		if (collided.CompareTag("Monster"))
 		{
 			if (collided.gameObject.GetComponent<Monster>().faction == 1)
-			GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == collided.transform.gameObject.name ) );
+			try {
+				GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == collided.gameObject.name ) );
+			} catch (InvalidOperationException) {
+
+			}
 		}
 		if (collided.CompareTag("Npc"))
 		{

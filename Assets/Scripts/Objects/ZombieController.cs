@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
@@ -24,6 +25,8 @@ public class ZombieController : MonoBehaviour {
     public float invincibilityTime = 0.3f;
     public float invincibleTimer;
 
+	public float armorDefense=0;
+
 	private Vector2 moveDirection;
 	private Vector2 lastClick;
 
@@ -36,10 +39,11 @@ public class ZombieController : MonoBehaviour {
 	private Weapon weapon;
 
 	private float attackCooldown;
-	private float attackCooldownTimer;
+	public float attackCooldownTimer;
 
 	private float attackTime;
 	private float attackTimer;
+	private float skillTimer;
 	private bool attacking = false;
 	private float boredTime = 5f;
 	private float boredTimer;
@@ -57,6 +61,16 @@ public class ZombieController : MonoBehaviour {
 
     private Vector2 knockBackLandPosition;
 	private bool isBeingTossed = false;
+
+	private bool usingSkill = false;
+	private CharSkill castingSkill = null;
+	private Vector2 skillMoveTarget;
+	private GameObject skillTargetTarget;
+	private bool skillMoveLocked = false;
+	private float skillKnockBack = 0f;
+	private float knockTimer = 0f;
+	private float skillMoveProximity =0.2f;
+	private float skillRunTime =0f;
 
 	public void DoStart()
 	{
@@ -93,8 +107,13 @@ public class ZombieController : MonoBehaviour {
 		attackCooldown = self.equipped.primaryWeapon.cooldown;
 		attackCooldownTimer = attackCooldown;
 
+		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
+		{
+			self.skills[i].cooldownTimer = self.skills[i].cooldown;
+		}Debug.Log("a reset");
 		attackTime = attackCooldown;
 		attackTimer = attackTime;
+		
         invincibleTimer = invincibilityTime;
 
 		attackDamageType = weapon.damageType;
@@ -184,13 +203,125 @@ public class ZombieController : MonoBehaviour {
 	void Attack()
 	{
 		SwingAnim();
+		RunSkillCast();
 		if (attackCooldownTimer > 0)
 		attackCooldownTimer -= Time.deltaTime;
 		attackTimer -= Time.deltaTime;
+		if (skillTimer > 0)
+		skillTimer -= Time.deltaTime;
+		else skillMoveLocked = false;
+		if (skillRunTime > 0)
+		skillRunTime -= Time.deltaTime;
+		else if(usingSkill) EndSkill();
+		if (knockTimer > 0)
+		knockTimer -= Time.deltaTime;
+		else isBeingTossed = false;
+		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
+		{
+			self.skills[i].cooldownTimer -= Time.deltaTime;
+		}
 		if (leader && Input.GetKey(KeyCode.Alpha1))
         {
 			AttemptAttack();
         }
+		if (leader && Input.GetKey(KeyCode.Alpha2))
+        {
+			AttemptSkill(0);
+        }
+	}
+	public void TriggerSkill(int skill){
+		if (leader) {
+			if (skill == 1)
+			AttemptAttack();
+			if (skill>1)
+			AttemptSkill(skill-2);
+		}
+	}
+	void AttemptSkill(int skillIndex) {
+		if (self.skills == null || self.skills.Count <skillIndex+1) return;
+		 CharSkill castSkill =self.skills[skillIndex];
+		if (self.skills[skillIndex].id == 0) {
+			// weapon skill
+			castSkill=GameLib.Instance.getWeaponsSkill(self.equipped.primaryWeapon.id);
+		} 
+		// cooldown timers
+		if (self.skills[skillIndex].cooldownTimer>0){
+			return;
+		}
+		if ((castSkill.skillTypes.Contains(SkillType.Move)&&castSkill.moveSystem>=2) 
+			||castSkill.skillTypes.Contains(SkillType.TargetedDamage)) {
+			switch (castSkill.targetSystem) {
+				case 0: {
+					skillTargetTarget =GameOverlord.Instance.nearbyMonsters[0];// TODO proximity calculator
+					break;
+				}
+				case 1:{
+					if (GameOverlord.Instance.nearbyMonsters.Count < 1) return;
+					skillTargetTarget = GameOverlord.Instance.nearbyMonsters[UnityEngine.Random.Range(0, GameOverlord.Instance.nearbyMonsters.Count-1)];
+					break;
+				}
+			}
+		}
+		if (castSkill.skillTypes.Contains(SkillType.Move)) {
+			switch (castSkill.moveSystem) {
+				case 0: {
+					skillMoveTarget = transform.position+transform.right*-1f*castSkill.offset; // Vector3.MoveTowards(transform.position,hitBox.transform.position, castSkill.offset);
+					skillMoveProximity =0.2f;
+					break;
+				}
+				case 1: {
+					skillMoveTarget = transform.position+transform.right*castSkill.offset;
+					skillMoveProximity =0.2f;
+					break;
+				}
+				case 2:
+				case 3:{
+					if (GameOverlord.Instance.nearbyMonsters.Count < 1) return;
+					skillMoveTarget = skillTargetTarget.transform.position;
+					skillMoveProximity =-0.4f;
+					GetComponent<CircleCollider2D>().isTrigger = true;
+					break;
+				}
+			} 
+			skillMoveLocked = true;
+		}
+		if (castSkill.skillTypes.Contains(SkillType.TargetedDamage)) {
+			Monster monster = skillTargetTarget.GetComponent<Monster>();
+			monster.TakeDamage(castSkill.damageBase);
+            monster.KnockedBack(gameObject, castSkill.knockBack);
+		}
+		if (castSkill.skillTypes.Contains(SkillType.CreateDamageObject)) {
+			GameObject arrow = Instantiate(castSkill.impactCollision,transform.position, transform.rotation);
+			Projectile newSettings = new Projectile();
+			float dmg = castSkill.damageBase+Player.Instance.CalculateDamage(self.id);
+			newSettings.minDamage = dmg;
+			newSettings.maxDamage = dmg * 1.5f;
+			newSettings.speed=3f;newSettings.maxDistance=1000f;newSettings.maxLife=70f;
+			newSettings.knockBack=castSkill.knockBack;
+			arrow.gameObject.AddComponent<ProjectileItem>();
+			arrow.gameObject.GetComponent<ProjectileItem>().projectileSettings = newSettings;
+			arrow.gameObject.GetComponent<ProjectileItem>().faction = 0;
+			arrow.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
+			arrow.gameObject.GetComponent<ProjectileItem>().playerParty = true;
+			arrow.gameObject.GetComponent<ProjectileItem>().consumableId = 800000;
+			arrow.gameObject.GetComponent<ProjectileItem>().Go();
+		}
+		skillTimer = castSkill.speed;
+		skillRunTime = castSkill.maxRunTime;
+		skillKnockBack+= castSkill.knockBack;
+		Player.Instance.GetCharById(charId).hitbox.knockBack+= castSkill.knockBack;
+		self.skills[skillIndex].cooldownTimer=self.skills[skillIndex].cooldown;
+		
+		Player.Instance.GetCharById(charId).hitbox.hitting = true;
+		Player.Instance.GetCharById(charId).hitbox.playerParty = true;
+		if (attackDamageType == DamageType.Melee) {
+			hitBox.isTrigger = false;
+			self.hitbox.hitting = true;
+			self.hitbox.playerParty = true;
+		}
+		usingSkill = true;
+		castingSkill = castSkill;
+
 	}
 	void AttemptAttack() {
 		if (attackCooldownTimer <= 0) {
@@ -202,10 +333,16 @@ public class ZombieController : MonoBehaviour {
 			attacking = true;
 			
 			if (attackDamageType == DamageType.Melee) {
-				Player.Instance.GetCharById(charId).hitbox.hitting = true;
-				Player.Instance.GetCharById(charId).hitbox.playerParty = true;
+				self.hitbox.hitting = true;
+				self.hitbox.playerParty = true;
 				hitBox.isTrigger = false;
 			} else if (attackDamageType == DamageType.Ranged) {
+				// turn towards mouse
+				Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+				moveDirection = moveTowards - (Vector2)transform.position;
+				moveDirection.Normalize();
+				float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
+				transform.rotation = Quaternion.Euler (0, 0, targetAngle + 180);
 				if (weapon.ammo == ConsumableType.Rock && Player.Instance.GetPartsByType(weapon.ammo).Count > 0) {
 					
 					Part item = Player.Instance.parts.First( s => s.consumableType == weapon.ammo);
@@ -225,6 +362,7 @@ public class ZombieController : MonoBehaviour {
 					arrow.gameObject.GetComponent<ProjectileItem>().playerParty = true;
 					arrow.gameObject.GetComponent<ProjectileItem>().consumableId = itemId;
 					arrow.gameObject.GetComponent<ProjectileItem>().Go();
+					Debug.Log("rock shot");
 				}
 				else if (Player.Instance.GetConsumablesByType(weapon.ammo).Count > 0) {
 					
@@ -245,20 +383,15 @@ public class ZombieController : MonoBehaviour {
 					arrow.gameObject.GetComponent<ProjectileItem>().consumableId = itemId;
 					arrow.gameObject.GetComponent<ProjectileItem>().Go();
 				} else {
-					Debug.Log("no arrows");
 					if (!leader) {
 						Player.Instance.UnequipWeapon(self.id);
-						// TODO autoequip
-						// TODO make it not equip bow if there are no arrows
+						UIManager.Instance.AutoEquipWeapons();
 					}
+					GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, transform);
+					DamageText.GetComponent<DamageText>().textToDisplay = "No arrows";
 					return;
 				}
-				// turn towards mouse
-				Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-				moveDirection = moveTowards - (Vector2)transform.position;
-				moveDirection.Normalize();
-				float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-				transform.rotation = Quaternion.Euler (0, 0, targetAngle + 180);
+				
 					
 			}
 		}
@@ -275,13 +408,15 @@ public class ZombieController : MonoBehaviour {
 		Player.Instance.activeCharId = charId;
 		Player.Instance.ResetContol();
 		Camera.main.GetComponent<CameraController>().SetFollowing();
+		UIManager.Instance.UpdateSkillSquare();
 		hovering = false;
 		UIManager.Instance.armorNeedsUpdate = true;
 		UIManager.Instance.weaponNeedsUpdate = true;
+		UIManager.Instance.UpdateSkillSquare();
 	}
 	void Walk()
 	{
-		if (isBeingTossed) return;
+		if (isBeingTossed || skillMoveLocked) return;
 		if (boredTimer > 0)boredTimer -=Time.deltaTime;
 		// if (!leader) {
 		// 	distToMain.x = transform.position.x - Player.Instance.controller.gameObject.transform.position.x;
@@ -329,10 +464,8 @@ public class ZombieController : MonoBehaviour {
 		}
 	}
 	void TakeDamage(float damage) {
-		// TODO: knockback
         if (invincibleTimer < 0) {
-            // TODO: localize [12 = armor]
-            float minDmg = damage - self.stats[12].value;
+            float minDmg = damage - armorDefense;
             if (minDmg < 0) minDmg = 0;
             self.life -= UnityEngine.Random.Range(minDmg,damage);
             invincibleTimer = invincibilityTime; 
@@ -340,6 +473,60 @@ public class ZombieController : MonoBehaviour {
             DamageText.GetComponent<DamageText>().textToDisplay = damage.ToString("0.00");
         }
         
+	}
+	void RunSkillCast() {
+		if (!usingSkill) return;
+
+		if (castingSkill.skillTypes.Contains(SkillType.StanceScript)) {
+			SkillStanceAnim();
+		}
+		if (castingSkill.skillTypes.Contains(SkillType.Move)) {
+			SkillMoveAnim();
+		}
+		
+	}
+	void SkillStanceAnim() {
+
+		Step[] attackScripts = (castingSkill.stance.attackScripts).Reverse().ToArray();
+		
+		int steps = attackScripts.Length;
+		int stepToPlay = (int)Math.Round((skillTimer/castingSkill.speed)*steps, 0);
+		stepToPlay -= 1;
+		// Debug.Log(stepToPlay + " -" + attackTimer);
+		if (stepToPlay < 0) {
+			rightHand.transform.localPosition = new Vector3(weapon.instance.rightHandPos.x, weapon.instance.rightHandPos.y, -0.2f);
+			rightHand.transform.localRotation = Quaternion.Euler(0, 0, weapon.instance.rightHandPos.z);
+			leftHand.transform.localPosition = new Vector3(weapon.instance.leftHandPos.x, weapon.instance.leftHandPos.y, -0.2f);
+			leftHand.transform.localRotation = Quaternion.Euler(0, 0, weapon.instance.leftHandPos.z);
+			weaponObject.transform.localPosition = new Vector3(weapon.instance.weaponPos.x, weapon.instance.weaponPos.y, -9.3f);
+			weaponObject.transform.localRotation = Quaternion.Euler(0, 0, weapon.instance.weaponPos.z);
+			EndSkill();
+		} else {
+			rightHand.transform.localPosition = new Vector3(attackScripts[stepToPlay].rightHandPos.x, attackScripts[stepToPlay].rightHandPos.y, -0.2f);
+			rightHand.transform.localRotation = Quaternion.Euler(0, 0, attackScripts[stepToPlay].rightHandPos.z);
+			leftHand.transform.localPosition = new Vector3(attackScripts[stepToPlay].leftHandPos.x, attackScripts[stepToPlay].leftHandPos.y, -0.2f);
+			leftHand.transform.localRotation = Quaternion.Euler(0, 0, attackScripts[stepToPlay].leftHandPos.z);
+			weaponObject.transform.localPosition = new Vector3(attackScripts[stepToPlay].weaponPos.x, attackScripts[stepToPlay].weaponPos.y, -9.3f);
+			weaponObject.transform.localRotation = Quaternion.Euler(0, 0, attackScripts[stepToPlay].weaponPos.z);
+		}
+	}
+	void SkillMoveAnim() {
+		if (!skillMoveLocked) return;
+		if (Vector3.Distance(transform.position, skillMoveTarget) > skillMoveProximity) {
+			transform.position = Vector3.Lerp (transform.position, skillMoveTarget, (castingSkill.moveSystem==3?99f : castingSkill.speed) * Time.deltaTime);
+		} else {
+			EndSkill();
+			lastClick=transform.position;
+		}
+	}
+	void EndSkill() {
+		skillMoveLocked = false;
+		skillKnockBack-= castingSkill.knockBack;
+		Player.Instance.GetCharById(charId).hitbox.knockBack-= castingSkill.knockBack;
+		usingSkill = false;
+		Player.Instance.GetCharById(charId).hitbox.hitting = false;
+		GetComponent<CircleCollider2D>().isTrigger = false;
+		if (attackDamageType == DamageType.Melee) hitBox.isTrigger = true;
 	}
 
 	void SwingAnim() {
@@ -409,7 +596,6 @@ public class ZombieController : MonoBehaviour {
 		}
 		if (collided.CompareTag("Projectile"))
 		{
-			Debug.Log("Arrow Shot");
 			Shot(collided);
 		}
 	}
@@ -531,7 +717,9 @@ public class ZombieController : MonoBehaviour {
 			} catch (NullReferenceException) {
 				monsterSize = 2;
 			}
+			 // HARDCODED arrow distance
 			if (weapon.damageType == DamageType.Ranged) monsterSize += 300f;
+			AiSkills(dist);
 			if (dist < monsterSize)AttemptAttack();
 			if (dist > monsterSize * 0.5f) {
 				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
@@ -550,6 +738,7 @@ public class ZombieController : MonoBehaviour {
 		switch (tempPersonality) {
 			case (Personality.Hothead):
 				if (GameOverlord.Instance.nearbyMonsters.Count > 0) {
+					try{
 					GameObject monster = GameOverlord.Instance.nearbyMonsters[0].gameObject;
 					Vector2 angryTar = monster.transform.position;
 					nextPoint = GameOverlord.Instance.Pathfind(currentPosition, angryTar);
@@ -565,6 +754,7 @@ public class ZombieController : MonoBehaviour {
 						monsterSize = monster.GetComponent<Neutral>().size;
 					}
 					if (weapon.damageType == DamageType.Ranged) monsterSize += 200f;
+					AiSkills(dist);
 					if (dist < monsterSize)AttemptAttack();
 					if (dist > monsterSize* 0.5) {
 						transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
@@ -577,6 +767,10 @@ public class ZombieController : MonoBehaviour {
 					transform.rotation = Quaternion.Slerp (transform.rotation, 
 														Quaternion.Euler (0, 0, targetAngle + 180), 
 														turnSpeed * Time.deltaTime);
+					} catch (MissingReferenceException e){
+						justFollow = true;
+						GameOverlord.Instance.nearbyMonsters = new List<GameObject>();
+					}
 				} else {justFollow = true;}
 				
 				break;
@@ -604,6 +798,19 @@ public class ZombieController : MonoBehaviour {
 			}
 		}
 	}
+	void AiSkills( float dist) {
+		if (UnityEngine.Random.Range(0, 121) < 120) return;
+		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
+		{
+			CharSkill caste = self.skills[i];
+			if (caste.id == 0) {
+				// weapon skill
+				caste=GameLib.Instance.getWeaponsSkill(self.equipped.primaryWeapon.id);
+			} 
+			if (dist < caste.npcCastRange)AttemptSkill(i);
+		}
+	}
+	
 	void Regen() {
 		if (regenTimer > 0) {
 			regenTimer -=Time.deltaTime;
@@ -624,6 +831,7 @@ public class ZombieController : MonoBehaviour {
         if (amount <0.1f) return;
         knockBackLandPosition = Vector3.MoveTowards(transform.position,source.transform.position, amount*-2f);
         isBeingTossed = true;
+		knockTimer = 2f;
         // TODO: Implemenent knockback
     }
 	void BeTossed() {
@@ -632,6 +840,10 @@ public class ZombieController : MonoBehaviour {
 			transform.position = Vector3.Lerp (transform.position, knockBackLandPosition, 3f * Time.deltaTime);
 		} else {
 			isBeingTossed = false;
+			lastClick=transform.position;
 		}
+	}
+	public bool IsRanged() {
+		return attackDamageType == DamageType.Ranged;
 	}
 }

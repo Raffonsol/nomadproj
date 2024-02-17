@@ -19,6 +19,7 @@ public class BerkeleySpawnable {
     public BerkeleyType berkeleyType;
     public int limit;
     public int currentQuantity;
+    public int minLevel;
 }
 public class BerkeleyManager : MonoBehaviour
 {
@@ -59,9 +60,9 @@ public class BerkeleyManager : MonoBehaviour
     void Start()
     {
         // TODO replace with glboal settings
-        berkeleyMax = 300;
-        monsterMax = 7;
-        rsrcMax = 100;
+        berkeleyMax = 400;
+        monsterMax = 30;
+        rsrcMax = 200;
         npcMax = 20;
 
         checkTimer = checkTime;
@@ -80,7 +81,7 @@ public class BerkeleyManager : MonoBehaviour
     void Update()
     {
         for(int i = 0; i <spawnables.Count; i++){
-            if (!spawnables[i].globalSpawn) return;
+            if (!spawnables[i].globalSpawn) continue;
             if (spawnables[i].spawnTimer > 0) {
                 spawnables[i].spawnTimer -= Time.deltaTime;
             } else {
@@ -88,11 +89,11 @@ public class BerkeleyManager : MonoBehaviour
                   ||(spawnables[i].berkeleyType == BerkeleyType.Monster && !monsterCapped)
                   ||(spawnables[i].berkeleyType == BerkeleyType.Npc && !npcCapped))
                   && spawnables[i].limit > spawnables[i].currentQuantity
+                  && Player.Instance.playerLevel >=  spawnables[i].minLevel
                   ) {
-                        spawnables[i].currentQuantity++;
                         Spawn(spawnables[i].obj, spawnables[i].id);
-                        spawnables[i].spawnTimer = spawnables[i].spawnTime;
                     }
+                spawnables[i].spawnTimer = spawnables[i].spawnTime;
             }
         }
         if (checkTimer > 0) {
@@ -127,7 +128,7 @@ public class BerkeleyManager : MonoBehaviour
 
         GameObject inst = Instantiate(obj, new Vector2(x, y), Quaternion.Euler(0,0,UnityEngine.Random.Range(0,360)));
         // Debug.Log("Spawning tree at " +x +","+y);
-        inst.GetComponent<Berkeley>().spawnableId = spawnableId;
+        // inst.GetComponent<Berkeley>().spawnableId = spawnableId;
     }
 
     public int LatestFriendId() {

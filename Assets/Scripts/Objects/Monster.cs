@@ -11,6 +11,10 @@ public class Monster : Combatant
     public Sprite step2;
     public Sprite attack;
 
+    public bool chaseSteps=false;
+    public Sprite chaseStep1;
+    public Sprite chaseStep2;
+
     public float attackSpeed = 1f;
     public int projectileId;
 
@@ -24,10 +28,12 @@ public class Monster : Combatant
 
     private HitBox hitScript;
     private bool projectileGoing = false;
+
+    private bool hovering = false;
     
 
     // Start is called before the first frame update
-    void Start()
+    protected override void ContinuedStart()
     {
         life = maxLife;
 
@@ -51,6 +57,13 @@ public class Monster : Combatant
                 skills[i].cooldownTimer-=Time.deltaTime;
             }
         }
+    }
+    protected override void ResetPatrol()
+    {
+        patrolTimer = patrolStopInterval;
+        patrolTarget = new Vector3(
+            (UnityEngine.Random.Range(transform.position.x - 20f, transform.position.x + 20f)),
+            (UnityEngine.Random.Range(transform.position.y - 20f, transform.position.y + 20f)), 0);
     }
     protected override bool CheckSkills()
     {
@@ -181,16 +194,28 @@ public class Monster : Combatant
     protected override void StepAnim()
 	{
 		if (moveTimer1 > 0) {
-			transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
-			moveTimer2 = feetSpeed;
+            if (chaseSteps && routine==Routine.Chasing){
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = chaseStep1;
+			    moveTimer2 = chasingFeetSpeed;
+            }
+			else {
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
+			    moveTimer2 = feetSpeed;
+            }
 			moveTimer1 -= Time.deltaTime;
 		} else {
-			transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step2;
+            if (chaseSteps && routine==Routine.Chasing){
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = chaseStep2;
+            }
+			else {
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step2;
+            }
 
 			moveTimer2 -= Time.deltaTime;
 
 			if (moveTimer2 < 0) {
-				moveTimer1 = feetSpeed;
+                if (chaseSteps && routine==Routine.Chasing)moveTimer1 = chasingFeetSpeed;
+				else moveTimer1 = feetSpeed;
 			}
 		}
 	}
@@ -199,5 +224,22 @@ public class Monster : Combatant
         transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
 	}
     
+    void OnMouseOver()
+    {
+		hovering = true;
+    }
+	void OnMouseExit()
+    {
+		hovering = false;
+    }
+    protected override void ListenForClick(){
+        if (hovering && Input.GetKey(KeyCode.Mouse0)) {
+            ZombieController attacker = Player.Instance.activePerson.controller;
+            float distance = attacker.IsRanged() ?  300f: size;
+			if (Vector3.Distance(transform.position, attacker.gameObject.transform.position) < size){
+                attacker.TriggerSkill(1);
+            }
+		}
+    }
 }
     

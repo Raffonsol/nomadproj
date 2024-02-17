@@ -34,7 +34,7 @@ public class GameOverlord : MonoBehaviour
     void Start()
     {
         
-        // Player.Instance.AddPart(900000);
+        // Player.Instance.AddEquipment(4);
        
         // Player.Instance.AddPart(900002);
         // Player.Instance.AddPart(900007);
@@ -72,11 +72,12 @@ public class GameOverlord : MonoBehaviour
             Player.Instance.AddEquipment(5);
             Player.Instance.AddEquipment(5);
             Player.Instance.AddPart(900000);
-            Player.Instance.AddPart(900002);
-            Player.Instance.AddPart(900003);
             Player.Instance.AddPart(900001);
-            Player.Instance.AddPart(900000);
+            // Player.Instance.AddPart(900003);
+            Player.Instance.AddPart(900002);
+            // Player.Instance.AddPart(900000);
             Player.Instance.AddPart(900004);
+            Player.Instance.AddPart(900008);
             Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);
         }
     }
