@@ -53,9 +53,12 @@ public class GameLib : MonoBehaviour
         // List<Weapon> weapoi = new List<Weapon>(allWeapons);
         // weapoi.Add(weapoi[6]);
         // allWeapons = weapoi.ToArray();
-        List<Part> weapoi = new List<Part>(allParts);
-        weapoi.Add(weapoi[2]);
-        allParts = weapoi.ToArray();
+        // List<Part> weapoi = new List<Part>(allParts);
+        // weapoi.Add(weapoi[2]);
+        // allParts = weapoi.ToArray();
+        List<Equipment> weapoi = new List<Equipment>(allEquipments);
+        weapoi.Add(weapoi[0]);weapoi.Add(weapoi[1]);weapoi.Add(weapoi[2]);weapoi.Add(weapoi[3]);weapoi.Add(weapoi[4]);
+        allEquipments = weapoi.ToArray();
     }
     public T GetItemById<T>(int id) {
         switch (typeof(T)){

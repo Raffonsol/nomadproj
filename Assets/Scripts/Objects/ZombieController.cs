@@ -186,6 +186,7 @@ public class ZombieController : MonoBehaviour {
 	private Vector2 nextPoint;
 
 	void Update () {
+		if (self == null) return;
 		ListenForClick();
 		Walk();
 		Attack();
@@ -276,7 +277,7 @@ public class ZombieController : MonoBehaviour {
 				}
 				case 2:
 				case 3:{
-					if (GameOverlord.Instance.nearbyMonsters.Count < 1) return;
+					if (GameOverlord.Instance.nearbyMonsters.Count < 1||skillTargetTarget==null) return;
 					skillMoveTarget = skillTargetTarget.transform.position;
 					skillMoveProximity =-0.4f;
 					GetComponent<CircleCollider2D>().isTrigger = true;
@@ -511,7 +512,7 @@ public class ZombieController : MonoBehaviour {
 		}
 	}
 	void SkillMoveAnim() {
-		if (!skillMoveLocked) return;
+		if (!skillMoveLocked || isBeingTossed) return;
 		if (Vector3.Distance(transform.position, skillMoveTarget) > skillMoveProximity) {
 			transform.position = Vector3.Lerp (transform.position, skillMoveTarget, (castingSkill.moveSystem==3?99f : castingSkill.speed) * Time.deltaTime);
 		} else {
@@ -756,7 +757,7 @@ public class ZombieController : MonoBehaviour {
 					if (weapon.damageType == DamageType.Ranged) monsterSize += 200f;
 					AiSkills(dist);
 					if (dist < monsterSize)AttemptAttack();
-					if (dist > monsterSize* 0.5) {
+					if (dist > monsterSize* 0.5f) {
 						transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
 						StepAnim();
 					}
@@ -765,7 +766,7 @@ public class ZombieController : MonoBehaviour {
 					}
 					float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
 					transform.rotation = Quaternion.Slerp (transform.rotation, 
-														Quaternion.Euler (0, 0, targetAngle + 180), 
+														Quaternion.Euler (0, 0, targetAngle + 180f), 
 														turnSpeed * Time.deltaTime);
 					} catch (MissingReferenceException e){
 						justFollow = true;
@@ -828,7 +829,7 @@ public class ZombieController : MonoBehaviour {
 		}
 	}
 	void KnockedBack(GameObject source, float amount) {
-        if (amount <0.1f) return;
+        if (amount <0.1f || skillMoveLocked) return;
         knockBackLandPosition = Vector3.MoveTowards(transform.position,source.transform.position, amount*-2f);
         isBeingTossed = true;
 		knockTimer = 2f;

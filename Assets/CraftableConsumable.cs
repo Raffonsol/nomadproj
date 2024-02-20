@@ -23,7 +23,7 @@ public class CraftableConsumable : MonoBehaviour
     // Update is called once per frame
      void Update()
     {
-        if (UIManager.Instance.openMenu != Menu.Inventory || UIManager.Instance.openTab != Tab.Potions) {
+        if (UIManager.Instance.openMenu != Menu.Inventory || UIManager.Instance.openTab != Tab.Projectiles) {
             return;
         }
 

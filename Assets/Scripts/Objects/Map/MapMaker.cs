@@ -26,6 +26,8 @@ public class Tile
     public bool isRiver;
     [HideInInspector]
     public bool hasGenerated;
+
+    public TileController controller;
     
     public Tile() {
         northCon = ConnectionPart.Void;
@@ -94,6 +96,7 @@ public class MapMaker : MonoBehaviour
             MapTileGroup(PreMappedVillages[i].villageTiles, PreMappedVillages[i].maxX, PreMappedVillages[i].maxY);
         }
         GenerateFirstTile();
+        BerkeleyManager.Instance.DoStart();
     }
     public void DeleteTileAt(int x, int y) {
         tileMap[x][y].tileObject = null;
@@ -332,6 +335,13 @@ public class MapMaker : MonoBehaviour
         tileMap[x][y].tileObject = Instantiate(tile.tileObject,
             new Vector3(x * tileLength, y * tileLength, 0), Quaternion.identity);
         TileController controller = tileMap[x][y].tileObject.AddComponent<TileController>();
-        controller.x = x; controller.y = y;
+        controller.x = x; controller.y = y; controller.hasRoadOrRiver=isRiver||tile.southCon==ConnectionPart.Street||tile.northCon==ConnectionPart.Street||tile.westCon==ConnectionPart.Street||tile.eastCon==ConnectionPart.Street;
+        tile.controller = controller;
+    }
+    public Tile GetTileAtCoordinates(float cx, float cy) {
+        int x =(int)Math.Round(cx/tileLength);
+        int y =(int)Math.Round(cy/tileLength);
+        if (tileMap[x]==null || tileMap[x][y]==null) return null;
+        return tileMap[x][y];
     }
 }

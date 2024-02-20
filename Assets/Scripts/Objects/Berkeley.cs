@@ -14,7 +14,7 @@ public class Berkeley : MonoBehaviour
 
     private float disappearDistance = 0;
     private float checkTimer = 3f;
-    private int indicatorIndex;
+    public int indicatorIndex;
     
     void Start() {
         
@@ -24,7 +24,8 @@ public class Berkeley : MonoBehaviour
         if(gameObject.tag != "Monster")Check();
         ContinuedStart();
         if (showIndicator) {
-            indicatorIndex = UIManager.Instance.AddMonsterIndicator(gameObject);
+            // HARDCODED 6 = neutral spawnableId
+            indicatorIndex = UIManager.Instance.AddMonsterIndicator(gameObject, spawnableId==6);
         }
     }
     protected virtual void BeforeCheck() {
@@ -42,11 +43,15 @@ public class Berkeley : MonoBehaviour
         if (Vector3.Distance(transform.position, Camera.main.transform.position) > disappearDistance) {
             DestroyAndRecount();
         }
-        // if (checkTimer > 0) 
-        // checkTimer -= Time.deltaTime;
-        // else {
-        //     Check();
-        // }
+
+        if ((gameObject.tag == "Berkeley" || gameObject.tag == "Rsrc") ) {
+            if (checkTimer > 0) 
+            checkTimer -= Time.deltaTime;
+            else {
+                Check();
+            }
+        }
+        
         ContinuedUpdate();
     }
     protected virtual void ContinuedUpdate(){}
@@ -57,7 +62,7 @@ public class Berkeley : MonoBehaviour
         Collider2D potentialHit = Physics2D.OverlapCircle(transform.position, size, unMatchable);
 
         if (potentialHit && potentialHit.gameObject.name != gameObject.name){
-           if (potentialHit.gameObject.tag == "Rsrc") {
+           if (potentialHit.gameObject.tag == "Rsrc" || potentialHit.gameObject.tag == "Berkeley") {
                 // we don't want trees destroying all the structures, so if its a rsrc, destroy the rsrc instead
                 try {
                     potentialHit.gameObject.GetComponent<Berkeley>().DestroyAndRecount();

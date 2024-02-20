@@ -234,6 +234,7 @@ public class Monster : Combatant
     }
     protected override void ListenForClick(){
         if (hovering && Input.GetKey(KeyCode.Mouse0)) {
+            if (Player.Instance == null || Player.Instance.activePerson.controller == null) return;
             ZombieController attacker = Player.Instance.activePerson.controller;
             float distance = attacker.IsRanged() ?  300f: size;
 			if (Vector3.Distance(transform.position, attacker.gameObject.transform.position) < size){

@@ -2,6 +2,15 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[System.Serializable]
+public class Mimic
+{
+    public int spawnableId;
+    public Sprite[] transformAnimation;
+    public int chance;
+    public float frameDurations;
+}
+
 public class CollectableRsrc : Berkeley
 {
     public DamageRsrcType damageRsrcTypeNeeded;
@@ -10,6 +19,8 @@ public class CollectableRsrc : Berkeley
     public Drop[] sfcDrops;
     public int life;
     public float shakeStrength = 0.2f;
+
+    public Mimic mimic;
 
     private int currentLife;
 
@@ -24,6 +35,10 @@ public class CollectableRsrc : Berkeley
 
     private Vector3 nPosition;
     private bool hovering = false;
+    private bool canBeMimic = true;
+    private bool becomingMimic = false;
+    private float mimicAnimationTimer = 0;
+    private int mimicAnimationIndex = 0;
 
     // Start is called before the first frame update
     protected override void ContinuedStart()
@@ -39,6 +54,7 @@ public class CollectableRsrc : Berkeley
     // Update is called once per frame
     protected override void ContinuedUpdate()
     {
+        BecomeMimic();
         Shake();
         ListenForClick();
         if (invincibleTimer > 0)
@@ -70,7 +86,7 @@ public class CollectableRsrc : Berkeley
                 // bad hit but can still give loot
                 BHit();
             }
-            
+            RunMimicCheck();
         }
     }
     void SfcHit() {
@@ -94,7 +110,7 @@ public class CollectableRsrc : Berkeley
         shaking = true;
         if (remainingDrops.Count < 1) return;
         int i = Random.Range(0, remainingDrops.Count - 1);
-        if (Random.Range(0, 100) <= remainingDrops[i].chance) {
+        if (Random.Range(0, 101) <= remainingDrops[i].chance) {
             
             DropLoot(remainingDrops[i]);
             remainingDrops.RemoveAt(i);
@@ -149,7 +165,39 @@ public class CollectableRsrc : Berkeley
         }
 
     }
-    
+    void RunMimicCheck(){
+        if (!canBeMimic) return;
+        if (Random.Range(0, 102) < mimic.chance) {
+            // become mimic
+            becomingMimic=true;
+            mimicAnimationTimer=mimic.frameDurations;
+        } else {
+            // 50/50 chance to determine as not mimic
+            if (Random.Range(0, 101) <= 50) canBeMimic=false;
+        }
+    }
+    void BecomeMimic() {
+        if (!becomingMimic) {
+            return;
+        }
+
+        if (mimicAnimationTimer > 0) {
+            mimicAnimationTimer -= Time.deltaTime;
+        } else {
+            mimicAnimationTimer = mimic.frameDurations;
+
+            GetComponent<SpriteRenderer>().sprite = mimic.transformAnimation[mimicAnimationIndex];
+            mimicAnimationIndex += 1;
+
+            if (mimicAnimationIndex >= mimic.transformAnimation.Length) {
+                becomingMimic = false;
+                BerkeleySpawnable spawn = BerkeleyManager.Instance.spawnables[mimic.spawnableId];
+                Instantiate(spawn.obj, transform.position, transform.rotation);
+                DestroyAndRecount();
+            }
+        }
+
+    }
     void OnMouseOver()
     {
 		hovering = true;

@@ -332,18 +332,18 @@ public class Player : MonoBehaviour
 
 
         for(int i = 0; i <partsUsed.Count; i++){
-            for(int j = 0; j <partsUsed[i].statEffects.Length; j++){
+            for(int j = 0; j <partsUsed[i].modifiers.Length; j++){
                 // melee
-                if (partsUsed[i].statEffects[j].affectedStat == CharacterStat.MeleeDamage && value.damageType == DamageType.Melee) {
-                    dmg += partsUsed[i].statEffects[j].offset; slot = 3;
+                if (partsUsed[i].modifiers[j].affectedStat == CharacterStat.MeleeDamage && value.damageType == DamageType.Melee) {
+                    dmg += partsUsed[i].modifiers[j].offset; slot = 3;
                 }
                 // ranged
-                if (partsUsed[i].statEffects[j].affectedStat == CharacterStat.RangedDamage && value.damageType == DamageType.Ranged) {
-                    dmg += partsUsed[i].statEffects[j].offset; slot = 4;
+                if (partsUsed[i].modifiers[j].affectedStat == CharacterStat.RangedDamage && value.damageType == DamageType.Ranged) {
+                    dmg += partsUsed[i].modifiers[j].offset; slot = 4;
                 }
                 // magic
-                if (partsUsed[i].statEffects[j].affectedStat == CharacterStat.MagicDamage && value.damageType == DamageType.Magic) {
-                    dmg += partsUsed[i].statEffects[j].offset; slot = 5;
+                if (partsUsed[i].modifiers[j].affectedStat == CharacterStat.MagicDamage && value.damageType == DamageType.Magic) {
+                    dmg += partsUsed[i].modifiers[j].offset; slot = 5;
                 }
             }
         }
@@ -542,6 +542,8 @@ public class Player : MonoBehaviour
         GameObject nameplate = Instantiate(GameOverlord.Instance.namePlate);
         nameplate.transform.parent = neutral.transform;
         nameplate.transform.localPosition = new Vector2(0.43f, 0);
+        
+        UIManager.Instance.RemoveMonsterIndicator(neutralScript.indicatorIndex);
 
         Destroy(neutral.transform.Find("Vision").gameObject);
         Destroy(neutralScript);

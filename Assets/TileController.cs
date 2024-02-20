@@ -6,6 +6,13 @@ public class TileController : MonoBehaviour
 {
     public int x;
     public int y;
+
+    
+    public bool hasRoadOrRiver;
+
+    public int contentLimit = 5;
+    public int contentCurrent = 0;
+
     private float disappearDistance = 0;
     private float checkTimer = 3f;
     // Start is called before the first frame update

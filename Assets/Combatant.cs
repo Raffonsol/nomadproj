@@ -34,6 +34,7 @@ public class Combatant : Berkeley
     public float patrolSpeed = 1f;
 	public float turnSpeed = 3f;
 	public float feetSpeed = 0.5f;
+    public bool runsAway = false;
 	public float chasingFeetSpeed = 0.5f;
 
     public float alertRange = 10f;
@@ -246,10 +247,14 @@ public class Combatant : Berkeley
 
         Vector2 nextPoint = GameOverlord.Instance.Pathfind(currentPosition, chaseTargetPosition);
         moveDirection = nextPoint - currentPosition;
+        if (runsAway)moveDirection = currentPosition-nextPoint;
         moveDirection.Normalize();
         Vector2 target = moveDirection + currentPosition;
         if (Vector3.Distance(currentPosition, chaseTargetPosition) > giveUpDistance) {SwitchRoutine(Routine.Patrolling); return;}
-		if (Vector3.Distance(currentPosition, chaseTargetPosition) > attackDistance || cooldownTimer > 0) {
+		if (
+            // (runsAway && Vector3.Distance(currentPosition, chaseTargetPosition) < attackDistance) ||
+            (Vector3.Distance(currentPosition, chaseTargetPosition) > attackDistance || cooldownTimer > 0)
+            ) {
 			
             transform.position = Vector3.Lerp (currentPosition, target, runSpeed * Time.deltaTime);
 

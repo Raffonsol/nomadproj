@@ -40,6 +40,7 @@ public enum FittablePart
     Bowstring,
     Hand, // Leave this here, its for unarmed
     Fiber,
+    Fabric
 }
 public enum PlatingMaterial
 {
@@ -50,7 +51,8 @@ public enum PlatingMaterial
     Iron,
     Rock,
     Mythril,
-    Bone
+    Bone,
+    Leather
 }
 public enum Rarity
 {
@@ -163,7 +165,7 @@ public class Equipment : Item
 
     public PowerUp[] modifiers;
     
-    public FittablePart[] partsNeeded;
+    public int[] partsNeeded;
 }
 
 [Serializable]
@@ -200,7 +202,6 @@ public class Part : Consumable
     public FittablePart fittablePart;
     public PlatingMaterial material;
     public PartLooks[] partLooks;
-    public PowerUp[] statEffects;
 }
 
 

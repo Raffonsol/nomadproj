@@ -16,7 +16,7 @@ public enum Tab
 {
     Armor,
     Weapons,
-    Potions,
+    Projectiles,
     Parts,
     Crafting,
     Skills,
@@ -60,6 +60,7 @@ public class UIManager : MonoBehaviour
     public List<GameObject> monsterArrows;
     public List<GameObject> monsterArrowTargets;
     public GameObject monsterArrowPrefab;
+    public GameObject friendArrowPrefab;
 
     public GameObject itemAddedPanel;
     public float newItemTimer=0f;
@@ -136,6 +137,9 @@ public class UIManager : MonoBehaviour
             try {
                 UpdateDirectionArrow(monsterArrowTargets[i].transform.position, monsterArrows[i], false,true);
             } catch (MissingReferenceException) {
+                RemoveMonsterIndicator(i);
+                return;
+            } catch (NullReferenceException) {
                 RemoveMonsterIndicator(i);
                 return;
             }
@@ -441,9 +445,9 @@ public class UIManager : MonoBehaviour
             arrow.GetComponent<Image>().color = color;
         }
     } 
-    public int AddMonsterIndicator(GameObject target) {
+    public int AddMonsterIndicator(GameObject target, bool friendly=false) {
         int indicatorIndex = monsterArrows.Count;
-        GameObject newArrow = Instantiate(monsterArrowPrefab);
+        GameObject newArrow = Instantiate(friendly ? friendArrowPrefab : monsterArrowPrefab);
         newArrow.transform.parent = gameObject.transform;
         monsterArrows.Add(newArrow);
         monsterArrowTargets.Add(target);
