@@ -7,9 +7,9 @@ public class AutoEquip : MonoBehaviour
 {
 
     public GameObject xMark;
-    public bool isOn = false;
+    public bool isOn = true;
 
-    private bool wasOff = true;
+    private bool wasOff = false;
 
     private float countTimer = 0.2f;
     // Start is called before the first frame update

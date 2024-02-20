@@ -31,7 +31,7 @@ public class TutorialManager : MonoBehaviour
         mask.SetActive(true);
         tutorialStartTime = 5f;
         mask.transform.Find("learn").GetComponent<TextMeshProUGUI>().text = panels[1];
-        UIManager.Instance.ShowTab(Tab.Weapons);
+        // UIManager.Instance.ShowTab(Tab.Weapons);
 
 
         // For now this is the last tutorial so mark the first progress done

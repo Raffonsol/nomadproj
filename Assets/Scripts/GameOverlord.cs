@@ -34,10 +34,10 @@ public class GameOverlord : MonoBehaviour
     void Start()
     {
         
-        // Player.Instance.AddPart(900001);
+        // Player.Instance.AddEquipment(4);
        
         // Player.Instance.AddPart(900002);
-        // Player.Instance.AddPart(900003);
+        // Player.Instance.AddPart(900007);
         
     }
     void Update() {
@@ -72,11 +72,12 @@ public class GameOverlord : MonoBehaviour
             Player.Instance.AddEquipment(5);
             Player.Instance.AddEquipment(5);
             Player.Instance.AddPart(900000);
-            Player.Instance.AddPart(900002);
-            Player.Instance.AddPart(900003);
             Player.Instance.AddPart(900001);
-            Player.Instance.AddPart(900000);
+            // Player.Instance.AddPart(900003);
+            Player.Instance.AddPart(900002);
+            // Player.Instance.AddPart(900000);
             Player.Instance.AddPart(900004);
+            Player.Instance.AddPart(900008);
             Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);
         }
     }
@@ -125,16 +126,34 @@ public class GameOverlord : MonoBehaviour
             canGo = TestForward(from, dir, dist);
         if (canGo) return from + dir;
 
-        degrees -= 120f;
+        degrees -= 120f; // = -60
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
         if (canGo) return from + dir;
-        // degrees -= 40f;
-        // dir = Vector2FromAngle(degrees );
-        //     canGo = TestForward(from, dir, dist);
-        // if (canGo) return from + dir;
+        degrees += 150f; // = 90
+        dir = Vector2FromAngle(degrees );
+            canGo = TestForward(from, dir, dist);
+        if (canGo) return from + dir;
 
-        degrees -= 120f;
+        degrees -= 180f; // = -90
+        dir = Vector2FromAngle(degrees );
+            canGo = TestForward(from, dir, dist);
+        return from + dir;
+
+        degrees += 240f; // = 150
+        dir = Vector2FromAngle(degrees );
+            canGo = TestForward(from, dir, dist);
+        return from + dir;
+         
+        degrees -= 300f; // = -150
+        dir = Vector2FromAngle(degrees );
+            canGo = TestForward(from, dir, dist);
+        return from + dir;
+        degrees += 350f; // = 200
+        dir = Vector2FromAngle(degrees );
+            canGo = TestForward(from, dir, dist);
+        return from + dir;
+        degrees -= 400f; // = -200
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
         return from + dir;
@@ -163,6 +182,9 @@ public class GameOverlord : MonoBehaviour
      }
      public void GameOver() {
         gameOver = true;
+        Destroy(MapMaker.Instance);
+        Destroy(BerkeleyManager.Instance);
+        Destroy(Player.Instance);
         // Save system catches tihs
      }
 }

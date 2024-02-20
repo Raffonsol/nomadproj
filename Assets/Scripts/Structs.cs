@@ -40,6 +40,7 @@ public enum FittablePart
     Bowstring,
     Hand, // Leave this here, its for unarmed
     Fiber,
+    Fabric
 }
 public enum PlatingMaterial
 {
@@ -50,13 +51,8 @@ public enum PlatingMaterial
     Iron,
     Rock,
     Mythril,
-    Titanium,
-    Adamarium,
-    Ervium,
-    Viranium,
-    Jotyne,
-    Valerean,
-    Critonite,
+    Bone,
+    Leather
 }
 public enum Rarity
 {
@@ -83,6 +79,7 @@ public enum ConsumableType
     Bolt,
     Scroll,
     Food,
+    Rock,
 }
 public enum CharacterStat
 {
@@ -101,6 +98,15 @@ public enum CharacterStat
     Armor,
     MovementSpeed,
     
+}
+public enum SkillType
+{
+    CreateDamageObject,
+    CreateHealingObject,
+    TargetedDamage,
+    TargetedHeal,
+    Move,
+    StanceScript,
 }
 [Serializable]
 public class PowerUp
@@ -127,6 +133,8 @@ public class Projectile
     public float minDamage;
     public float maxDamage;
     public float maxDistance;
+    public float knockBack;
+    public float maxLife = 60f;
 }
 
 [Serializable]
@@ -157,7 +165,7 @@ public class Equipment : Item
 
     public PowerUp[] modifiers;
     
-    public FittablePart[] partsNeeded;
+    public int[] partsNeeded;
 }
 
 [Serializable]
@@ -173,17 +181,11 @@ public class Weapon : Item
     public DamageRsrcType damageRsrcType;
 
     public ConsumableType ammo;
+    public Weapon Clone()
+    {
+        return (Weapon)this.MemberwiseClone();
+    }
 }
-[Serializable]
-public class Part : Item
-{
-    public FittablePart fittablePart;
-    public PlatingMaterial material;
-    public PartLooks[] partLooks;
-    public PowerUp[] statEffects;
-    public FittablePart[] partsNeeded;
-}
-
 [Serializable]
 public class Consumable : Item
 {
@@ -194,6 +196,15 @@ public class Consumable : Item
     public Projectile projectileSettings;
     public FittablePart[] partsNeeded;
 }
+[Serializable]
+public class Part : Consumable
+{
+    public FittablePart fittablePart;
+    public PlatingMaterial material;
+    public PartLooks[] partLooks;
+}
+
+
 [Serializable]
 public class Material : Item
 {
@@ -404,6 +415,8 @@ public class FriendlyChar {
     [SerializeField]
     public List<Bonus> bonuses;
 
+    public List<CharSkill> skills;
+
     [HideInInspector]
     public int[] equippedOnLoad = new int[0];
     [HideInInspector]
@@ -473,6 +486,51 @@ public class NamePart
     public bool worksForMen;
     public bool worksForWomen;
 }
+// --------------- skills  -----------------
+
+[Serializable]
+public class CombatSkill {
+    public SkillType[] skillTypes;
+    public float cooldown;
+    public float cooldownTimer;
+    public float channelingTime;
+    public float impactTime;
+    public float npcCastRange;
+    // ---dmg ----
+    public float knockBack;
+    public float damageBase;
+    public GameObject impactCollision;
+    // ---heal ----
+    public float healBase;
+    public GameObject healCollision;
+    // ---target ----
+    public int targetSystem; // 0 - nearst, 1 - random engaged, 2 - all engaged
+    // ---move ----
+    public int moveSystem; // 0 - forward, 1 - backwards, 2 - towards target, 3 - tpToTarget
+    public float offset;
+    public float speed;
+}
+[Serializable]
+public class MonsterSkill : CombatSkill {
+	public Sprite channeling;
+    public Sprite impact;
+
+}
+[Serializable]
+public class CharSkill : CombatSkill {
+    public int id; // id=0 will be for weapon skill
+    public string name;
+    public string description;
+    public Sprite icon;
+	public Instance stance;
+    public float maxRunTime;
+
+    public CharSkill Clone()
+    {
+        return (CharSkill)this.MemberwiseClone();
+    }
+}
+
 //  ----------------------- Caravan ----
 
 public class Horse {

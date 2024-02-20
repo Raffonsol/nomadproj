@@ -76,6 +76,7 @@ public class ItemDrop : Berkeley
 		if (!pickable) return;
 		// TODO: give to picker and not just player
         Player.Instance.PickupItem(itemType, id);
+        if (itemType==ItemType.Part||itemType==ItemType.Equipment)UIManager.Instance.CheckAutoEquips();
 		Destroy(transform.gameObject);
 	}
 }

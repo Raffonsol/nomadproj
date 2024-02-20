@@ -11,8 +11,14 @@ public class Monster : Combatant
     public Sprite step2;
     public Sprite attack;
 
+    public bool chaseSteps=false;
+    public Sprite chaseStep1;
+    public Sprite chaseStep2;
+
     public float attackSpeed = 1f;
     public int projectileId;
+
+    public MonsterSkill[] skills;
 
     public Color aboutToAttackColor;
 
@@ -22,10 +28,12 @@ public class Monster : Combatant
 
     private HitBox hitScript;
     private bool projectileGoing = false;
+
+    private bool hovering = false;
     
 
     // Start is called before the first frame update
-    void Start()
+    protected override void ContinuedStart()
     {
         life = maxLife;
 
@@ -41,7 +49,38 @@ public class Monster : Combatant
         SwitchRoutine(Routine.Patrolling);
         ResetPatrol();
     }
-
+    protected override void RunSkillTimers()
+    {
+        for (int i = 0; i < skills.Length; i++)
+        {
+            if (skills[i].cooldownTimer>0) {
+                skills[i].cooldownTimer-=Time.deltaTime;
+            }
+        }
+    }
+    protected override void ResetPatrol()
+    {
+        patrolTimer = patrolStopInterval;
+        patrolTarget = new Vector3(
+            (UnityEngine.Random.Range(transform.position.x - 20f, transform.position.x + 20f)),
+            (UnityEngine.Random.Range(transform.position.y - 20f, transform.position.y + 20f)), 0);
+    }
+    protected override bool CheckSkills()
+    {
+        bool oneSkillFound = false;
+        for (int i = 0; i < skills.Length; i++)
+        {
+            if (skills[i].cooldownTimer<=0.03f) {
+                oneSkillFound=true;
+                skillCastId = i;
+                skillChannelingTimer = skills[i].channelingTime;
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = skills[i].channeling;
+                SwitchRoutine(Routine.UsingSkill);
+                break;
+            }
+        }
+        return oneSkillFound;
+    }
     
     protected override void Attack()
     {
@@ -103,20 +142,80 @@ public class Monster : Combatant
         }
 
     }
-    
+    protected override void SkillCast()
+    {
+        if  (skillChannelingTimer > 0) {
+            skillChannelingTimer -= Time.deltaTime;
+        } else {
+            if (skillInImpact) {
+                if (skillImpactingTimer > 0) {
+                    skillImpactingTimer-= Time.deltaTime;
+                } else {
+                    //Impact end
+                    skillInImpact = false;
+                    transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
+               
+                    // stop damaging;
+                    // damagingOnTouch = false;
+                    // hitScript.hitting = false;
+                    // hitBox.isTrigger = true;
+
+                    skills[skillCastId].cooldownTimer = skills[skillCastId].cooldown;
+                    SwitchRoutine(Routine.Chasing);
+                }
+            } else {
+                // impact start
+                skillInImpact = true;
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = skills[skillCastId].impact;
+                skillImpactingTimer = skills[skillCastId].impactTime;
+                
+				 // start damaging;
+                // damagingOnTouch = true;
+                // hitScript.hitting = true;
+                // hitBox.isTrigger = false;
+
+                //create impact collision
+                GameObject aoe = Instantiate(skills[skillCastId].impactCollision,transform.position, transform.rotation);
+                Projectile newSettings = new Projectile();
+                newSettings.maxLife = 0.4f;
+                newSettings.minDamage = skills[skillCastId].damageBase;
+                newSettings.maxDamage = skills[skillCastId].damageBase*1.5f;
+                newSettings.knockBack = skills[skillCastId].knockBack;
+                newSettings.speed=0;
+                aoe.gameObject.GetComponent<ProjectileItem>().projectileSettings = newSettings;
+                aoe.gameObject.GetComponent<ProjectileItem>().faction = faction;
+                aoe.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
+				aoe.gameObject.GetComponent<ProjectileItem>().playerParty = false;
+                aoe.gameObject.GetComponent<ProjectileItem>().Go();
+            }
+        }
+
+    }
     protected override void StepAnim()
 	{
 		if (moveTimer1 > 0) {
-			transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
-			moveTimer2 = feetSpeed;
+            if (chaseSteps && routine==Routine.Chasing){
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = chaseStep1;
+			    moveTimer2 = chasingFeetSpeed;
+            }
+			else {
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
+			    moveTimer2 = feetSpeed;
+            }
 			moveTimer1 -= Time.deltaTime;
 		} else {
-			transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step2;
+            if (chaseSteps && routine==Routine.Chasing){
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = chaseStep2;
+            }
+			else {
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step2;
+            }
 
 			moveTimer2 -= Time.deltaTime;
 
 			if (moveTimer2 < 0) {
-				moveTimer1 = feetSpeed;
+                if (chaseSteps && routine==Routine.Chasing)moveTimer1 = chasingFeetSpeed;
+				else moveTimer1 = feetSpeed;
 			}
 		}
 	}
@@ -125,5 +224,23 @@ public class Monster : Combatant
         transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = step1;
 	}
     
+    void OnMouseOver()
+    {
+		hovering = true;
+    }
+	void OnMouseExit()
+    {
+		hovering = false;
+    }
+    protected override void ListenForClick(){
+        if (hovering && Input.GetKey(KeyCode.Mouse0)) {
+            if (Player.Instance == null || Player.Instance.activePerson.controller == null) return;
+            ZombieController attacker = Player.Instance.activePerson.controller;
+            float distance = attacker.IsRanged() ?  300f: size;
+			if (Vector3.Distance(transform.position, attacker.gameObject.transform.position) < size){
+                attacker.TriggerSkill(1);
+            }
+		}
+    }
 }
     

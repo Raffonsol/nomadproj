@@ -1,0 +1,290 @@
+fileFormatVersion: 2
+guid: 35809c62496e48148a109b636557950f
+TextureImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 11
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMasterTextureLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Server
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: wolf_1
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 2050
+        width: 575
+        height: 1316
+      alignment: 9
+      pivot: {x: 0.5940825, y: 0.4841893}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 139f42d5d0c9b2f4897b6d8cd7944afe
+      internalID: -1784686859
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: wolf_2
+      rect:
+        serializedVersion: 2
+        x: 1538
+        y: 1731
+        width: 715
+        height: 1429
+      alignment: 9
+      pivot: {x: 0.5232801, y: 0.505824}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9053b7564a5c6ff499c58aa4f5b11e3f
+      internalID: 1363311979
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: wolf_58
+      rect:
+        serializedVersion: 2
+        x: 326
+        y: 405
+        width: 613
+        height: 1306
+      alignment: 9
+      pivot: {x: 0.5950387, y: 0.47450936}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 9cc14ac00b3276844882eab89b3f60a5
+      internalID: -1200341576
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: wolf_59
+      rect:
+        serializedVersion: 2
+        x: 1690
+        y: 1311
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 355491dc799331e489e07b993efe4a6a
+      internalID: -89366981
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: wolf_60
+      rect:
+        serializedVersion: 2
+        x: 1700
+        y: 251
+        width: 689
+        height: 1399
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 1f5a5e1644823b04fb4e0855ff626af7
+      internalID: -572085203
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      wolf_10: 578411827
+      wolf_34: -1350636799
+      wolf_61: 500098403
+      wolf_41: 1028872008
+      wolf_18: -1943196271
+      wolf_50: -473647950
+      wolf_5: 569332751
+      wolf_59: -89366981
+      wolf_48: -1344424694
+      wolf_38: -1589380745
+      wolf_52: -1609089429
+      wolf_12: 1568634582
+      wolf_45: -241159255
+      wolf_37: -1484047368
+      wolf_32: 463742931
+      wolf_43: -468155156
+      wolf_21: 1344548457
+      wolf_47: 385306283
+      wolf_53: -1404551711
+      wolf_11: 1418360355
+      wolf_6: -154831148
+      wolf_30: 1045123548
+      wolf_23: 1938043893
+      wolf_14: 1518273708
+      wolf_31: 458075663
+      wolf_0: -28738052
+      wolf_26: -289385827
+      wolf_8: 232938835
+      wolf_44: 1467032704
+      wolf_42: -1201812840
+      wolf_57: -900103306
+      wolf_55: 663969162
+      wolf_3: 1500862780
+      wolf_2: 1363311979
+      wolf_4: 138477735
+      wolf_54: 1777251267
+      wolf_62: 1104648518
+      wolf_1: -1784686859
+      wolf_36: -931909975
+      wolf_7: -1109304835
+      wolf_39: 1858751410
+      wolf_46: 732885807
+      wolf_40: -57924792
+      wolf_16: 815598304
+      wolf_56: 1891966762
+      wolf_13: 1454787526
+      wolf_33: -970990178
+      wolf_35: -1274675008
+      wolf_28: -2124840162
+      wolf_20: -872028958
+      wolf_19: 1283786063
+      wolf_24: 376247536
+      wolf_9: 642829828
+      wolf_22: 2081156053
+      wolf_15: -1714037847
+      wolf_25: -377662816
+      wolf_17: 1765340994
+      wolf_51: 442934738
+      wolf_29: -1115208455
+      wolf_27: 1078112333
+      wolf_49: 2002828226
+      wolf_58: -1200341576
+      wolf_60: -572085203
+  spritePackingTag: 
+  pSDRemoveMatte: 0
+  pSDShowRemoveMatteOption: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

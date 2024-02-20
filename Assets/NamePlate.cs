@@ -18,7 +18,7 @@ public class NamePlate : MonoBehaviour
     void Update()
     {
         if (UIManager.Instance.openMenu == Menu.Inventory) {
-            if (textMesh.text == "" || textMesh.text == "name")
+            if (textMesh.text.Equals("") || textMesh.text.Equals("name"))
             textMesh.text = transform.parent.gameObject.name;
         } else {
             textMesh.text = "";

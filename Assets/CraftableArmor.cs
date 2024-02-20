@@ -17,6 +17,8 @@ public class CraftableArmor : MonoBehaviour
         showingItem = GameLib.Instance.GetEquipmentById(showingItemId);
         transform.Find("craft1").GetComponent<Button>().onClick.AddListener(() => CraftOne());
         transform.Find("craftAll").GetComponent<Button>().onClick.AddListener(() => CraftAll());
+        partNeeded1 = GameLib.Instance.GetPartById(showingItem.partsNeeded[0]).icon;
+        partNeeded2 = GameLib.Instance.GetPartById(showingItem.partsNeeded[1]).icon;
     }
 
     // Update is called once per frame
@@ -57,7 +59,7 @@ public class CraftableArmor : MonoBehaviour
         bool part2Owned = false;
         int part2Id = 0;
         for(int i = 0; i <Player.Instance.parts.Count; i++){
-            if (!part1Owned && Player.Instance.parts[i].fittablePart == showingItem.partsNeeded[0]) {
+            if (!part1Owned && Player.Instance.parts[i].id == showingItem.partsNeeded[0]) {
                 part1Owned = true;
                 part1Id =Player.Instance.parts[i].id;
                 
@@ -65,7 +67,7 @@ public class CraftableArmor : MonoBehaviour
                 continue;
 
             } 
-            if (!part2Owned && Player.Instance.parts[i].fittablePart == showingItem.partsNeeded[1]) {
+            if (!part2Owned && Player.Instance.parts[i].id == showingItem.partsNeeded[1]) {
                 part2Owned = true;
                 part2Id =Player.Instance.parts[i].id;
 

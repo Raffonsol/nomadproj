@@ -131,7 +131,7 @@ public class Save : MonoBehaviour
     private float saveTimer = 2;
     void Start()
      {
-         LoadFile();
+        //  LoadFile();
          
          Player.Instance.DoStart();
         // start all characters to make them right

@@ -2,8 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
 
-public class TabButton : MonoBehaviour
+public class TabButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     public Tab tabToOpen;
 
@@ -30,5 +31,15 @@ public class TabButton : MonoBehaviour
     void ButtonClicked()
     {
         UIManager.Instance.SetOpenTab(tabToOpen);
+    }
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        UIManager.Instance.ShowSimpleToolTip(transform.position*0.965f, tabToOpen.ToString());
+        
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        UIManager.Instance.HideToolTips();
     }
 }

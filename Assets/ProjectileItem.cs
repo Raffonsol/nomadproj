@@ -14,22 +14,29 @@ public class ProjectileItem : MonoBehaviour
 
     private bool going = false;
     private Vector3 firingPoint;
+    private float lifeTime;
     // Start is called before the first frame update
     public void Go()
     {
         transform.position += transform.right * -0.6f;
-        going = true;
         firingPoint = transform.position;
+        lifeTime = projectileSettings.maxLife;
+        going = true;
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
+        if (!going) return;
         Run();
-        Destroy();
+       Destroy();
+        if (lifeTime > 0) {
+            lifeTime -= Time.deltaTime;
+        } else {
+            Destroy(this.gameObject);
+        }
     }
     private void Run () {
-        if (!going) return;
         transform.position += transform.right * -2.5f * projectileSettings.speed * Time.deltaTime;
     }
     private void Destroy() {

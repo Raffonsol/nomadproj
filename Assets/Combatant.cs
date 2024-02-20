@@ -11,10 +11,13 @@ public enum Routine
     Attacking,
     Fleeing,
     Searching,
+    Tossed, // for knockback
+    UsingSkill,
 }
 
 public class Combatant : Berkeley
 {
+    // 0=inGroup 1=hostile 2=neutral
     public int faction = 2;
     public int[] hatesFactions;
 
@@ -26,12 +29,13 @@ public class Combatant : Berkeley
 
     public float attackDistance = 0.73f;
     public float attackCooldown = 1f;
-    
 
     public DamageType attackDamageType;
     public float patrolSpeed = 1f;
 	public float turnSpeed = 3f;
 	public float feetSpeed = 0.5f;
+    public bool runsAway = false;
+	public float chasingFeetSpeed = 0.5f;
 
     public float alertRange = 10f;
     public float searchTimer = 20f;
@@ -46,6 +50,13 @@ public class Combatant : Berkeley
     [HideInInspector]
     public float invincibleTimer;
     public Drop[] drops;
+
+    public bool searches =true;
+
+    protected int skillCastId;
+    protected float skillChannelingTimer;
+    protected float skillImpactingTimer;
+    protected bool skillInImpact = false;
 
     protected bool engaged = false;
 
@@ -74,10 +85,15 @@ public class Combatant : Berkeley
     protected Vision vision;
     protected float visionTimer;
 
+    protected AudioSource audio;
+
+    protected Vector2 knockBackLandPosition;
+
     private void Awake() 
     {
         originPosition = transform.position;
         vision = transform.Find("Vision").GetComponent<Vision>();
+        audio = GetComponent<AudioSource>();
     }
 
     protected void SwitchRoutine(Routine newRoutine)
@@ -88,7 +104,6 @@ public class Combatant : Berkeley
             ResetPatrol();
             break;
         case (Routine.Chasing):
-            
             break;
         case (Routine.Attacking):
             attackTimer = attackCooldown;
@@ -101,7 +116,7 @@ public class Combatant : Berkeley
         routine = newRoutine;
     }
     // Update is called once per frame
-    void FixedUpdate()
+    protected override void ContinuedUpdate()
     {
          if (invincibleTimer > -1f) {
             invincibleTimer -= Time.deltaTime;
@@ -110,6 +125,7 @@ public class Combatant : Berkeley
             cooldownTimer -= Time.deltaTime;
         }
         Die();
+        ListenForClick();
         switch (routine) {
         case (Routine.Patrolling):
             Patrol();
@@ -120,11 +136,23 @@ public class Combatant : Berkeley
         case (Routine.Attacking):
             Attack();
             break;
+        case (Routine.UsingSkill):
+            SkillCast();
+            break;
+        case (Routine.Tossed):
+            BeTossed();
+            break;
         case (Routine.Searching):
             Search();
             break;
         }
         
+    }
+    protected virtual void ListenForClick(){
+    }
+    protected virtual void RunSkillTimers()
+    {
+        // implemented on monster
     }
     protected void Patrol()
     {
@@ -178,7 +206,7 @@ public class Combatant : Berkeley
             searchTimer -= Time.deltaTime;
         } else {
             // searching for too long creates problems
-            Destroy(gameObject);
+            gameObject.GetComponent<Berkeley>().DestroyAndRecount();
         }
         Vector2 currentPosition = transform.position;
 
@@ -200,12 +228,18 @@ public class Combatant : Berkeley
     }
     protected void Chase()
     {
+        RunSkillTimers();
         if (chaseTarget == null) SwitchRoutine(Routine.Patrolling);
         
         Vector2 currentPosition = transform.position;
         try {
             chaseTargetPosition = chaseTarget.transform.position;
-        } catch (MissingReferenceException) {
+        } catch (NullReferenceException) {
+            // meaning they don't exist anymore
+            chaseTarget = null;
+            SwitchRoutine(Routine.Patrolling);
+        }
+         catch (MissingReferenceException) {
             // meaning they don't exist anymore
             chaseTarget = null;
             SwitchRoutine(Routine.Patrolling);
@@ -213,10 +247,14 @@ public class Combatant : Berkeley
 
         Vector2 nextPoint = GameOverlord.Instance.Pathfind(currentPosition, chaseTargetPosition);
         moveDirection = nextPoint - currentPosition;
+        if (runsAway)moveDirection = currentPosition-nextPoint;
         moveDirection.Normalize();
         Vector2 target = moveDirection + currentPosition;
         if (Vector3.Distance(currentPosition, chaseTargetPosition) > giveUpDistance) {SwitchRoutine(Routine.Patrolling); return;}
-		if (Vector3.Distance(currentPosition, chaseTargetPosition) > attackDistance || cooldownTimer > 0) {
+		if (
+            // (runsAway && Vector3.Distance(currentPosition, chaseTargetPosition) < attackDistance) ||
+            (Vector3.Distance(currentPosition, chaseTargetPosition) > attackDistance || cooldownTimer > 0)
+            ) {
 			
             transform.position = Vector3.Lerp (currentPosition, target, runSpeed * Time.deltaTime);
 
@@ -228,14 +266,13 @@ public class Combatant : Berkeley
                 // For now just resetting into patrol when stuck
                 SwitchRoutine(Routine.Patrolling);
             }
-            
-
             StepAnim();
-			
 		}
 		else {
 			StopAnim();
-            SwitchRoutine(Routine.Attacking);
+            bool usedSkill = false;
+            usedSkill = CheckSkills();
+            if (!usedSkill) SwitchRoutine(Routine.Attacking);
 		}
     }
     protected virtual void Attack()
@@ -243,12 +280,22 @@ public class Combatant : Berkeley
         // needs to be overriden
         Debug.Log("Uh oh");
     }
-    protected void ResetPatrol()
+    protected virtual void SkillCast()
+    {
+        // needs to be overriden
+        Debug.Log("Uh oh");
+    }
+    protected virtual void ResetPatrol()
     {
         patrolTimer = patrolStopInterval;
         patrolTarget = new Vector3(
-            (UnityEngine.Random.Range(originPosition.x - 20f, originPosition.x + 20f)),
-            (UnityEngine.Random.Range(originPosition.y - 20f, originPosition.y + 20f)), 0);
+            (UnityEngine.Random.Range(originPosition.x - 6f, originPosition.x + 6f)),
+            (UnityEngine.Random.Range(originPosition.y - 6f, originPosition.y + 6f)), 0);
+            
+    }
+    protected virtual bool CheckSkills()
+    {
+        return false;
     }
     protected bool StuckCheck()
     {
@@ -268,7 +315,7 @@ public class Combatant : Berkeley
         if (faction != 1) return false;
 
         // if very far, switch to a lower code searching script
-        if (Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*2f) {
+        if (searches && Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*2f) {
             SwitchRoutine(Routine.Searching);
             // disables collision tso we dont have to pathfind
             GetComponent<CircleCollider2D>().isTrigger = true;
@@ -304,6 +351,13 @@ public class Combatant : Berkeley
 			Shot(collided);
 		}
 	}
+    void OnTriggerStay2D(Collider2D collided)
+	{
+		if (collided.CompareTag("Projectile"))
+		{
+			Shot(collided);
+		}
+	}
 	void OnCollisionStay2D(Collision2D collision)
 	{
 		if (collision.collider.CompareTag("Hitbox"))
@@ -323,13 +377,14 @@ public class Combatant : Berkeley
 		if (hitter.hitting && hitter.faction != faction && invincibleTimer < 0) {
 			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
 			TakeDamage(damage);
+            KnockedBack(target, hitter.knockBack);
             if (hitter.playerParty && !engaged){ 
                 Player.Instance.Engage(gameObject);
                 engaged = true;
             }
 
             chaseTarget = collided.transform.gameObject;
-            if (routine!=Routine.Chasing && routine!=Routine.Attacking) SwitchRoutine(Routine.Chasing);
+            if (routine!=Routine.Chasing && routine!=Routine.Attacking && routine!=Routine.UsingSkill) SwitchRoutine(Routine.Chasing);
 		}
 
 	}
@@ -340,14 +395,15 @@ public class Combatant : Berkeley
 		ProjectileItem hitter = target.GetComponent<ProjectileItem>();
 		if (hitter.faction != faction && invincibleTimer < 0) {
             // drop arrow
-            if (hitter.shooter.GetComponent<ZombieController>().self.ownedAbilities.Contains(PassiveAbility.ArrowRecovery)
+            if (hitter.faction == 0 && hitter.shooter.GetComponent<ZombieController>().self.ownedAbilities.Contains(PassiveAbility.ArrowRecovery)
                 && UnityEngine.Random.Range(0, 2) == 1) {
                 DropItem(ItemType.Consumable, hitter.consumableId);
             }
 			float damage = UnityEngine.Random.Range(hitter.projectileSettings.minDamage, hitter.projectileSettings.maxDamage);
 			TakeDamage(damage);
+            KnockedBack(target, hitter.projectileSettings.knockBack);
             if (hitter.playerParty) Player.Instance.Engage(gameObject);
-            Destroy(target);
+            Destroy(target); // deestroying arrow proj
 
             try {
                 chaseTarget = hitter.shooter;
@@ -365,6 +421,12 @@ public class Combatant : Berkeley
         life -= damage;
         GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, transform);
         DamageText.GetComponent<DamageText>().textToDisplay = damage.ToString("0.00");
+
+        // stagger 
+        cooldownTimer+=(cooldownTimer/10f);
+
+        // audio
+        // audio.Play();
     }
     public void Die() {
         if (life > 0) return;
@@ -380,7 +442,7 @@ public class Combatant : Berkeley
         int exp = UnityEngine.Random.Range(minExpGiven, maxExpGiven);
         Player.Instance.GainExperience(exp);
         // GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == transform.gameObject.name ) );
-        Destroy(transform.gameObject);
+       gameObject.GetComponent<Berkeley>().DestroyAndRecount();
     }
     void DropLoot(Drop drop) {
         int dropsQ = UnityEngine.Random.Range(1, drop.maxDropped);
@@ -400,4 +462,18 @@ public class Combatant : Berkeley
         itemObj.GetComponent<SpriteRenderer>().sprite = GameLib.Instance.GetItemByType(dropId, dropType).icon;
 
     }
+
+    public void KnockedBack(GameObject source, float amount) {
+        if (amount <0.1f) return;
+        knockBackLandPosition = Vector3.MoveTowards(transform.position,source.transform.position, amount*-2f);
+        SwitchRoutine(Routine.Tossed);
+        // TODO: Implemenent knockback
+    }
+	void BeTossed() {
+		if (Vector3.Distance(transform.position, knockBackLandPosition) > 0.2f) {
+			transform.position = Vector3.Lerp (transform.position, knockBackLandPosition, 3f * Time.deltaTime);
+		} else {
+			SwitchRoutine(Routine.Chasing);
+		}
+	}
 }

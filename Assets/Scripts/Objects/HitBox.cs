@@ -6,6 +6,7 @@ public class HitBox : MonoBehaviour
 {
     public float damageMin;
     public float damageMax;
+    public float knockBack;
     public bool hitting = false;
     public bool playerParty = false;
     public DamageRsrcType damageRsrcType;

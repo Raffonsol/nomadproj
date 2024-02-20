@@ -11,10 +11,16 @@ public enum BerkeleyType
 }
 [Serializable]
 public class BerkeleySpawnable {
+    public int id;
+    public bool globalSpawn = false;
     public GameObject obj;
     public float spawnTime;
     public float spawnTimer;
     public BerkeleyType berkeleyType;
+    public int limit;
+    public int currentQuantity;
+    public int minLevel;
+    public bool notOnRiverOrRoad=false;
 }
 public class BerkeleyManager : MonoBehaviour
 {
@@ -29,7 +35,7 @@ public class BerkeleyManager : MonoBehaviour
     public int friendlyGoingId = 4;
 
     [SerializeField]
-    List<BerkeleySpawnable> spawnables;
+    public List<BerkeleySpawnable> spawnables;
 
     private int berkeleyMax;
     private int monsterMax;
@@ -52,22 +58,17 @@ public class BerkeleyManager : MonoBehaviour
 
     
     // Start is called before the first frame update
-    void Start()
+    public void DoStart()
     {
         // TODO replace with glboal settings
-        berkeleyMax = 300;
+        berkeleyMax = 400;
         monsterMax = 30;
-        rsrcMax = 100;
+        rsrcMax = 200;
         npcMax = 20;
 
         checkTimer = checkTime;
         for(int i = 0; i <spawnables.Count; i++){
             spawnables[i].spawnTimer = spawnables[i].spawnTime;
-        }
-        
-        for(int i = 0; i <50; i++){
-            // hardcoded add of first spawnable 50 time. Use for trees
-            Spawn(spawnables[0].obj);
         }
         
     }
@@ -76,14 +77,18 @@ public class BerkeleyManager : MonoBehaviour
     void Update()
     {
         for(int i = 0; i <spawnables.Count; i++){
+            if (!spawnables[i].globalSpawn) continue;
             if (spawnables[i].spawnTimer > 0) {
                 spawnables[i].spawnTimer -= Time.deltaTime;
             } else {
-                if ((spawnables[i].berkeleyType == BerkeleyType.Rsrc && !rsrcCapped)
+                if (((spawnables[i].berkeleyType == BerkeleyType.Rsrc && !rsrcCapped)
                   ||(spawnables[i].berkeleyType == BerkeleyType.Monster && !monsterCapped)
-                  ||(spawnables[i].berkeleyType == BerkeleyType.Npc && !npcCapped)
-                  )
-                Spawn(spawnables[i].obj);
+                  ||(spawnables[i].berkeleyType == BerkeleyType.Npc && !npcCapped))
+                  && spawnables[i].limit > spawnables[i].currentQuantity
+                  && Player.Instance.playerLevel >=  spawnables[i].minLevel
+                  ) {
+                        Spawn(spawnables[i], spawnables[i].id);
+                    }
                 spawnables[i].spawnTimer = spawnables[i].spawnTime;
             }
         }
@@ -107,7 +112,7 @@ public class BerkeleyManager : MonoBehaviour
         rsrcCapped = berkeleyCapped || rsrcL > rsrcMax;
         npcCapped = berkeleyCapped || npcL > npcMax;
     }
-    void Spawn(GameObject obj) {
+    void Spawn(BerkeleySpawnable spawn, int spawnableId, int attempt=0) {
         Vector2 CamPos = Camera.main.transform.position;
         float x = UnityEngine.Random.Range(CamPos.x-disappearDistance, CamPos.x+disappearDistance);
         while (Math.Abs(x - Camera.main.transform.position.x) < 7) 
@@ -116,9 +121,19 @@ public class BerkeleyManager : MonoBehaviour
         float y = UnityEngine.Random.Range(CamPos.y-disappearDistance, CamPos.y+disappearDistance);
         while (Math.Abs(y - Camera.main.transform.position.y) < 7) 
             y = UnityEngine.Random.Range(CamPos.y-disappearDistance, CamPos.y+disappearDistance);
-
-        Instantiate(obj, new Vector2(x, y), Quaternion.Euler(0,0,UnityEngine.Random.Range(0,360)));
-        // Debug.Log("Spawning tree at " +x +","+y);
+        
+        Tile tile = MapMaker.Instance.GetTileAtCoordinates(x,y);
+        if (spawn.berkeleyType!=BerkeleyType.Monster &&
+            (tile == null || tile.controller==null || tile.controller.contentCurrent>=tile.controller.contentLimit)) {
+            if (attempt>5)return;
+            Spawn(spawn, spawn.id, 1+attempt); // Retry
+        } else {
+            // actually spawning
+            if (spawn.berkeleyType!=BerkeleyType.Monster) tile.controller.contentCurrent++;
+            GameObject inst = Instantiate(spawn.obj, new Vector2(x, y), Quaternion.Euler(0,0,UnityEngine.Random.Range(0,360)));
+            // Debug.Log("Spawning tree at " +x +","+y);
+            // inst.GetComponent<Berkeley>().spawnableId = spawnableId;
+        }
     }
 
     public int LatestFriendId() {

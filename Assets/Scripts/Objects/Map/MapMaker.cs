@@ -26,6 +26,8 @@ public class Tile
     public bool isRiver;
     [HideInInspector]
     public bool hasGenerated;
+
+    public TileController controller;
     
     public Tile() {
         northCon = ConnectionPart.Void;
@@ -41,6 +43,14 @@ public class Tile
         return (Tile)this.MemberwiseClone();
     }
 }
+[Serializable]
+public class TileVillage 
+{
+    public int id;
+    public Tile[] villageTiles;
+    public int maxX;
+    public int maxY;
+}
 
 public class MapMaker : MonoBehaviour
 {
@@ -49,6 +59,8 @@ public class MapMaker : MonoBehaviour
     [SerializeField]
     public List<Tile> Tiles;
     public List<Tile> RiverTiles;
+    public List<Tile> PreMapped;
+    public List<TileVillage> PreMappedVillages;
 
     public float tileLength = 16.8f;
     public int riverLength;
@@ -71,12 +83,20 @@ public class MapMaker : MonoBehaviour
     void Start()
     {
         tileMap = new Tile[mapHeight][];
-        // MapRiver();
         
         MapLine(riverLength, ConnectionPart.River, true, 0, 0);
         MapLine(riverLength, ConnectionPart.River, true, 0, 20);
         MapLine(100, ConnectionPart.Street, false, 0, 30);
+        for (int i = 0; i < PreMapped.Count; i++)
+        {
+            MapSingleTile(PreMapped[i]);
+        }
+        for (int i = 0; i < PreMappedVillages.Count; i++)
+        {
+            MapTileGroup(PreMappedVillages[i].villageTiles, PreMappedVillages[i].maxX, PreMappedVillages[i].maxY);
+        }
         GenerateFirstTile();
+        BerkeleyManager.Instance.DoStart();
     }
     public void DeleteTileAt(int x, int y) {
         tileMap[x][y].tileObject = null;
@@ -91,7 +111,7 @@ public class MapMaker : MonoBehaviour
 
             bool lastUp = up;
             if (tileMap[xPos] == null) 
-                tileMap[xPos] = new Tile[100];
+                tileMap[xPos] = new Tile[mapHeight];
             else if (tileMap[xPos][yPos]!=null && tileMap[xPos][yPos].isRiver) return;
             // 1/6 to change direction
             if (UnityEngine.Random.Range(0, 5) == 1) up =!up;
@@ -106,54 +126,52 @@ public class MapMaker : MonoBehaviour
         
             // move
             if (up) yPos++; else xPos++;
-
-            
         }
         
     }
-    // void MapRiver() {
-
-    //     int xPos = 0;
-    //     int yPos = 0;
-    //     bool up = UnityEngine.Random.Range(0, 1) == 0;
-
-    //     for(int i = 0; i <riverLength; i++){
-
-    //         bool lastUp = up;
-    //         if (tileMap[xPos] == null) 
-    //             tileMap[xPos] = new Tile[100];
-    //         // 1/6 to change direction
-    //         if (UnityEngine.Random.Range(0, 5) == 1) up =!up;
-
-    //         tileMap[xPos][yPos] = new Tile();
-    //         tileMap[xPos][yPos].northCon = up ? ConnectionPart.River : ConnectionPart.Void;
-    //         tileMap[xPos][yPos].southCon = lastUp ? ConnectionPart.River : ConnectionPart.Void;
-    //         tileMap[xPos][yPos].eastCon = !up ? ConnectionPart.River : ConnectionPart.Void;
-    //         tileMap[xPos][yPos].westCon = !lastUp ? ConnectionPart.River : ConnectionPart.Void;
-    //         tileMap[xPos][yPos].isRiver = true;
-    //         try {
-    //             tileMap[-1* xPos][-1*yPos] = new Tile();
-    //             tileMap[-1* xPos][-1*yPos].northCon = up ? ConnectionPart.River : ConnectionPart.Void;
-    //             tileMap[-1* xPos][-1*yPos].southCon = up ? ConnectionPart.River : ConnectionPart.Void;
-    //             tileMap[-1* xPos][-1*yPos].eastCon = !up ? ConnectionPart.River : ConnectionPart.Void;
-    //             tileMap[-1* xPos][-1*yPos].westCon = !up ? ConnectionPart.River : ConnectionPart.Void;
-    //             tileMap[xPos][yPos].isRiver = true;
-    //         } catch {
-    //             // just whatever
-    //         }
+    void MapSingleTile(Tile tile) {
+        int xPos = UnityEngine.Random.Range(0, mapHeight);
+        int yPos = UnityEngine.Random.Range(0, mapHeight);
+        do {
+            xPos = UnityEngine.Random.Range(0, mapHeight);
+            yPos = UnityEngine.Random.Range(0, mapHeight);
+            if (tileMap[xPos] == null) 
+                tileMap[xPos] = new Tile[mapHeight];
+        } while (tileMap[xPos][yPos] !=null);
         
-    //         // move
-    //         if (up) yPos++; else xPos++;
-
+        tileMap[xPos][yPos] = tile.Clone();
+        tileMap[xPos][yPos].tileObject = Instantiate(tile.tileObject,
+            new Vector3(xPos * tileLength, yPos * tileLength, 0), Quaternion.identity); 
+    }
+    void MapTileGroup(Tile[] tile, int maxX, int maxY) {
+        int xPos = UnityEngine.Random.Range(0, maxX);
+        int yPos = UnityEngine.Random.Range(0, maxY);
+        do {
+            xPos = UnityEngine.Random.Range(0, maxX);
+            yPos = UnityEngine.Random.Range(0, maxY);
+            if (tileMap[xPos] == null) tileMap[xPos] = new Tile[mapHeight];
+            if (tileMap[xPos+1] == null) tileMap[xPos+1] = new Tile[mapHeight];
+        } while (xPos>=mapHeight || yPos<=0 || tileMap[xPos][yPos] !=null || tileMap[xPos+1][yPos] !=null || tileMap[xPos][yPos-1] !=null || tileMap[xPos+1][yPos-1] !=null);
+        
+        tileMap[xPos][yPos] = tile[0].Clone();
+        tileMap[xPos][yPos].tileObject = Instantiate(tile[0].tileObject,
+            new Vector3(xPos * tileLength, yPos * tileLength, 0), Quaternion.identity);
+        tileMap[xPos+1][yPos] = tile[1].Clone();
+        tileMap[xPos+1][yPos].tileObject = Instantiate(tile[1].tileObject,
+            new Vector3((xPos+1) * tileLength, yPos * tileLength, 0), Quaternion.identity);  
+        tileMap[xPos][yPos-1] = tile[2].Clone();
+        tileMap[xPos][yPos-1].tileObject = Instantiate(tile[2].tileObject,
+            new Vector3(xPos * tileLength, (yPos-1) * tileLength, 0), Quaternion.identity); 
+        tileMap[xPos+1][yPos-1] = tile[3].Clone();
+        tileMap[xPos+1][yPos-1].tileObject = Instantiate(tile[3].tileObject,
+            new Vector3((xPos+1) * tileLength, (yPos-1) * tileLength, 0), Quaternion.identity); 
             
-    //     }
-        
-    // }
-    
+        UIManager.Instance.villageLocations.Add(new Vector2(xPos*tileLength+tileLength/2, (yPos-1)*tileLength+tileLength/2));
+    }
     // Expects no tile to have graphics yet, but rivers will be allocated
     void GenerateFirstTile() {
         bool isRiver = false;
-        if (tileMap[49] == null) tileMap[49] = new Tile[100];
+        if (tileMap[49] == null) tileMap[49] = new Tile[mapHeight];
         if (tileMap[49][49] != null) {
             // is river
            isRiver = true;
@@ -253,7 +271,7 @@ public class MapMaker : MonoBehaviour
         
         if (!(tileMap[playerX] != null && tileMap[playerX][playerY] !=null && tileMap[playerX][playerY].hasGenerated)) {
             // Debug.Log("Mapping around " + playerX + ", " + playerY);
-            if (tileMap[playerX] == null) tileMap[playerX] = new Tile[100];
+            if (tileMap[playerX] == null) tileMap[playerX] = new Tile[mapHeight];
             // if (tileMap[playerX][playerY] == null) {
                 MapTile(playerX, playerY);
             // }
@@ -301,7 +319,7 @@ public class MapMaker : MonoBehaviour
         }
         bool isRiver = false;
         if ( tileMap[x] == null) {
-            tileMap[x] = new Tile[100];
+            tileMap[x] = new Tile[mapHeight];
         } 
         if (tileMap[x][y] == null) {
             tileMap[x][y] = new Tile();
@@ -317,6 +335,13 @@ public class MapMaker : MonoBehaviour
         tileMap[x][y].tileObject = Instantiate(tile.tileObject,
             new Vector3(x * tileLength, y * tileLength, 0), Quaternion.identity);
         TileController controller = tileMap[x][y].tileObject.AddComponent<TileController>();
-        controller.x = x; controller.y = y;
+        controller.x = x; controller.y = y; controller.hasRoadOrRiver=isRiver||tile.southCon==ConnectionPart.Street||tile.northCon==ConnectionPart.Street||tile.westCon==ConnectionPart.Street||tile.eastCon==ConnectionPart.Street;
+        tile.controller = controller;
+    }
+    public Tile GetTileAtCoordinates(float cx, float cy) {
+        int x =(int)Math.Round(cx/tileLength);
+        int y =(int)Math.Round(cy/tileLength);
+        if (tileMap[x]==null || tileMap[x][y]==null) return null;
+        return tileMap[x][y];
     }
 }
