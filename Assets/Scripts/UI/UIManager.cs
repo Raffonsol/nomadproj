@@ -6,6 +6,7 @@ using System.Linq;
 using System;
 using UnityEngine.UI;
 using TMPro;
+using System.Text.RegularExpressions;
 
 public enum Menu
 {
@@ -28,6 +29,8 @@ public enum Tab
 public class UIManager : MonoBehaviour
 {
     public static UIManager Instance { get; private set; }
+
+    public TextMeshProUGUI debugger;
     public Menu? openMenu;
     public Tab openTab = Tab.Armor;
     
@@ -76,6 +79,8 @@ public class UIManager : MonoBehaviour
     private float toolTipTime=0.03f;
     private float toolTipTimer=0;
     private int toolTipStep=0;
+
+    private int lastIndicatorId = 0;
 
     // Singleton stuff
     private void Awake() 
@@ -127,6 +132,15 @@ public class UIManager : MonoBehaviour
                 detailedToolTipPrefab.GetComponent<ContentSizeFitter>().verticalFit =ContentSizeFitter.FitMode.PreferredSize;
             }
         }
+        string debuggerText = "";
+        for (int i = 0; i < Player.Instance.engagedMonster.Count; i++)
+        {
+            if (Player.Instance.engagedMonster[i] == null)debuggerText+="Destroyed\n";
+            else debuggerText+=Player.Instance.engagedMonster[i].name.Replace("(Clone)","").Replace("(Clone)","") + "\n";
+        }
+        debugger.text += Player.Instance.EngagedFor();
+        // Regex.Replace(debuggerText, @"[0-9]", "");
+        debugger.text = debuggerText;
     }
 
     void ProcessIndicatorArrows() {
@@ -134,15 +148,16 @@ public class UIManager : MonoBehaviour
         UpdateDirectionArrow(nextPoint, directionArrow, true,false);
         for (int i = 0; i < monsterArrows.Count; i++)
         {
-            try {
+            if (monsterArrows[i]!=null && monsterArrowTargets[i] != null)
+            // try {
                 UpdateDirectionArrow(monsterArrowTargets[i].transform.position, monsterArrows[i], false,true);
-            } catch (MissingReferenceException) {
-                RemoveMonsterIndicator(i);
-                return;
-            } catch (NullReferenceException) {
-                RemoveMonsterIndicator(i);
-                return;
-            }
+            // } catch (MissingReferenceException) {
+            //     RemoveMonsterIndicator(i);
+            //     return;
+            // } catch (NullReferenceException) {
+            //     RemoveMonsterIndicator(i);
+            //     return;
+            // }
         }
     }
 
@@ -150,6 +165,7 @@ public class UIManager : MonoBehaviour
     {
         if (openMenu == menu) {
             openMenu = null;
+            HideToolTips();
         } else {
             openMenu = menu;
         }
@@ -392,17 +408,14 @@ public class UIManager : MonoBehaviour
         FriendlyChar person = Player.Instance.activePerson;
         skillSquares[0].transform.Find("Text").GetComponent<Image>().sprite = person.equipped.primaryWeapon.icon;
         // additional skills
-        if (person.skills!=null && person.skills.Count>0){
-            if (!skillSquares[1].activeSelf && person.equipped.primaryWeapon.id!=100000){
-                skillSquares[1].SetActive(true);
-                CharSkill addSkill =person.skills[0];
-                if (person.skills[0].id == 0) {
-                    // weapon skill
-                    addSkill=GameLib.Instance.getWeaponsSkill(person.equipped.primaryWeapon.id);
-                    Debug.Log(addSkill.name);
-                } 
-                skillSquares[1].transform.Find("Text").GetComponent<Image>().sprite = addSkill.icon;
-            }
+        if (person.skills!=null && person.skills.Count>0 && person.equipped.primaryWeapon.id!=100000){
+            skillSquares[1].SetActive(true);
+            CharSkill addSkill =person.skills[0];
+            if (person.skills[0].id == 0) {
+                // weapon skill
+                addSkill=GameLib.Instance.getWeaponsSkill(person.equipped.primaryWeapon.id);
+            } 
+            skillSquares[1].transform.Find("Text").GetComponent<Image>().sprite = addSkill.icon;
         } else skillSquares[1].SetActive(false);
     }
     public void UpdateDirectionArrow(Vector2 nextPoint, GameObject arrow, bool rotate, bool changeColor) {
@@ -446,18 +459,19 @@ public class UIManager : MonoBehaviour
         }
     } 
     public int AddMonsterIndicator(GameObject target, bool friendly=false) {
-        int indicatorIndex = monsterArrows.Count;
+        int indicatorIndex = lastIndicatorId;
         GameObject newArrow = Instantiate(friendly ? friendArrowPrefab : monsterArrowPrefab);
         newArrow.transform.parent = gameObject.transform;
         monsterArrows.Add(newArrow);
         monsterArrowTargets.Add(target);
+        lastIndicatorId++;
         return indicatorIndex;
     }
     public void RemoveMonsterIndicator(int index) {
         if (index>=monsterArrows.Count)return;
         GameObject toBeDied =monsterArrows[index];
-        monsterArrows.RemoveAt(index);
-        monsterArrowTargets.RemoveAt(index);
+        // monsterArrows.RemoveAt(index);
+        // monsterArrowTargets.RemoveAt(index);
         Destroy(toBeDied);
     }
     public void ShowSimpleToolTip(Vector2 position, string text) {

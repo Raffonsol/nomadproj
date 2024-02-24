@@ -144,19 +144,19 @@ public class Save : MonoBehaviour
         BerkeleyManager.Instance.friendlyGoingId = Player.Instance.characters[Player.Instance.characters.Count -1].id;
         SaveFile();
      }
-     void Update() {
-        if (saveTimer > 0) {
-            saveTimer -= Time.deltaTime;
-        } else {
-            Debug.Log("Saving game");
-            SaveFile();
-            saveTimer = 20f;
-            return;
-        }
-        if (GameOverlord.Instance.gameOver) {
-            SaveFile();
-        }
-     }
+    //  void Update() {
+    //     if (saveTimer > 0) {
+    //         saveTimer -= Time.deltaTime;
+    //     } else {
+    //         Debug.Log("Saving game");
+    //         SaveFile();
+    //         saveTimer = 20f;
+    //         return;
+    //     }
+    //     if (GameOverlord.Instance.gameOver) {
+    //         SaveFile();
+    //     }
+    //  }
      
  
      public void SaveFile()

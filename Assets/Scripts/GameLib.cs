@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Linq;
 
 public class GameLib : MonoBehaviour
 {
@@ -37,7 +38,9 @@ public class GameLib : MonoBehaviour
     public CharSkill[] allCharSkills;
     [SerializeField]
     public CharSkill[] weaponSkills;
-    
+
+    [SerializeField]
+    public OddityChances[] oddityChances;
     
     // Singleton stuff
     private void Awake() 
@@ -144,9 +147,12 @@ public class GameLib : MonoBehaviour
         
         int j = 0;
         NamePart part = nameParts[j];
-        while (!(isMale && part.worksForMen) && !(!isMale && part.worksForWomen)) {
+        while (part==null || (!(isMale && part.worksForMen) && !(!isMale && part.worksForWomen))) {
             j++;
             part = nameParts[j];
+            if (part.type == NamePartType.FullName && UnityEngine.Random.Range(0, 101) < 60) {
+                part = null;
+            }
         }
         if (part.type == NamePartType.FullName) {
             return part.value;
@@ -187,9 +193,27 @@ public class GameLib : MonoBehaviour
             case (100007): {
                 return weaponSkills[3];
             }
+            case (100001): {
+                return weaponSkills[4];
+            }
         }
 
         return weaponSkills[0];
+    }
+
+    public Oddity[] MakeListOfOddities() {
+        List<Oddity> oddities = new List<Oddity>();
+        oddityChances.Shuffle();
+
+        for (int i = 0; i < oddityChances.Length; i++)
+        {
+            if (UnityEngine.Random.Range(0, 101) < oddityChances[i].percentage
+                && !oddities.Intersect(oddityChances[i].conflictsWith).Any()) {
+                oddities.Add(oddityChances[i].oddity);
+            }
+        }
+
+        return oddities.ToArray();
     }
 
 }

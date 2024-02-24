@@ -9,7 +9,7 @@ public class Neutral : Combatant
 {
     public string name;
     [SerializeField]
-    public Appearance appearance;
+    public NeutralChar person;
 
     public int startingWeaponId;
     public int[] startingWeaponParts;

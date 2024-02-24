@@ -107,6 +107,9 @@ public enum SkillType
     TargetedHeal,
     Move,
     StanceScript,
+    EnterDefensiveMode,
+    TargetedStun,
+    TargetedLifesteal,
 }
 [Serializable]
 public class PowerUp
@@ -268,7 +271,25 @@ public enum Personality
     Clingy,
     Coward,
     Lazy,
-    Giddy,
+}
+public enum Oddity
+{
+    Individualistic, // finds his own target
+    Looter,
+    Helper, // mines/cuts wood when leader doing it
+    Miner,
+    Woodsman,
+    Conservative, // less likely to use skills
+    Daredevil, // prefers melee
+    TriggerHappy, // prefers ranged
+    Mystical, // prefers magic
+}
+[Serializable]
+public class OddityChances {
+    public int id;
+    public Oddity oddity;
+    public int percentage;
+    public Oddity[] conflictsWith;
 }
 [Serializable]
 public class BodyLook {
@@ -395,6 +416,7 @@ public class FriendlyChar {
     public int id;
     public bool isMale;
     public Personality personality;
+    public Oddity[] oddities;
     public DistToMain formation;
     public ZombieController controller;
     public List<CurrentCharStat> stats;
@@ -436,11 +458,13 @@ public class FriendlyChar {
     public List<PassiveAbility> ownedAbilities;
      
 }
+[Serializable]
 public class NeutralChar {
     public string name;
     public bool isMale;
     public Personality personality;
     public Appearance appearance;
+    public Oddity[] oddities;
 }
 
 public enum PassiveAbility
@@ -496,6 +520,8 @@ public class CombatSkill {
     public float channelingTime;
     public float impactTime;
     public float npcCastRange;
+    public bool castWhenAttacking = true;
+    public bool castWhenAttacked;
     // ---dmg ----
     public float knockBack;
     public float damageBase;
@@ -504,7 +530,7 @@ public class CombatSkill {
     public float healBase;
     public GameObject healCollision;
     // ---target ----
-    public int targetSystem; // 0 - nearst, 1 - random engaged, 2 - all engaged
+    public int targetSystem; // 0 - nearst, 1 - random engaged, 2 - all engaged, 3 - self, 4 - enemy hit by script
     // ---move ----
     public int moveSystem; // 0 - forward, 1 - backwards, 2 - towards target, 3 - tpToTarget
     public float offset;

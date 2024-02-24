@@ -60,6 +60,10 @@ public class GameOverlord : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.Escape)) {
             UIManager.Instance.OpenMenu(Menu.System);
         }
+        if (Input.GetKeyDown(KeyCode.K)) {
+            Debug.Log(GameLib.Instance.GenerateName(true));
+            Debug.Log(GameLib.Instance.GenerateName(false));
+        }
         if (Input.GetKeyDown(KeyCode.L)) {
             Player.Instance.GainExperience(20);
              Player.Instance.AddEquipment(1);
@@ -73,10 +77,11 @@ public class GameOverlord : MonoBehaviour
             Player.Instance.AddEquipment(5);
             Player.Instance.AddPart(900000);
             Player.Instance.AddPart(900001);
-            // Player.Instance.AddPart(900003);
+            Player.Instance.AddPart(900003);
             Player.Instance.AddPart(900002);
             // Player.Instance.AddPart(900000);
             Player.Instance.AddPart(900004);
+            Player.Instance.AddPart(900006);
             Player.Instance.AddPart(900008);
             Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);
         }
@@ -138,24 +143,28 @@ public class GameOverlord : MonoBehaviour
         degrees -= 180f; // = -90
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
-        return from + dir;
+       if (canGo) return from + dir;
 
         degrees += 240f; // = 150
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
-        return from + dir;
+        if (canGo) return from + dir;
          
         degrees -= 300f; // = -150
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
-        return from + dir;
+        if (canGo) return from + dir;
         degrees += 350f; // = 200
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
-        return from + dir;
+        if (canGo) return from + dir;
         degrees -= 400f; // = -200
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
+            if (canGo) return from + dir;
+
+        degrees = 180f; // = 180
+        dir = Vector2FromAngle(degrees );
         return from + dir;
     }
     public bool TestForward(Vector2 from, Vector2 dir, float dist) {

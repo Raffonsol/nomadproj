@@ -66,6 +66,9 @@ public class MapMaker : MonoBehaviour
     public int riverLength;
     public int mapHeight = 100;
 
+    public GameObject grass;
+    public float grassLength = 17.7f;
+
     private Tile[][] tileMap;
 
     // Singleton stuff
@@ -140,8 +143,7 @@ public class MapMaker : MonoBehaviour
         } while (tileMap[xPos][yPos] !=null);
         
         tileMap[xPos][yPos] = tile.Clone();
-        tileMap[xPos][yPos].tileObject = Instantiate(tile.tileObject,
-            new Vector3(xPos * tileLength, yPos * tileLength, 0), Quaternion.identity); 
+        tileMap[xPos][yPos].tileObject = SpawnTile(tile, xPos, yPos); 
     }
     void MapTileGroup(Tile[] tile, int maxX, int maxY) {
         int xPos = UnityEngine.Random.Range(0, maxX);
@@ -154,17 +156,13 @@ public class MapMaker : MonoBehaviour
         } while (xPos>=mapHeight || yPos<=0 || tileMap[xPos][yPos] !=null || tileMap[xPos+1][yPos] !=null || tileMap[xPos][yPos-1] !=null || tileMap[xPos+1][yPos-1] !=null);
         
         tileMap[xPos][yPos] = tile[0].Clone();
-        tileMap[xPos][yPos].tileObject = Instantiate(tile[0].tileObject,
-            new Vector3(xPos * tileLength, yPos * tileLength, 0), Quaternion.identity);
+        tileMap[xPos][yPos].tileObject = SpawnTile(tile[0],xPos, yPos);
         tileMap[xPos+1][yPos] = tile[1].Clone();
-        tileMap[xPos+1][yPos].tileObject = Instantiate(tile[1].tileObject,
-            new Vector3((xPos+1) * tileLength, yPos * tileLength, 0), Quaternion.identity);  
+        tileMap[xPos+1][yPos].tileObject = SpawnTile(tile[1], (xPos+1), yPos);  
         tileMap[xPos][yPos-1] = tile[2].Clone();
-        tileMap[xPos][yPos-1].tileObject = Instantiate(tile[2].tileObject,
-            new Vector3(xPos * tileLength, (yPos-1) * tileLength, 0), Quaternion.identity); 
+        tileMap[xPos][yPos-1].tileObject = SpawnTile(tile[2], xPos, (yPos-1) ); 
         tileMap[xPos+1][yPos-1] = tile[3].Clone();
-        tileMap[xPos+1][yPos-1].tileObject = Instantiate(tile[3].tileObject,
-            new Vector3((xPos+1) * tileLength, (yPos-1) * tileLength, 0), Quaternion.identity); 
+        tileMap[xPos+1][yPos-1].tileObject = SpawnTile(tile[3],(xPos+1), (yPos-1));
             
         UIManager.Instance.villageLocations.Add(new Vector2(xPos*tileLength+tileLength/2, (yPos-1)*tileLength+tileLength/2));
     }
@@ -182,8 +180,7 @@ public class MapMaker : MonoBehaviour
         }
         Tile tile = FindRandomTile(49,49, isRiver);
         tileMap[49][49] = tile;
-        tileMap[49][49].tileObject = Instantiate(tile.tileObject,
-            new Vector3(49 * tileLength, 49 * tileLength, 0), Quaternion.identity);
+        tileMap[49][49].tileObject = SpawnTile(tile,49, 49);
     }
 
     Tile FindRandomTile(int x, int y, bool river = false) {
@@ -259,6 +256,10 @@ public class MapMaker : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
+        WalkMap();
+    }
+    void WalkMap()
+    {
         if (BerkeleyManager.Instance.mapBounds == 0)
         BerkeleyManager.Instance.mapBounds = mapHeight * tileLength;
         // player at a given tile. Generate the ones arend it
@@ -332,11 +333,26 @@ public class MapMaker : MonoBehaviour
 
         Tile tile = FindRandomTile(x,y, isRiver);
         tileMap[x][y] = tile;
-        tileMap[x][y].tileObject = Instantiate(tile.tileObject,
-            new Vector3(x * tileLength, y * tileLength, 0), Quaternion.identity);
+        tileMap[x][y].tileObject = SpawnTile(tile,x , y );
         TileController controller = tileMap[x][y].tileObject.AddComponent<TileController>();
         controller.x = x; controller.y = y; controller.hasRoadOrRiver=isRiver||tile.southCon==ConnectionPart.Street||tile.northCon==ConnectionPart.Street||tile.westCon==ConnectionPart.Street||tile.eastCon==ConnectionPart.Street;
         tile.controller = controller;
+    }
+    GameObject SpawnTile(Tile tile, float x, float y ){
+        GameObject inst = Instantiate(tile.tileObject,
+            new Vector3(x * tileLength, y * tileLength, 0), tile.tileObject.transform.rotation);
+        inst.transform.SetParent(transform);
+        return inst;
+    }
+    void SpawnGrass(float x, float y ){
+        int random = UnityEngine.Random.Range(0, 5);
+        float z = 90f;
+        if (random == 0) z = 0;
+        if (random == 2) z = 270f;
+        if (random == 3) z = 180f;
+        GameObject inst = Instantiate(grass,
+            new Vector3(x * grassLength, y * grassLength, 0), new Quaternion (0,0,z,0));
+        inst.transform.SetParent(transform.Find("grass"));
     }
     public Tile GetTileAtCoordinates(float cx, float cy) {
         int x =(int)Math.Round(cx/tileLength);

@@ -29,6 +29,7 @@ public class ZombieController : MonoBehaviour {
 
 	private Vector2 moveDirection;
 	private Vector2 lastClick;
+	private Vector2 lastNpcClick;
 
 	private float moveTimer1 = 0;
 	private float moveTimer2 = 0;
@@ -61,6 +62,7 @@ public class ZombieController : MonoBehaviour {
 
     private Vector2 knockBackLandPosition;
 	private bool isBeingTossed = false;
+	private bool isStunned = false;
 
 	private bool usingSkill = false;
 	private CharSkill castingSkill = null;
@@ -69,8 +71,10 @@ public class ZombieController : MonoBehaviour {
 	private bool skillMoveLocked = false;
 	private float skillKnockBack = 0f;
 	private float knockTimer = 0f;
+	private float stunTimer = 0f;
 	private float skillMoveProximity =0.2f;
 	private float skillRunTime =0f;
+	private List<Combatant> skillHits;
 
 	public void DoStart()
 	{
@@ -88,6 +92,7 @@ public class ZombieController : MonoBehaviour {
 	public void Reset() {
 		
 		lastClick = transform.position;
+		lastNpcClick = lastClick;
 		self = Player.Instance.GetCharById(charId);
 
 		leftFoot = transform.Find("Player/Body/LFoot").gameObject;
@@ -107,10 +112,7 @@ public class ZombieController : MonoBehaviour {
 		attackCooldown = self.equipped.primaryWeapon.cooldown;
 		attackCooldownTimer = attackCooldown;
 
-		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
-		{
-			self.skills[i].cooldownTimer = self.skills[i].cooldown;
-		}Debug.Log("a reset");
+		
 		attackTime = attackCooldown;
 		attackTimer = attackTime;
 		
@@ -210,13 +212,16 @@ public class ZombieController : MonoBehaviour {
 		attackTimer -= Time.deltaTime;
 		if (skillTimer > 0)
 		skillTimer -= Time.deltaTime;
-		else skillMoveLocked = false;
+		else if(skillMoveLocked) skillMoveLocked = false;
 		if (skillRunTime > 0)
 		skillRunTime -= Time.deltaTime;
 		else if(usingSkill) EndSkill();
 		if (knockTimer > 0)
 		knockTimer -= Time.deltaTime;
-		else isBeingTossed = false;
+		else if(isBeingTossed) isBeingTossed = false;
+		if (stunTimer > 0)
+		stunTimer -= Time.deltaTime;
+		else if(isStunned) isStunned = false;
 		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
 		{
 			self.skills[i].cooldownTimer -= Time.deltaTime;
@@ -249,6 +254,8 @@ public class ZombieController : MonoBehaviour {
 		if (self.skills[skillIndex].cooldownTimer>0){
 			return;
 		}
+		skillHits = new List<Combatant>();
+		Player.Instance.GetCharById(charId).hitbox.recordHits=true;
 		if ((castSkill.skillTypes.Contains(SkillType.Move)&&castSkill.moveSystem>=2) 
 			||castSkill.skillTypes.Contains(SkillType.TargetedDamage)) {
 			switch (castSkill.targetSystem) {
@@ -323,6 +330,12 @@ public class ZombieController : MonoBehaviour {
 		usingSkill = true;
 		castingSkill = castSkill;
 
+	}
+	public void AddSkillHit(Combatant combatant) {
+		skillHits.Add(combatant);
+		if (castingSkill.skillTypes.Contains(SkillType.TargetedLifesteal) && castingSkill.targetSystem==4){
+			Heal(castingSkill.offset);
+		}
 	}
 	void AttemptAttack() {
 		if (attackCooldownTimer <= 0) {
@@ -413,11 +426,10 @@ public class ZombieController : MonoBehaviour {
 		hovering = false;
 		UIManager.Instance.armorNeedsUpdate = true;
 		UIManager.Instance.weaponNeedsUpdate = true;
-		UIManager.Instance.UpdateSkillSquare();
 	}
 	void Walk()
 	{
-		if (isBeingTossed || skillMoveLocked) return;
+		if (isBeingTossed || skillMoveLocked ) return;
 		if (boredTimer > 0)boredTimer -=Time.deltaTime;
 		// if (!leader) {
 		// 	distToMain.x = transform.position.x - Player.Instance.controller.gameObject.transform.position.x;
@@ -437,9 +449,9 @@ public class ZombieController : MonoBehaviour {
 				moveTowards.y+=self.formation.y;
 			}
 			// Leader goes straight to click, non-leader has a chance to ignore, resulting in delay to match move position. This is here to simulate reaction time of ofllowers
-			if (leader || UnityEngine.Random.Range(0, 52) > 50)
+			if (leader) // || UnityEngine.Random.Range(0, 52) > 50) // moved to AI
 			lastClick = moveTowards;
-			
+			lastNpcClick = moveTowards;
 		}
 		nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);
 		moveDirection = nextPoint - currentPosition;
@@ -448,6 +460,7 @@ public class ZombieController : MonoBehaviour {
 		else if (isLClickHeld || boredTimer > 0) {
 			Vector2 target = moveDirection + currentPosition;
 			if (Vector3.Distance(transform.position, lastClick) > 0.2f) {
+				if (!isStunned)
 				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
 
 				float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
@@ -464,7 +477,7 @@ public class ZombieController : MonoBehaviour {
 			PerformAi(self.personality);
 		}
 	}
-	void TakeDamage(float damage) {
+	public void TakeDamage(float damage) {
         if (invincibleTimer < 0) {
             float minDmg = damage - armorDefense;
             if (minDmg < 0) minDmg = 0;
@@ -528,6 +541,7 @@ public class ZombieController : MonoBehaviour {
 		Player.Instance.GetCharById(charId).hitbox.hitting = false;
 		GetComponent<CircleCollider2D>().isTrigger = false;
 		if (attackDamageType == DamageType.Melee) hitBox.isTrigger = true;
+		Player.Instance.GetCharById(charId).hitbox.recordHits=false;
 	}
 
 	void SwingAnim() {
@@ -701,38 +715,15 @@ public class ZombieController : MonoBehaviour {
 		
 		Vector2 target;
 		Vector2 currentPosition = transform.position;
+		if (Player.Instance.controller == null) {
+			Debug.LogError("Controller was null, which it should never be! " + Player.Instance.activeCharId+" - "+Player.Instance.characters.Count);
+		}
 		float speed = leader ? moveSpeed : moveSpeed + 0.1f*(float)(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x));
-		if (((tempPersonality != Personality.Coward && Player.Instance.engagementTimer > 0.3f) || Player.Instance.engagementTimer > 3f) && Player.Instance.engagedMonster.Count > 0) {
+		if (((tempPersonality != Personality.Coward && Player.Instance.EngagedFor() > 0.3f) || Player.Instance.EngagedFor() > 2.5f) && Player.Instance.engagedMonster.Count > 0) {
+			// Conditions for normally cahsing/fighting, if these are not met, behaviour will depend on personality
 			GameObject engage = Player.Instance.engagedMonster[0];
-			if (engage == null) return;
-			Vector2 threateningTar = engage.transform.position;
-			nextPoint = GameOverlord.Instance.Pathfind(currentPosition, threateningTar);
-			moveDirection = nextPoint - currentPosition;
-			moveDirection.Normalize();
-			target = moveDirection + currentPosition;
-
-			float dist = Vector3.Distance(transform.position, threateningTar);
-			float monsterSize;
-			try {
-				monsterSize = engage.GetComponent<Monster>().size;
-			} catch (NullReferenceException) {
-				monsterSize = 2;
-			}
-			 // HARDCODED arrow distance
-			if (weapon.damageType == DamageType.Ranged) monsterSize += 300f;
-			AiSkills(dist);
-			if (dist < monsterSize)AttemptAttack();
-			if (dist > monsterSize * 0.5f) {
-				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
-				StepAnim();
-			}
-			else {
-				StopAnim();
-			}
-			float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-				transform.rotation = Quaternion.Slerp (transform.rotation, 
-												Quaternion.Euler (0, 0, targetAngle + 180), 
-												turnSpeed * Time.deltaTime);
+			if (engage != null)
+			AiFight(engage, speed);
 			return;
 		}
 		bool justFollow = false;
@@ -741,34 +732,13 @@ public class ZombieController : MonoBehaviour {
 				if (GameOverlord.Instance.nearbyMonsters.Count > 0) {
 					try{
 					GameObject monster = GameOverlord.Instance.nearbyMonsters[0].gameObject;
-					Vector2 angryTar = monster.transform.position;
-					nextPoint = GameOverlord.Instance.Pathfind(currentPosition, angryTar);
-					moveDirection = nextPoint - currentPosition;
-					moveDirection.Normalize();
-					target = moveDirection + currentPosition;
+					AiFight(monster, speed);
 					
-					float dist = Vector3.Distance(transform.position, angryTar);
-					float monsterSize;
-					try {
-						monsterSize = monster.GetComponent<Monster>().size;
-					} catch (NullReferenceException) {
-						monsterSize = monster.GetComponent<Neutral>().size;
-					}
-					if (weapon.damageType == DamageType.Ranged) monsterSize += 200f;
-					AiSkills(dist);
-					if (dist < monsterSize)AttemptAttack();
-					if (dist > monsterSize* 0.5f) {
-						transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
-						StepAnim();
-					}
-					else {
-						StopAnim();						
-					}
-					float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-					transform.rotation = Quaternion.Slerp (transform.rotation, 
-														Quaternion.Euler (0, 0, targetAngle + 180f), 
-														turnSpeed * Time.deltaTime);
 					} catch (MissingReferenceException e){
+						justFollow = true;
+						GameOverlord.Instance.nearbyMonsters = new List<GameObject>();
+					}
+					catch (NullReferenceException e){
 						justFollow = true;
 						GameOverlord.Instance.nearbyMonsters = new List<GameObject>();
 					}
@@ -776,15 +746,18 @@ public class ZombieController : MonoBehaviour {
 				
 				break;
 			case (Personality.Clingy):
+			default:
 				justFollow = true;
 				break;
 		}
 		if (justFollow) {
+			if ((tempPersonality != Personality.Lazy && UnityEngine.Random.Range(0, 52) > 50) || UnityEngine.Random.Range(0, 102) > 100)
+				lastClick = lastNpcClick;
 			nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);
 			moveDirection = nextPoint - currentPosition;
 			moveDirection.Normalize();
 			target = moveDirection + currentPosition;
-			if (Vector3.Distance(transform.position, lastClick) > 0.2f) {
+			if (Vector3.Distance(transform.position, lastClick) > 0.2f){
 				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
 
 				float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
@@ -799,8 +772,42 @@ public class ZombieController : MonoBehaviour {
 			}
 		}
 	}
+	void AiFight( GameObject engage, float speed) {
+		Vector2 target;
+		Vector2 currentPosition = transform.position;
+		Vector2 threateningTar = engage.transform.position;
+		nextPoint = GameOverlord.Instance.Pathfind(currentPosition, threateningTar);
+		moveDirection = nextPoint - currentPosition;
+		moveDirection.Normalize();
+		target = moveDirection + currentPosition;
+
+		float dist = Vector3.Distance(transform.position, threateningTar);
+		float monsterSize;
+		try {
+			monsterSize = engage.GetComponent<Monster>().size;
+		} catch (NullReferenceException) {
+			monsterSize = 2;
+		}
+			// HARDCODED arrow distance
+		if (weapon.damageType == DamageType.Ranged) monsterSize += 300f;
+		AiSkills(dist);
+		if (dist < monsterSize)AttemptAttack();
+		if (dist > monsterSize * 0.5f) {
+			transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
+			StepAnim();
+		}
+		else {
+			StopAnim();
+		}
+		float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
+			transform.rotation = Quaternion.Slerp (transform.rotation, 
+											Quaternion.Euler (0, 0, targetAngle + 180), 
+											turnSpeed * Time.deltaTime);
+											
+	}
 	void AiSkills( float dist) {
 		if (UnityEngine.Random.Range(0, 121) < 120) return;
+		if (self.oddities!=null && self.oddities.Contains(Oddity.Conservative)&& UnityEngine.Random.Range(0, 171) < 170) return;
 		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
 		{
 			CharSkill caste = self.skills[i];
@@ -828,12 +835,11 @@ public class ZombieController : MonoBehaviour {
 			self.life = self.stats[0].value;
 		}
 	}
-	void KnockedBack(GameObject source, float amount) {
+	public void KnockedBack(GameObject source, float amount) {
         if (amount <0.1f || skillMoveLocked) return;
         knockBackLandPosition = Vector3.MoveTowards(transform.position,source.transform.position, amount*-2f);
         isBeingTossed = true;
 		knockTimer = 2f;
-        // TODO: Implemenent knockback
     }
 	void BeTossed() {
 		if (!isBeingTossed) return;
@@ -844,6 +850,10 @@ public class ZombieController : MonoBehaviour {
 			lastClick=transform.position;
 		}
 	}
+	public void Stun(float duration) {
+        stunTimer = duration;
+		isStunned = true;
+    }
 	public bool IsRanged() {
 		return attackDamageType == DamageType.Ranged;
 	}

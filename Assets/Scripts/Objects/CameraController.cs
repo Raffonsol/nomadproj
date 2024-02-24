@@ -2,6 +2,8 @@
 using System.Collections;
 using System.Linq;
 using System;
+using System.Collections;
+using System.Collections.Generic;
 
 public class CameraController : MonoBehaviour {
 
@@ -50,6 +52,9 @@ public class CameraController : MonoBehaviour {
 				GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == collided.gameObject.name ) );
 			} catch (InvalidOperationException) {
 
+			} catch (MissingReferenceException e) {
+				GameOverlord.Instance.nearbyMonsters = new List<GameObject>();
+				Debug.LogError("Deleted monster somehow left camra bounds?"+e);
 			}
 		}
 		if (collided.CompareTag("Npc"))

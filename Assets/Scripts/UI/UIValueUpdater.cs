@@ -26,11 +26,11 @@ public class UIValueUpdater : MonoBehaviour
         
         if (UIManager.Instance.openMenu != null) {
             if (timer > 0) {
-            timer -= Time.deltaTime;
-        } else {
-            timer = 3f;
-            ReloadStat();
-        }
+                timer -= Time.deltaTime;
+            } else {
+                timer = 0.3f;
+                ReloadStat();
+            }
         }
     }
     void ReloadStat() {

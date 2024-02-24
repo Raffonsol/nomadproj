@@ -15,6 +15,11 @@ public class BonusChooser : MonoBehaviour
     private bool showing = false;
     private bool awaitingChoice = false;
     List<Bonus> lib;
+
+    int opt1 = -1;
+    int opt2 = -1;
+    int opt3 = -1;
+    List<Bonus> pool;
     // Start is called before the first frame update
     void Start()
     {
@@ -67,19 +72,19 @@ public class BonusChooser : MonoBehaviour
         awaitingChoice = true;
 
         // determine pool to select from
-        List<Bonus> pool = new List<Bonus>();
+        pool = new List<Bonus>();
         pool.AddRange(lib);
 
         // remove already owned bilities
         for(int i = 0; i <upee.bonuses.Count; i++){
             pool.Remove(upee.bonuses[i]);
         }
-        
+        if (pool.Count<3) return; // Crash prevention
 
         // find 3 bonus options
-        int opt1 = -1;
-        int opt2 = -1; 
-        int opt3 = -1;
+        opt1 = -1;
+        opt2 = -1; 
+        opt3 = -1;
         while (opt1 == -1) {
             opt1 = UnityEngine.Random.Range(0,pool.Count);
             if (pool[opt1].minLvl > upee.level) opt1 = -1;
@@ -116,19 +121,22 @@ public class BonusChooser : MonoBehaviour
         panel3.GetComponent<Button>().onClick.RemoveAllListeners();
         panel3.GetComponent<Button>().onClick.AddListener(() => ChooseOption(opt3, 3));
     }
-    void ChooseOption( int bonus, int option) {
-
+    void ChooseOption( int bonusOld, int option) {
+        int bonus = option == 1 ? opt1 : option ==2? opt2: opt3;
         if (!awaitingChoice) return;
         awaitingChoice = false;
         showing = false;
 
         // find top of lvl up que
-        List<int> queue = UIManager.Instance.lvlUpQueue; 
-        Player.Instance.ApplyBonus(queue[0], lib[bonus]);
+        List<int> queue = new List<int>(UIManager.Instance.lvlUpQueue); 
+        Player.Instance.ApplyBonus(queue[0], pool[bonus]);
         queue.RemoveAt(0);
         UIManager.Instance.lvlUpQueue = queue;
 
         transform.Find("mask").gameObject.SetActive(false);
+    }
+    static void ChooseStaticOption(int bonus, int option) {
+        
     }
 }
 

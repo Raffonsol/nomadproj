@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-    
+using System.Linq;
+
 public static class MyExtensions
 {
     private static readonly Random rng = new Random();
@@ -19,6 +20,14 @@ public static class MyExtensions
             list[k] = list[n];
             list[n] = value;
         }
+    }
+    // https://stackoverflow.com/questions/3132126/how-do-i-select-a-random-value-from-an-enumeration
+    public static Enum GetRandomEnumValue(this Type t)
+    {
+        return Enum.GetValues(t)          // get values from Type provided
+            .OfType<Enum>()               // casts to Enum
+            .OrderBy(e => Guid.NewGuid()) // mess with order of results
+            .FirstOrDefault();            // take first item in result
     }
 }
 public static class UIHelper

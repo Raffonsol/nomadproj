@@ -26,9 +26,12 @@ public class Combatant : Berkeley
     public float maxDamage = 15f;
     public float invincibilityTime = 0.3f;
     public float runSpeed = 1.5f;
+    public bool movesOnAttackCD = true;
 
     public float attackDistance = 0.73f;
     public float attackCooldown = 1f;
+    // switches targets when attacked no matter if already has target
+    public bool distractable = true;
 
     public DamageType attackDamageType;
     public float patrolSpeed = 1f;
@@ -75,6 +78,10 @@ public class Combatant : Berkeley
     protected float stuckDistanceLimit = 2.4f;
     protected float stuckCheckTimer;
     protected float attackTimer;
+
+    protected bool defensive = false;
+    protected float defensiveKnockback = 0;
+    protected float defensiveDamage = 0;
 
     protected Vector3 originPosition;
     protected Vector3 lastCheckPosition;
@@ -190,6 +197,8 @@ public class Combatant : Berkeley
             if(DetectEnemy())
             {
                 SwitchRoutine(Routine.Chasing);
+                Player.Instance.Engage(gameObject);
+                engaged = true;
             }
             StepAnim();
 			
@@ -255,9 +264,11 @@ public class Combatant : Berkeley
             // (runsAway && Vector3.Distance(currentPosition, chaseTargetPosition) < attackDistance) ||
             (Vector3.Distance(currentPosition, chaseTargetPosition) > attackDistance || cooldownTimer > 0)
             ) {
-			
-            transform.position = Vector3.Lerp (currentPosition, target, runSpeed * Time.deltaTime);
-
+			if (Vector3.Distance(currentPosition, chaseTargetPosition) > attackDistance || movesOnAttackCD) // second check needed so he doesnt attack on cooldown
+            {
+                transform.position = Vector3.Lerp (currentPosition, target, runSpeed * Time.deltaTime);
+                StepAnim();
+            }
             float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Slerp (transform.rotation, 
                                             Quaternion.Euler (0, 0, targetAngle + 180), 
@@ -266,7 +277,6 @@ public class Combatant : Berkeley
                 // For now just resetting into patrol when stuck
                 SwitchRoutine(Routine.Patrolling);
             }
-            StepAnim();
 		}
 		else {
 			StopAnim();
@@ -293,7 +303,7 @@ public class Combatant : Berkeley
             (UnityEngine.Random.Range(originPosition.y - 6f, originPosition.y + 6f)), 0);
             
     }
-    protected virtual bool CheckSkills()
+    protected virtual bool CheckSkills(bool attacking = true)
     {
         return false;
     }
@@ -315,11 +325,15 @@ public class Combatant : Berkeley
         if (faction != 1) return false;
 
         // if very far, switch to a lower code searching script
-        if (searches && Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*2f) {
-            SwitchRoutine(Routine.Searching);
-            // disables collision tso we dont have to pathfind
-            GetComponent<CircleCollider2D>().isTrigger = true;
-            return false;
+        if ( Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*2f) {
+            if (searches){
+                SwitchRoutine(Routine.Searching);
+                // disables collision tso we dont have to pathfind
+                GetComponent<CircleCollider2D>().isTrigger = true;
+                return false;
+            } else if (Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*2.3f) {
+                DestroyAndRecount();
+            }
         } 
         // TODO: redo
         if (visionTimer > 0) {
@@ -375,18 +389,31 @@ public class Combatant : Berkeley
 
 		HitBox hitter = target.GetComponent<HitBox>();
 		if (hitter.hitting && hitter.faction != faction && invincibleTimer < 0) {
-			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
-			TakeDamage(damage);
-            KnockedBack(target, hitter.knockBack);
-            if (hitter.playerParty && !engaged){ 
-                Player.Instance.Engage(gameObject);
-                engaged = true;
+            if (defensive) {
+                if (hitter.friendlyOwner!=null) {
+                    hitter.friendlyOwner.TakeDamage(defensiveDamage);
+                    hitter.friendlyOwner.KnockedBack(gameObject, defensiveKnockback);
+                }
+            } else {
+
+			    float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
+                TakeDamage(damage);
+                KnockedBack(target, hitter.knockBack);
+                if (hitter.playerParty && !engaged){ 
+                    Player.Instance.Engage(gameObject);
+                    engaged = true;
+                }
+                // attention
+                if (distractable || chaseTarget == null){
+                    chaseTarget = collided.transform.gameObject;
+                    if (routine!=Routine.Chasing && routine!=Routine.Attacking && routine!=Routine.UsingSkill) SwitchRoutine(Routine.Chasing);
+                }
+                // recording
+                if (hitter.recordHits) {
+                    hitter.friendlyOwner.AddSkillHit(this);
+                }
             }
-
-            chaseTarget = collided.transform.gameObject;
-            if (routine!=Routine.Chasing && routine!=Routine.Attacking && routine!=Routine.UsingSkill) SwitchRoutine(Routine.Chasing);
 		}
-
 	}
     void Shot(Collider2D collided)
 	{
@@ -399,19 +426,26 @@ public class Combatant : Berkeley
                 && UnityEngine.Random.Range(0, 2) == 1) {
                 DropItem(ItemType.Consumable, hitter.consumableId);
             }
-			float damage = UnityEngine.Random.Range(hitter.projectileSettings.minDamage, hitter.projectileSettings.maxDamage);
-			TakeDamage(damage);
-            KnockedBack(target, hitter.projectileSettings.knockBack);
-            if (hitter.playerParty) Player.Instance.Engage(gameObject);
-            Destroy(target); // deestroying arrow proj
+            if (defensive) {
+                // do nothing for defensive arrows, but no damage either
+            } else {
+                float damage = UnityEngine.Random.Range(hitter.projectileSettings.minDamage, hitter.projectileSettings.maxDamage);
+                TakeDamage(damage);
+                KnockedBack(target, hitter.projectileSettings.knockBack);
+                if (hitter.playerParty) {
+                    Player.Instance.Engage(gameObject);
+                    engaged = true;
+                }
+                Destroy(target); // deestroying arrow proj
 
-            try {
-                chaseTarget = hitter.shooter;
-                if (routine!=Routine.Chasing && routine!=Routine.Attacking) SwitchRoutine(Routine.Chasing);
-            } catch (NullReferenceException) {
-                // TODO: search in the direction projectile came from
-            }
-            
+                if (distractable || chaseTarget == null)
+                try {
+                    chaseTarget = hitter.shooter;
+                    if (routine!=Routine.Chasing && routine!=Routine.Attacking && routine!=Routine.UsingSkill) SwitchRoutine(Routine.Chasing);
+                } catch (NullReferenceException) {
+                    // TODO: search in the direction projectile came from
+                }
+            }    
 		}
 
 	}
@@ -424,6 +458,9 @@ public class Combatant : Berkeley
 
         // stagger 
         cooldownTimer+=(cooldownTimer/10f);
+
+        // defensive skills
+        bool usedSkill = CheckSkills(false);
 
         // audio
         // audio.Play();

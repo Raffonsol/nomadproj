@@ -44,13 +44,14 @@ public class Berkeley : MonoBehaviour
             DestroyAndRecount();
         }
 
-        if ((gameObject.tag == "Berkeley" || gameObject.tag == "Rsrc") ) {
-            if (checkTimer > 0) 
-            checkTimer -= Time.deltaTime;
-            else {
-                Check();
-            }
-        }
+        // if ((gameObject.tag == "Berkeley" || gameObject.tag == "Rsrc")
+        // && Vector3.Distance(transform.position, Camera.main.transform.position) > disappearDistance/4f ) {
+        //     if (checkTimer > 0) 
+        //     checkTimer -= Time.deltaTime;
+        //     else {
+        //         Check();
+        //     }
+        // }
         
         ContinuedUpdate();
     }
@@ -71,9 +72,9 @@ public class Berkeley : MonoBehaviour
                     Debug.LogWarning("Something was just destroyed but not recounted - "+potentialHit.gameObject.name);
                     Destroy(potentialHit.gameObject);
                 }
-                Debug.Log("destroy overlapped " + Physics2D.OverlapCircle(transform.position, size, unMatchable).gameObject.name);
+                Debug.Log(gameObject.name+ " destroyed overlapped " + potentialHit.gameObject.name);
            } else {
-                Debug.Log("self=destroyed from overlap with" + Physics2D.OverlapCircle(transform.position, size, unMatchable).gameObject.name);
+                Debug.Log("self=destroyed from overlap with" + potentialHit.gameObject.name);
                 DestroyAndRecount();
            }
         }

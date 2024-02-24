@@ -26,7 +26,7 @@ public class Player : MonoBehaviour
     public int playerLevel = 0;
 
     public List<GameObject> engagedMonster = new List<GameObject>();
-    private float engagementTime = 6f;
+    private float engagementTime = 2f;
     public float engagementTimer;
 
     [HideInInspector]
@@ -113,7 +113,19 @@ public class Player : MonoBehaviour
         
         if (engagementTimer > 0) {
             engagementTimer -= Time.deltaTime;
-        } else engagedMonster = new List<GameObject>();
+        } 
+        else 
+        for (int i = 0; i < engagedMonster.Count; i++)
+        {
+            if (engagedMonster[i] == null) {
+                engagedMonster.RemoveAt(i);
+            } else if (Vector3.Distance(engagedMonster[i].transform.position, Camera.main.transform.position) > (BerkeleyManager.Instance.disappearDistance/6f)) {
+                engagedMonster.RemoveAt(i);
+            }
+        }
+    }
+    public float EngagedFor() {
+        return engagementTime - engagementTimer;
     }
     public void CalculateNextLevel()
     {
@@ -273,6 +285,7 @@ public class Player : MonoBehaviour
             {
                 PowerUp mod = person.equipped.partsBeingUsed[i].modifiers[j];
                 person.stats[(int)mod.affectedStat].value += mod.offset;
+                Debug.Log("+ "+mod.affectedStat+" "+mod.offset);
             }
         }
         ApplyStats(charId);
@@ -289,8 +302,8 @@ public class Player : MonoBehaviour
                 person.stats[(int)mod.affectedStat].value -= mod.offset;
             }
         }
+
         EquipWeapon(100000, new List<Part>(), charId);
-        ApplyStats(charId);
     }
     public void ApplyStats(int charId = -1) {
         if (charId == -1) charId = activeCharId;
@@ -306,6 +319,7 @@ public class Player : MonoBehaviour
             person.hitbox.damageRsrcType = value.damageRsrcType;
             person.hitbox.damageMin = dmg;
             person.hitbox.damageMax = dmg * 1.5f;
+            person.hitbox.friendlyOwner = person.controller;
             // CHEAT (this is supposed to only go on when hitting but that is not whats happening)
             person.hitbox.hitting=true;
         }
@@ -350,7 +364,7 @@ public class Player : MonoBehaviour
         if (dmg == 0) dmg = 1;
         // TODO: add modifiers
         // STATSET
-        person.stats[slot].value = (int)System.Math.Floor(dmg);
+        // person.stats[slot].value = (int)System.Math.Floor(dmg);
 
         return dmg;
     }
@@ -371,7 +385,7 @@ public class Player : MonoBehaviour
 
         }
     }
-    public void PickupItem(int itemId)
+    public void PickupItemId(int itemId)
     {   
         // this is not exactly dynamic but its fine
         if (itemId.ToString().Length < 6) {
@@ -511,11 +525,13 @@ public class Player : MonoBehaviour
 
         // Create friendlyChar
         FriendlyChar newFriend = new FriendlyChar();
-        newFriend.name = neutralScript.name;
+        newFriend.name = neutralScript.person.name;
         newFriend.id = BerkeleyManager.Instance.LatestFriendId();
         newFriend.experience = 0;
         newFriend.level = 0;
-        newFriend.appearance = neutralScript.appearance;
+        newFriend.appearance = neutralScript.person.appearance;
+        newFriend.personality = neutralScript.person.personality;
+        newFriend.oddities = neutralScript.person.oddities;
         newFriend.controller = controller;
         newFriend.stats =  GameOverlord.Instance.defaultCharacterStats.ConvertAll(stat => stat.Clone());
         newFriend.life = newFriend.stats[0].value;
@@ -538,7 +554,7 @@ public class Player : MonoBehaviour
 
         // Settings on GameObject
         neutral.tag = "Character";
-        neutral.name = neutralScript.name;
+        neutral.name = neutralScript.person.name;
         GameObject nameplate = Instantiate(GameOverlord.Instance.namePlate);
         nameplate.transform.parent = neutral.transform;
         nameplate.transform.localPosition = new Vector2(0.43f, 0);
@@ -576,17 +592,18 @@ public class Player : MonoBehaviour
         switch (bonus.bonusType) {
             case (BonusType.PowerUp):
                 characters[index].stats.Find(i => i.stat == bonus.powerUp.affectedStat).value += bonus.powerUp.offset;
-            break;
+                break;
             case (BonusType.Loot):
-                for(int i = 0; i <bonus.items.Length; i++){
+                Debug.Log("arros");
+                for(int i = 0; i <bonus.items.Length; i++){Debug.Log("pickup"+bonus.items[i]);
                     if (UnityEngine.Random.Range(0,2) == 1) // 50-50 chance
-                    PickupItem(bonus.items[i]);
+                    PickupItemId(bonus.items[i]);
                 }
                 
-            break;
+                break;
             case (BonusType.PassiveAbility):
                 characters[index].ownedAbilities.Add(bonus.PassiveAbility);
-            break;
+                break;
         }
     }
     public void ClearPartsBeingUsed(int charId ){

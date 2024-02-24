@@ -110,9 +110,13 @@ public class VillageManager : MonoBehaviour
         );
 
         Neutral combatant = spawnee.GetComponent<Neutral>();
+        NeutralChar person = new NeutralChar();
+        person.appearance = new Appearance();
         // Randomize
-        combatant.appearance.isMale = UnityEngine.Random.Range(0,2) == 1;
-        combatant.name = GameLib.Instance.GenerateName(combatant.appearance.isMale);
+        person.appearance.isMale = UnityEngine.Random.Range(0,2) == 1;
+        person.name = GameLib.Instance.GenerateName(person.appearance.isMale);
+        person.personality = (Personality)(typeof(Personality).GetRandomEnumValue());
+        person.oddities = GameLib.Instance.MakeListOfOddities();
         
         // parts
         int head, chest, foot, hand, clothing;
@@ -123,8 +127,8 @@ public class VillageManager : MonoBehaviour
         while (chest == -1) {
             int index = UnityEngine.Random.Range(0, parts.Length);
             if (parts[index].slot == Slot.Chest && (parts[index].xChromossomes == 0 ||
-                ((combatant.appearance.isMale && parts[index].xChromossomes == 1) ||
-                (!combatant.appearance.isMale && parts[index].xChromossomes == 2)))
+                ((person.appearance.isMale && parts[index].xChromossomes == 1) ||
+                (!person.appearance.isMale && parts[index].xChromossomes == 2)))
             ) {
                 chest = index;
             }
@@ -132,8 +136,8 @@ public class VillageManager : MonoBehaviour
         while (head == -1) {
             int index = UnityEngine.Random.Range(0, parts.Length);
             if (parts[index].slot == Slot.Head && (parts[index].xChromossomes == 0 ||
-                ((combatant.appearance.isMale && parts[index].xChromossomes == 1) ||
-                (!combatant.appearance.isMale && parts[index].xChromossomes == 2)))
+                ((person.appearance.isMale && parts[index].xChromossomes == 1) ||
+                (!person.appearance.isMale && parts[index].xChromossomes == 2)))
             ) {
                 head = index;
             }
@@ -141,8 +145,8 @@ public class VillageManager : MonoBehaviour
         while (clothing == -1) {
             int index = UnityEngine.Random.Range(0, parts.Length);
             if (parts[index].slot == Slot.Clothing && (parts[index].xChromossomes == 0 ||
-                ((combatant.appearance.isMale && parts[index].xChromossomes == 1) ||
-                (!combatant.appearance.isMale && parts[index].xChromossomes == 2)))
+                ((person.appearance.isMale && parts[index].xChromossomes == 1) ||
+                (!person.appearance.isMale && parts[index].xChromossomes == 2)))
             ) {
                 clothing = index;
             }
@@ -166,9 +170,9 @@ public class VillageManager : MonoBehaviour
         // Skin Color 
         int cIndex = UnityEngine.Random.Range(0, GameLib.Instance.skinColorPresets.Length);
         Color color = GameLib.Instance.skinColorPresets[cIndex];
-        combatant.appearance.skinColor = cIndex;
+        person.appearance.skinColor = cIndex;
         // setting everything on the game object
-        combatant.appearance.bodyLooks = new int[] {head, chest, hand, foot, clothing};
+        person.appearance.bodyLooks = new int[] {head, chest, hand, foot, clothing};
         spawnee.transform.Find("Player/Body/Head").GetComponent<SpriteRenderer>().sprite 
         = GameLib.Instance.allBodyParts[head].look;
         spawnee.transform.Find("Player/Body/Head").GetComponent<SpriteRenderer>().color = color;
@@ -192,5 +196,8 @@ public class VillageManager : MonoBehaviour
         spawnee.transform.Find("Player/Body/Instance/RHand").GetComponent<SpriteRenderer>().sprite 
         = GameLib.Instance.allBodyParts[hand].look;
         spawnee.transform.Find("Player/Body/Instance/RHand").GetComponent<SpriteRenderer>().color = color;
+
+        // last settings
+        combatant.person = person;
     }
 }

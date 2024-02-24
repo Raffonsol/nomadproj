@@ -7,7 +7,6 @@ public class TileController : MonoBehaviour
     public int x;
     public int y;
 
-    
     public bool hasRoadOrRiver;
 
     public int contentLimit = 5;
@@ -22,7 +21,7 @@ public class TileController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
         if (Vector3.Distance(transform.position, Camera.main.transform.position) > disappearDistance) {
             MapMaker.Instance.DeleteTileAt(x, y);
