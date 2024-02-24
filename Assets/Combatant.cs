@@ -399,13 +399,15 @@ public class Combatant : Berkeley
 			    float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
                 TakeDamage(damage);
                 KnockedBack(target, hitter.knockBack);
-                if (hitter.playerParty && !engaged){ 
+                if (hitter.playerParty ){ 
                     Player.Instance.Engage(gameObject);
                     engaged = true;
                 }
                 // attention
                 if (distractable || chaseTarget == null){
                     chaseTarget = collided.transform.gameObject;
+                    HitBox box = chaseTarget.GetComponent<HitBox>();
+                    if (box != null && box.friendlyOwner != null) chaseTarget = box.friendlyOwner.gameObject;
                     if (routine!=Routine.Chasing && routine!=Routine.Attacking && routine!=Routine.UsingSkill) SwitchRoutine(Routine.Chasing);
                 }
                 // recording

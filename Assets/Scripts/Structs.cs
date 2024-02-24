@@ -478,6 +478,7 @@ public enum BonusType
     PowerUp,
     PassiveAbility,
     Loot,
+    Setting
 }
 [Serializable]
 public class Bonus

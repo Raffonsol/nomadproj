@@ -630,7 +630,13 @@ public class ZombieController : MonoBehaviour {
 			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
 			TakeDamage(damage);
             KnockedBack(target, hitter.knockBack);
-		}
+
+			Combatant attacker = collided.transform.parent.GetComponent<Combatant>();
+			if (attacker!=null)
+				Player.Instance.Engage(attacker.gameObject);
+			} else if (GameOverlord.Instance.nearbyMonsters.Count>0) {
+				Player.Instance.Engage(GameOverlord.Instance.nearbyMonsters[0]);
+			}
 	}
 	void Shot(Collider2D collided)
 	{
@@ -641,6 +647,10 @@ public class ZombieController : MonoBehaviour {
 			TakeDamage(damage);
             KnockedBack(target, hitter.projectileSettings.knockBack);
 		}
+		if (GameOverlord.Instance.nearbyMonsters.Count>0) {
+			Player.Instance.Engage(GameOverlord.Instance.nearbyMonsters[0]);
+		}
+		
 	}
 
 	void Die() {

@@ -68,7 +68,12 @@ public class Neutral : Combatant
     public void ListenForClick() {
         // Debug.Log(hovering, Input.GetButtonUp("Fire1"));
 		if (Input.GetButtonUp("Fire1") && hovering) {
-            Debug.Log("convert");
+            if (Player.Instance.characters.Count >= Player.Instance.maxPartySize) {
+                
+                GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, transform);
+                DamageText.GetComponent<DamageText>().textToDisplay = "Party is FULL!";
+                return;
+            }
             // 6 = hardcoded npc spawnwable index !!!!!!
             BerkeleyManager.Instance.spawnables[6].currentQuantity--;
             Player.Instance.ConvertNeutral(gameObject);

@@ -29,6 +29,8 @@ public class Player : MonoBehaviour
     private float engagementTime = 2f;
     public float engagementTimer;
 
+    public int maxPartySize = 4;
+
     [HideInInspector]
     public bool isTeamHovered = false;
 
@@ -588,10 +590,10 @@ public class Player : MonoBehaviour
         if (index == -1) {
             return;
         }     
-        characters[index].bonuses.Add(bonus);
         switch (bonus.bonusType) {
             case (BonusType.PowerUp):
                 characters[index].stats.Find(i => i.stat == bonus.powerUp.affectedStat).value += bonus.powerUp.offset;
+                characters[index].bonuses.Add(bonus);
                 break;
             case (BonusType.Loot):
                 Debug.Log("arros");
@@ -602,7 +604,13 @@ public class Player : MonoBehaviour
                 
                 break;
             case (BonusType.PassiveAbility):
+                characters[index].bonuses.Add(bonus);
                 characters[index].ownedAbilities.Add(bonus.PassiveAbility);
+                break;
+            case (BonusType.Setting):
+                if  (bonus.id ==15) { // 15 = Hardcoded bonus for max party size increase
+                    Player.Instance.maxPartySize+=1;
+                }
                 break;
         }
     }

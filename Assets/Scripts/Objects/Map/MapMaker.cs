@@ -138,6 +138,7 @@ public class MapMaker : MonoBehaviour
         do {
             xPos = UnityEngine.Random.Range(0, mapHeight);
             yPos = UnityEngine.Random.Range(0, mapHeight);
+            
             if (tileMap[xPos] == null) 
                 tileMap[xPos] = new Tile[mapHeight];
         } while (tileMap[xPos][yPos] !=null);
@@ -146,11 +147,11 @@ public class MapMaker : MonoBehaviour
         tileMap[xPos][yPos].tileObject = SpawnTile(tile, xPos, yPos); 
     }
     void MapTileGroup(Tile[] tile, int maxX, int maxY) {
-        int xPos = UnityEngine.Random.Range(0, maxX);
-        int yPos = UnityEngine.Random.Range(0, maxY);
+        int xPos = UnityEngine.Random.Range(30, maxX);
+        int yPos = UnityEngine.Random.Range(30, maxY);
         do {
-            xPos = UnityEngine.Random.Range(0, maxX);
-            yPos = UnityEngine.Random.Range(0, maxY);
+            xPos = UnityEngine.Random.Range(30, maxX);
+            yPos = UnityEngine.Random.Range(30, maxY);
             if (tileMap[xPos] == null) tileMap[xPos] = new Tile[mapHeight];
             if (tileMap[xPos+1] == null) tileMap[xPos+1] = new Tile[mapHeight];
         } while (xPos>=mapHeight || yPos<=0 || tileMap[xPos][yPos] !=null || tileMap[xPos+1][yPos] !=null || tileMap[xPos][yPos-1] !=null || tileMap[xPos+1][yPos-1] !=null);

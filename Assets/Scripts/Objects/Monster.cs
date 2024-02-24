@@ -205,6 +205,12 @@ public class Monster : Combatant
                 if (skill.skillTypes.Contains(SkillType.TargetedStun)){
                     if (chaseTarget == null) return;
                     GameObject aoe = Instantiate(skill.impactCollision,chaseTarget.transform.position, transform.rotation);
+                    PlayDeath anim = aoe.GetComponent<PlayDeath>();
+                    if (anim != null) {
+                        anim.stickTarget = chaseTarget;
+                        anim.sticky = true;
+                    }
+
                     ZombieController tar = chaseTarget.GetComponent<ZombieController>();
                     if (tar != null) {
                         tar.Stun(skill.offset);
