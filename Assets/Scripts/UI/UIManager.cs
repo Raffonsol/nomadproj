@@ -138,7 +138,8 @@ public class UIManager : MonoBehaviour
             if (Player.Instance.engagedMonster[i] == null)debuggerText+="Destroyed\n";
             else debuggerText+=Player.Instance.engagedMonster[i].name.Replace("(Clone)","").Replace("(Clone)","") + "\n";
         }
-        debugger.text += Player.Instance.EngagedFor().ToString();
+        // debuggerText += Player.Instance.engagementTime.ToString() +" - "+ Player.Instance.engagementTimer.ToString() +"\n";
+        // debuggerText += Player.Instance.EngagedFor().ToString();
         // Regex.Replace(debuggerText, @"[0-9]", "");
         debugger.text = debuggerText;
     }

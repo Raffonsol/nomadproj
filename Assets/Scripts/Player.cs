@@ -26,8 +26,9 @@ public class Player : MonoBehaviour
     public int playerLevel = 0;
 
     public List<GameObject> engagedMonster = new List<GameObject>();
-    private float engagementTime = 2f;
+    public float engagementTime = 2f;
     public float engagementTimer;
+    public float engagementFor;
 
     public int maxPartySize = 4;
 
@@ -115,6 +116,7 @@ public class Player : MonoBehaviour
         
         if (engagementTimer > 0) {
             engagementTimer -= Time.deltaTime;
+            engagementFor+= Time.deltaTime;
         } 
         else 
         for (int i = 0; i < engagedMonster.Count; i++)
@@ -125,9 +127,14 @@ public class Player : MonoBehaviour
                 engagedMonster.RemoveAt(i);
             }
         }
+        
+        if (engagedMonster.Count < 1) {
+            engagementTimer = 0;
+            engagementFor = 0;
+        }    
     }
     public float EngagedFor() {
-        return engagementTime - engagementTimer;
+        return engagementFor;
     }
     public void CalculateNextLevel()
     {
@@ -482,6 +489,12 @@ public class Player : MonoBehaviour
 
 
     public void Engage(GameObject enemy) {
+        for (int i = 0; i < engagedMonster.Count; i++)
+        {
+            if(engagedMonster[i].GetInstanceID() == enemy.GetInstanceID()) {
+                return;
+            }
+        }
         engagedMonster.Add(enemy);
         // Debug.Log("add " + engagedMonster.Count);
         engagementTimer = engagementTime;
@@ -489,7 +502,10 @@ public class Player : MonoBehaviour
     public void Unengage(GameObject enemy) {
         // Debug.Log("Remove " + engagedMonster.Count);
         engagedMonster.Remove(enemy);
-        if (engagedMonster.Count < 1) engagementTimer = 0;
+        if (engagedMonster.Count < 1) {
+            engagementTimer = 0;
+            engagementFor = 0;
+        }    
     }
     public List<Consumable> GetConsumablesByType(ConsumableType type) {
         List<Consumable> list = new List<Consumable>();

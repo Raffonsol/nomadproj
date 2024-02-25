@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 
-public class ZombieController : MonoBehaviour {
+public class ZombieController : Walker {
 	
 	public float moveSpeed;
 	public float turnSpeed;
@@ -27,7 +27,6 @@ public class ZombieController : MonoBehaviour {
 
 	public float armorDefense=0;
 
-	private Vector2 moveDirection;
 	private Vector2 lastClick;
 	private Vector2 lastNpcClick;
 
@@ -60,15 +59,10 @@ public class ZombieController : MonoBehaviour {
 	private float regenInterval = 1f;
 	private float regenTimer = 1f;
 
-    private Vector2 knockBackLandPosition;
-	private bool isBeingTossed = false;
-	private bool isStunned = false;
-
 	private bool usingSkill = false;
 	private CharSkill castingSkill = null;
 	private Vector2 skillMoveTarget;
 	private GameObject skillTargetTarget;
-	private bool skillMoveLocked = false;
 	private float skillKnockBack = 0f;
 	private float knockTimer = 0f;
 	private float stunTimer = 0f;
@@ -94,6 +88,7 @@ public class ZombieController : MonoBehaviour {
 		lastClick = transform.position;
 		lastNpcClick = lastClick;
 		self = Player.Instance.GetCharById(charId);
+		turnRate = turnSpeed;
 
 		leftFoot = transform.Find("Player/Body/LFoot").gameObject;
 		rightFoot = transform.Find("Player/Body/RFoot").gameObject;
@@ -190,7 +185,7 @@ public class ZombieController : MonoBehaviour {
 	void Update () {
 		if (self == null) return;
 		ListenForClick();
-		Walk();
+		ControllerWalk();
 		Attack();
 		Die();
 		Regen();
@@ -200,6 +195,37 @@ public class ZombieController : MonoBehaviour {
 	void CountInvincibleTimer() {
 		if (invincibleTimer >= 0) {
 			invincibleTimer -= Time.deltaTime;
+		}
+	}
+	void ControllerWalk() {
+		Vector2 currentPosition = transform.position;
+		if (boredTimer > 0)boredTimer -=Time.deltaTime;
+		if (Input.GetButtonDown("Fire1") && !UIManager.Instance.IsPointerOverUIElement() && !Player.Instance.isTeamHovered) 
+			isLClickHeld = true;
+		if (Input.GetButtonUp("Fire1")) isLClickHeld = false;
+		if (isLClickHeld) {
+			boredTimer = boredTime;
+			Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+			// if a follower, gotta offset this move target
+			if (!leader) {
+				moveTowards.x+=self.formation.x;
+				moveTowards.y+=self.formation.y;
+			}
+			// Leader goes straight to click, non-leader has a chance to ignore, resulting in delay to match move position. This is here to simulate reaction time of ofllowers
+			if (leader) // || UnityEngine.Random.Range(0, 52) > 50) // moved to AI
+			lastClick = moveTowards;
+			lastNpcClick = moveTowards;
+		}
+		nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);
+		
+		if (!leader)PerformAi(self.personality);
+		else if (isLClickHeld || boredTimer > 0) {
+			Walk(
+				leader ? moveSpeed : moveSpeed + 0.1f*(float)Math.Pow(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x), 2),
+				nextPoint
+			);
+		} else {
+			PerformAi(self.personality);
 		}
 	}
 
@@ -427,56 +453,7 @@ public class ZombieController : MonoBehaviour {
 		UIManager.Instance.armorNeedsUpdate = true;
 		UIManager.Instance.weaponNeedsUpdate = true;
 	}
-	void Walk()
-	{
-		if (isBeingTossed || skillMoveLocked ) return;
-		if (boredTimer > 0)boredTimer -=Time.deltaTime;
-		// if (!leader) {
-		// 	distToMain.x = transform.position.x - Player.Instance.controller.gameObject.transform.position.x;
-		// 	distToMain.y = transform.position.y - Player.Instance.controller.gameObject.transform.position.y;
-		// }
-		Vector2 currentPosition = transform.position;
-		float speed = leader ? moveSpeed : moveSpeed + 0.1f*(float)Math.Pow(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x), 2);
-		if (Input.GetButtonDown("Fire1") && !UIManager.Instance.IsPointerOverUIElement() && !Player.Instance.isTeamHovered) 
-			isLClickHeld = true;
-		if (Input.GetButtonUp("Fire1")) isLClickHeld = false;
-		if (isLClickHeld) {
-			boredTimer = boredTime;
-			Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-			// if a follower, gotta offset this move target
-			if (!leader) {
-				moveTowards.x+=self.formation.x;
-				moveTowards.y+=self.formation.y;
-			}
-			// Leader goes straight to click, non-leader has a chance to ignore, resulting in delay to match move position. This is here to simulate reaction time of ofllowers
-			if (leader) // || UnityEngine.Random.Range(0, 52) > 50) // moved to AI
-			lastClick = moveTowards;
-			lastNpcClick = moveTowards;
-		}
-		nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);
-		moveDirection = nextPoint - currentPosition;
-		moveDirection.Normalize();
-		if (!leader)PerformAi(self.personality);
-		else if (isLClickHeld || boredTimer > 0) {
-			Vector2 target = moveDirection + currentPosition;
-			if (Vector3.Distance(transform.position, lastClick) > 0.2f) {
-				if (!isStunned)
-				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
-
-				float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-				transform.rotation = Quaternion.Slerp (transform.rotation, 
-												Quaternion.Euler (0, 0, targetAngle + 180), 
-												turnSpeed * Time.deltaTime);
-				
-				StepAnim();
-			}
-			else {
-				StopAnim();
-			}
-		} else {
-			PerformAi(self.personality);
-		}
-	}
+	
 	public void TakeDamage(float damage) {
         if (invincibleTimer < 0) {
             float minDmg = damage - armorDefense;
@@ -576,7 +553,7 @@ public class ZombieController : MonoBehaviour {
 	/**
 	* 1 - always counting timer 1 or 2, moves tight foot on timer 1 and left on timer 2.	
 	*/
-	void StepAnim()
+	protected override void StepAnim()
 	{
 		if (attacking) return;
 		if (moveTimer1 > 0) {
@@ -596,7 +573,7 @@ public class ZombieController : MonoBehaviour {
 			}
 		}
 	}
-	void StopAnim()
+	protected override void StopAnim()
 	{
 			rightFoot.transform.localPosition = new Vector3(0.3f, 0.13f, feetZ);
 			leftFoot.transform.localPosition =  new Vector3(-0.3f, 0.13f, feetZ);
@@ -764,22 +741,10 @@ public class ZombieController : MonoBehaviour {
 			if ((tempPersonality != Personality.Lazy && UnityEngine.Random.Range(0, 52) > 50) || UnityEngine.Random.Range(0, 102) > 100)
 				lastClick = lastNpcClick;
 			nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);
-			moveDirection = nextPoint - currentPosition;
-			moveDirection.Normalize();
-			target = moveDirection + currentPosition;
-			if (Vector3.Distance(transform.position, lastClick) > 0.2f){
-				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
-
-				float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-				transform.rotation = Quaternion.Slerp (transform.rotation, 
-												Quaternion.Euler (0, 0, targetAngle + 180), 
-												turnSpeed * Time.deltaTime);
-				
-				StepAnim();
-			}
-			else {
-				StopAnim();
-			}
+			Walk(
+				leader ? moveSpeed : moveSpeed + 0.1f*(float)Math.Pow(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x), 2),
+				nextPoint
+			);
 		}
 	}
 	void AiFight( GameObject engage, float speed) {
