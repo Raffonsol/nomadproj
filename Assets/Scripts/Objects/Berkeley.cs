@@ -18,7 +18,7 @@ public class Berkeley : MonoBehaviour
     
     void Start() {
         
-        if (gameObject.name.Contains("rker")) {Debug.Log("Norker spanwed"); Debug.Log(spawnableId+gameObject.name);}
+        // if (gameObject.name.Contains("olf")) {Debug.Log(spawnableId+gameObject.name + " - "+BerkeleyManager.Instance.spawnables[spawnableId].currentQuantity);}
         BerkeleyManager.Instance.spawnables[spawnableId].currentQuantity++;
         BeforeCheck();
         if(gameObject.tag != "Monster")Check();
@@ -42,6 +42,7 @@ public class Berkeley : MonoBehaviour
         // If we are too far, delete us. Get it? Berkeley..
         if (Vector3.Distance(transform.position, Camera.main.transform.position) > disappearDistance) {
             DestroyAndRecount();
+            return;
         }
 
         // if ((gameObject.tag == "Berkeley" || gameObject.tag == "Rsrc")
@@ -80,13 +81,32 @@ public class Berkeley : MonoBehaviour
         }
     
     }
+    protected void MonsterCheck() {
+        Collider2D potentialHit = Physics2D.OverlapCircle(transform.position, size, unMatchable);
+
+        if (potentialHit && potentialHit.gameObject.name != gameObject.name){
+           if (potentialHit.gameObject.tag == "Rsrc" || potentialHit.gameObject.tag == "Berkeley") {
+                // we don't want trees destroying all the structures, so if its a rsrc, destroy the rsrc instead
+                try {
+                    potentialHit.gameObject.GetComponent<Berkeley>().DestroyAndRecount();
+                }   
+                catch (NullReferenceException e) {
+                    Debug.LogWarning("Something was just destroyed but not recounted - "+potentialHit.gameObject.name);
+                    Destroy(potentialHit.gameObject);
+                }
+                Debug.Log(gameObject.name+ " destroyed overlapped " + potentialHit.gameObject.name);
+           } else {
+                Debug.Log(gameObject.name+" self destroyed from overlap with" + potentialHit.gameObject.name);
+                DestroyAndRecount();
+           }
+        }
+    
+    }
 
     public void DestroyAndRecount() {
-        // HARDCODED 7 = neutral buildings id
-        if (spawnableId == 7) {
-            VillageManager.Instance.scenesExisting--;
-        } else
-        BerkeleyManager.Instance.spawnables[spawnableId].currentQuantity--;
+        if (spawnableId==9) {Debug.Log(spawnableId+gameObject.name + " - "+BerkeleyManager.Instance.spawnables[spawnableId].currentQuantity);}
+
+            BerkeleyManager.Instance.spawnables[spawnableId].currentQuantity--;
         if (showIndicator) {
             UIManager.Instance.RemoveMonsterIndicator(indicatorIndex);
         }

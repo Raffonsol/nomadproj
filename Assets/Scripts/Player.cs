@@ -164,6 +164,7 @@ public class Player : MonoBehaviour
             person.equipped.head = equipment;
         }
         // graphs
+		Debug.Log("Player/Body/" +Util.SlotToBodyPosition(equipment.slot, left));
         GameObject current = person.controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(equipment.slot, left)).gameObject;
         current.GetComponent<SpriteRenderer>().sprite = equipment.visual.GetComponent<SpriteRenderer>().sprite;
         current.GetComponent<SpriteRenderer>().color = equipment.visual.GetComponent<SpriteRenderer>().color;

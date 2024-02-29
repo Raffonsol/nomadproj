@@ -96,6 +96,10 @@ public class Combatant : Berkeley
 
     protected Vector2 knockBackLandPosition;
 
+    protected float pathFindTime = 1f;
+    protected float pathFindTimer = 0f;
+    protected Vector2 lastFoundPath;
+
     private void Awake() 
     {
         originPosition = transform.position;
@@ -161,13 +165,30 @@ public class Combatant : Berkeley
     {
         // implemented on monster
     }
+    protected Vector2 Pathfind(Vector2 currentPosition, Vector2 patrolTarget) {
+
+        
+        if (pathFindTimer > 0 && lastFoundPath!=null && Vector2.Distance(transform.position,lastFoundPath)>0.1f ) {
+            pathFindTimer -= Time.deltaTime;
+            return lastFoundPath;
+        }
+        
+        Vector2 path;
+        path = GameOverlord.Instance.Pathfind(currentPosition, patrolTarget);
+        lastFoundPath = path;
+        pathFindTimer = pathFindTime;
+
+        // MapMaker.Instance.debugMarker.transform.position = path;
+
+        return path;
+    }
     protected void Patrol()
     {
         patrolTimer -= Time.deltaTime;
 
         Vector2 currentPosition = transform.position;
 
-        Vector2 nextPoint = GameOverlord.Instance.Pathfind(currentPosition, patrolTarget);
+        Vector2 nextPoint = Pathfind(currentPosition, patrolTarget);
         moveDirection = nextPoint - currentPosition;
         moveDirection.Normalize();
         Vector2 target = moveDirection + currentPosition;
@@ -230,6 +251,7 @@ public class Combatant : Berkeley
 
         }
 		else {
+            MonsterCheck();
             SwitchRoutine(Routine.Patrolling);
 		}
 
@@ -254,7 +276,7 @@ public class Combatant : Berkeley
             SwitchRoutine(Routine.Patrolling);
         }
 
-        Vector2 nextPoint = GameOverlord.Instance.Pathfind(currentPosition, chaseTargetPosition);
+        Vector2 nextPoint = Pathfind(currentPosition, chaseTargetPosition);
         moveDirection = nextPoint - currentPosition;
         if (runsAway)moveDirection = currentPosition-nextPoint;
         moveDirection.Normalize();
@@ -331,7 +353,7 @@ public class Combatant : Berkeley
                 // disables collision tso we dont have to pathfind
                 GetComponent<CircleCollider2D>().isTrigger = true;
                 return false;
-            } else if (Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*2.3f) {
+            } else if (Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*4f) {
                 DestroyAndRecount();
             }
         } 

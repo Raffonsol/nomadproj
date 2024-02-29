@@ -83,30 +83,23 @@ public class GameOverlord : MonoBehaviour
             Player.Instance.AddPart(900004);
             Player.Instance.AddPart(900006);
             Player.Instance.AddPart(900008);
+            Player.Instance.AddPart(900009);Player.Instance.AddPart(900009);Player.Instance.AddPart(900009);Player.Instance.AddPart(900009);Player.Instance.AddPart(900009);Player.Instance.AddPart(900009);
             Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);
         }
     }
     public Vector2 Pathfind(Vector2 from, Vector2 target, bool capDist = true) {
         float dist = Vector2.Distance(from, target);
-        if (capDist && dist > 150) dist = 150;
+        // if (capDist && dist > 950f) dist = 950f;
+        dist*=1.1f;
         Vector2 dir  = target - from;
         dir.Normalize();
         
         bool canGo = TestForward(from, dir, dist);
         if (canGo) return target;
 
-        float degrees = AngleFromVector2(dir);
-        
-        Vector2 dif = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-        
-        dif -= from;
-        dif.Normalize();
+        float angle = AngleFromVector2(dir);
+        float degrees = angle;
 
-
-        // while (canGo == false) {
-            dir = Vector2FromAngle(degrees );
-            canGo = TestForward(from, dir, dist);
-        // }
         if (canGo) return from + dir;
 
         degrees += 20f;
@@ -118,7 +111,7 @@ public class GameOverlord : MonoBehaviour
 
 
 
-        degrees += -40f;
+        degrees += -60f; // -40
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
         // }
@@ -126,45 +119,23 @@ public class GameOverlord : MonoBehaviour
 
 
 
-        degrees += 80f;
+        degrees += 120f; // 80
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
         if (canGo) return from + dir;
 
-        degrees -= 120f; // = -60
+        degrees = angle-120f;
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
         if (canGo) return from + dir;
-        degrees += 150f; // = 90
+        degrees = angle+150f; // = 90
         dir = Vector2FromAngle(degrees );
             canGo = TestForward(from, dir, dist);
         if (canGo) return from + dir;
 
-        degrees -= 180f; // = -90
+        degrees = angle-180f; // = -90
         dir = Vector2FromAngle(degrees );
-            canGo = TestForward(from, dir, dist);
-       if (canGo) return from + dir;
 
-        degrees += 240f; // = 150
-        dir = Vector2FromAngle(degrees );
-            canGo = TestForward(from, dir, dist);
-        if (canGo) return from + dir;
-         
-        degrees -= 300f; // = -150
-        dir = Vector2FromAngle(degrees );
-            canGo = TestForward(from, dir, dist);
-        if (canGo) return from + dir;
-        degrees += 350f; // = 200
-        dir = Vector2FromAngle(degrees );
-            canGo = TestForward(from, dir, dist);
-        if (canGo) return from + dir;
-        degrees -= 400f; // = -200
-        dir = Vector2FromAngle(degrees );
-            canGo = TestForward(from, dir, dist);
-            if (canGo) return from + dir;
-
-        degrees = 180f; // = 180
-        dir = Vector2FromAngle(degrees );
         return from + dir;
     }
     public bool TestForward(Vector2 from, Vector2 dir, float dist) {

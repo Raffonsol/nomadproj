@@ -52,6 +52,8 @@ public class UIManager : MonoBehaviour
 
     public bool armorNeedsUpdate = false;
     public bool weaponNeedsUpdate = false;
+
+    public int uIPage = 0;
     
     private int UILayer;
     public int TrasnparentLayer;
@@ -225,11 +227,18 @@ public class UIManager : MonoBehaviour
     public void AutoEquipArmor() {
         if (!autoEquipping) return;
 
-        for(int i = 0; i <Player.Instance.equipments.Count; i++){
-            bool didIt = AutoEquipSingleArmor(Player.Instance.equipments[i].id);
-            if (didIt) i--;
+        bool somethingHappened = true;
+        while(somethingHappened==true)
+        {
+            somethingHappened=false;
+            for(int i = 0; i <Player.Instance.equipments.Count; i++){
+                bool didIt = AutoEquipSingleArmor(Player.Instance.equipments[i].id);
+                if (didIt) {
+                    i--;
+                    somethingHappened = true;
+                }
+            }
         }
-        
 
     }
     public bool AutoEquipSingleArmor(int armorId) {
@@ -248,29 +257,35 @@ public class UIManager : MonoBehaviour
             tried.Add(i);
             switch (armor.slot) {
                 case (Slot.Head):
-                if (Player.Instance.characters[i].equipped.head == null) {
+                if (Player.Instance.characters[i].equipped.head == null
+                    || armor.value > Player.Instance.characters[i].equipped.head.value) {
                     canEquip = true;
                 }
                 break;
                 case (Slot.Chest):
-                if (Player.Instance.characters[i].equipped.chest == null) {
+                if (Player.Instance.characters[i].equipped.chest == null
+                    || armor.value > Player.Instance.characters[i].equipped.chest.value) {
                     canEquip = true;
                 }
                 break;
                 case (Slot.Pauldron):
-                if (Player.Instance.characters[i].equipped.rightPauldron == null) {
+                if (Player.Instance.characters[i].equipped.rightPauldron == null
+                    || armor.value > Player.Instance.characters[i].equipped.rightPauldron.value) {
                     canEquip = true;
                 }
-                else if (Player.Instance.characters[i].equipped.leftPauldron == null) {
+                else if (Player.Instance.characters[i].equipped.leftPauldron == null
+                    || armor.value >  Player.Instance.characters[i].equipped.leftPauldron.value) {
                     canEquip = true;
                     left = true;
                 }
                 break;
                 case (Slot.Hand):
-                if (Player.Instance.characters[i].equipped.rightHand == null) {
+                if (Player.Instance.characters[i].equipped.rightHand == null
+                    || armor.value > Player.Instance.characters[i].equipped.rightHand.value) {
                     canEquip = true;
                 }
-                else if (Player.Instance.characters[i].equipped.leftHand == null) {
+                else if (Player.Instance.characters[i].equipped.leftHand == null
+                    || armor.value >  Player.Instance.characters[i].equipped.leftHand.value) {
                     canEquip = true;
                     left = true;
                 }
@@ -294,6 +309,7 @@ public class UIManager : MonoBehaviour
         }
         return false;
     }
+    
     public void AutoEquipWeapons(int count = -1) {
         if (!autoEquipping) return;
         bool somethingHappened = false;
@@ -500,5 +516,10 @@ public class UIManager : MonoBehaviour
     public void ExitGame(){
         Debug.Log("Exit");
          Application.Quit();
+    }
+
+    public void PageChange(int offset) {
+        if (uIPage + offset > -1)
+        uIPage += offset;
     }
 }

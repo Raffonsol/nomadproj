@@ -153,7 +153,6 @@ public class ZombieController : Walker {
 			BodyLook look = GameLib.Instance.GetBodyPartById(self.appearance.bodyLooks[i]);
 			// don't overwrite armor
 			if (look.slot == Slot.Clothing && self.equipped.chest != null) continue;
-
 			GameObject current = gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(look.slot, left, true)).gameObject;
 			current.GetComponent<SpriteRenderer>().sprite = look.look;
 			if (look.slot != Slot.Clothing) // don't change clothing color
@@ -368,8 +367,11 @@ public class ZombieController : Walker {
 			// Attack confirmed (but it might be ranged with no arrows)
 			boredTimer = boredTime;
 			attackCooldownTimer = attackCooldown;
+			if (self.personality == Personality.Lazy || self.personality == Personality.Coward)
+				attackCooldownTimer*= UnityEngine.Random.Range(1.1f,1.7f);
 			attackTimer = attackTime;
-
+			if (self.personality == Personality.Lazy)
+				attackTimer *=UnityEngine.Random.Range(1.1f,1.7f);
 			attacking = true;
 			
 			if (attackDamageType == DamageType.Melee) {
@@ -483,6 +485,8 @@ public class ZombieController : Walker {
 		int steps = attackScripts.Length;
 		int stepToPlay = (int)Math.Round((skillTimer/castingSkill.speed)*steps, 0);
 		stepToPlay -= 1;
+		if (stepToPlay>(attackScripts.Length-1))
+			stepToPlay=(attackScripts.Length-1);
 		// Debug.Log(stepToPlay + " -" + attackTimer);
 		if (stepToPlay < 0) {
 			rightHand.transform.localPosition = new Vector3(weapon.instance.rightHandPos.x, weapon.instance.rightHandPos.y, -0.2f);
@@ -529,6 +533,7 @@ public class ZombieController : Walker {
 		int steps = attackScripts.Length;
 		int stepToPlay = (int)Math.Round((attackTimer/attackTime)*steps, 0);
 		stepToPlay -= 1;
+		if (stepToPlay>attackScripts.Length-1)stepToPlay=attackScripts.Length-1;
 		// Debug.Log(stepToPlay + " -" + attackTimer);
 		if (stepToPlay < 0) {
 			rightHand.transform.localPosition = new Vector3(weapon.instance.rightHandPos.x, weapon.instance.rightHandPos.y, -0.2f);
@@ -709,6 +714,9 @@ public class ZombieController : Walker {
 		if (((tempPersonality != Personality.Coward && Player.Instance.EngagedFor() > 0.3f) || Player.Instance.EngagedFor() > 2.5f) && Player.Instance.engagedMonster.Count > 0) {
 			// Conditions for normally cahsing/fighting, if these are not met, behaviour will depend on personality
 			GameObject engage = Player.Instance.engagedMonster[0];
+			if (self.oddities.Contains(Oddity.Individualistic)) {
+				engage = Player.Instance.engagedMonster[Player.Instance.engagedMonster.Count-1];
+			}
 			if (engage != null)
 			AiFight(engage, speed);
 			return;
@@ -764,11 +772,13 @@ public class ZombieController : Walker {
 			monsterSize = 2;
 		}
 			// HARDCODED arrow distance
-		if (weapon.damageType == DamageType.Ranged) monsterSize += 300f;
+		if (weapon.damageType == DamageType.Ranged) monsterSize += 180f;
 		AiSkills(dist);
 		if (dist < monsterSize)AttemptAttack();
 		if (dist > monsterSize * 0.5f) {
-			transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
+			float usedSpeed = self.personality == Personality.Coward && attackCooldownTimer > 0 ? -1f*speed 
+				: speed;
+			transform.position = Vector3.Lerp (currentPosition, target, usedSpeed * Time.deltaTime);
 			StepAnim();
 		}
 		else {

@@ -72,7 +72,8 @@ public static class Util
             if (!bare)
             pos = "Chest/";
         } else if (slot == Slot.Head) {
-            
+            if (!bare)
+            pos = "Head/";
         }
         pos = pos + slot.ToString();
         if (slot == Slot.Clothing) {

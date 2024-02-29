@@ -85,6 +85,7 @@ public class MapMaker : MonoBehaviour
     }
     void Start()
     {
+        debugMarker = Instantiate(debugMarker);
         tileMap = new Tile[mapHeight][];
         
         MapLine(riverLength, ConnectionPart.River, true, 0, 0);

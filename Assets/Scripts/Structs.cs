@@ -283,6 +283,9 @@ public enum Oddity
     Daredevil, // prefers melee
     TriggerHappy, // prefers ranged
     Mystical, // prefers magic
+    Armorer,
+    Fletcher,
+    Craftsman
 }
 [Serializable]
 public class OddityChances {
