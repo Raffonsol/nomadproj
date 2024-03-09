@@ -164,10 +164,11 @@ public class Player : MonoBehaviour
             person.equipped.head = equipment;
         }
         // graphs
-		Debug.Log("Player/Body/" +Util.SlotToBodyPosition(equipment.slot, left));
+		// Debug.Log("AKA Player/Body/" +Util.SlotToBodyPosition(equipment.slot, left) + " \n "+ equipment.visual.GetComponent<SpriteRenderer>().sprite.name + " - "+person.name);
         GameObject current = person.controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(equipment.slot, left)).gameObject;
-        current.GetComponent<SpriteRenderer>().sprite = equipment.visual.GetComponent<SpriteRenderer>().sprite;
-        current.GetComponent<SpriteRenderer>().color = equipment.visual.GetComponent<SpriteRenderer>().color;
+        SpriteRenderer sr = equipment.visual.GetComponent<SpriteRenderer>();
+        current.GetComponent<SpriteRenderer>().sprite=sr.sprite;
+        current.GetComponent<SpriteRenderer>().color=sr.color;
         current.transform.localScale = equipment.visual.transform.localScale;
 
         //stats
@@ -176,73 +177,86 @@ public class Player : MonoBehaviour
         }
         ApplyStats(charId);
     }
-    public void Unequip(Slot slot, bool left = false) {
+    public void Unequip(Slot slot, bool left = false, int charId = -1) {
+        if (charId == -1) charId = activeCharId;
+        FriendlyChar person = GetCharById(charId);
         GameObject bod = controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(slot, left)).gameObject;
-        Equipment equipment = activePerson.equipped.chest;
+        Equipment equipment = person.equipped.chest;
         switch (slot) {
             case (Slot.Head):
-                equipment = activePerson.equipped.head;            
-                AddEquipment(activePerson.equipped.head.id);
-                activePerson.equipped.head = null;
+                if (person.equipped.head == null) return;
+                equipment = person.equipped.head;            
+                AddEquipment(person.equipped.head.id);
+                person.equipped.head = null;
                 
-                bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.head.GetComponent<SpriteRenderer>().sprite;
-                bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.head.GetComponent<SpriteRenderer>().color;
+                // Debug.Log("AKA Unequip "+ person.appearance.head.GetComponent<SpriteRenderer>().sprite.name + "\n - "+person.name);
+                bod.GetComponent<SpriteRenderer>().sprite = person.appearance.head.GetComponent<SpriteRenderer>().sprite;
+                bod.GetComponent<SpriteRenderer>().color = person.appearance.head.GetComponent<SpriteRenderer>().color;
                 break;
             case (Slot.Chest):
-                equipment = activePerson.equipped.chest; 
-                AddEquipment(activePerson.equipped.chest.id);
-                activePerson.equipped.chest = null;
-                bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.clothing.GetComponent<SpriteRenderer>().sprite;
-                bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.chest.GetComponent<SpriteRenderer>().color;
+                if (person.equipped.chest == null) return;
+                equipment = person.equipped.chest; 
+                AddEquipment(person.equipped.chest.id);
+                person.equipped.chest = null;
+                // Debug.Log("AKA Unequip "+ person.appearance.clothing.GetComponent<SpriteRenderer>().sprite.name + "\n - "+person.name);
+                // if (person.appearance.clothing.GetComponent<SpriteRenderer>().sprite.name.Contains("eps_17")) MapMaker.Instance.debugMarker.transform.position = person.controller.transform.position;
+                bod.GetComponent<SpriteRenderer>().sprite = person.appearance.clothing.GetComponent<SpriteRenderer>().sprite;
+                bod.GetComponent<SpriteRenderer>().color = person.appearance.chest.GetComponent<SpriteRenderer>().color;
                 break;
             case (Slot.Pauldron):
                 if (left) {
-                    equipment = activePerson.equipped.leftPauldron; 
-                    AddEquipment(activePerson.equipped.leftPauldron.id);
-                    activePerson.equipped.leftPauldron = null;
+                    if (person.equipped.leftPauldron == null) return;
+                    equipment = person.equipped.leftPauldron; 
+                    AddEquipment(person.equipped.leftPauldron.id);
+                    person.equipped.leftPauldron = null;
                 }else {
-                    equipment = activePerson.equipped.rightPauldron; 
-                    AddEquipment(activePerson.equipped.rightPauldron.id);
-                    activePerson.equipped.rightPauldron = null;
+                    if (person.equipped.rightPauldron == null) return;
+                    equipment = person.equipped.rightPauldron; 
+                    AddEquipment(person.equipped.rightPauldron.id);
+                    person.equipped.rightPauldron = null;
                 }
                 bod.GetComponent<SpriteRenderer>().sprite = null;
                 
                 break;
             case (Slot.Foot):
                 if (left) {
-                    equipment = activePerson.equipped.leftFoot; 
-                    AddEquipment(activePerson.equipped.leftFoot.id);
-                    activePerson.equipped.leftFoot = null;
+                    if (person.equipped.leftFoot == null) return;
+                    equipment = person.equipped.leftFoot; 
+                    AddEquipment(person.equipped.leftFoot.id);
+                    person.equipped.leftFoot = null;
                 }else {
-                    equipment = activePerson.equipped.rightFoot; 
-                     AddEquipment(activePerson.equipped.rightFoot.id);
-                    activePerson.equipped.rightFoot = null;
+                    if (person.equipped.rightFoot == null) return;
+                    equipment = person.equipped.rightFoot; 
+                     AddEquipment(person.equipped.rightFoot.id);
+                    person.equipped.rightFoot = null;
                 }
-                bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.foot.GetComponent<SpriteRenderer>().sprite;
-                bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.foot.GetComponent<SpriteRenderer>().color;
+                bod.GetComponent<SpriteRenderer>().sprite = person.appearance.foot.GetComponent<SpriteRenderer>().sprite;
+                bod.GetComponent<SpriteRenderer>().color = person.appearance.foot.GetComponent<SpriteRenderer>().color;
                 
                 break;
             case (Slot.Hand):
                 if (left) {
-                    equipment = activePerson.equipped.leftHand; 
-                    AddEquipment(activePerson.equipped.leftHand.id);
-                    activePerson.equipped.leftHand = null;
+                    if (person.equipped.leftHand == null) return;
+                    equipment = person.equipped.leftHand; 
+                    AddEquipment(person.equipped.leftHand.id);
+                    person.equipped.leftHand = null;
                 }else {
-                    equipment = activePerson.equipped.rightHand; 
-                     AddEquipment(activePerson.equipped.rightHand.id);
-                    activePerson.equipped.rightHand = null;
+                    if (person.equipped.rightHand == null) return;
+                    equipment = person.equipped.rightHand; 
+                     AddEquipment(person.equipped.rightHand.id);
+                    person.equipped.rightHand = null;
                 }
-                bod.GetComponent<SpriteRenderer>().sprite = activePerson.appearance.hand.GetComponent<SpriteRenderer>().sprite;
-                bod.GetComponent<SpriteRenderer>().color = activePerson.appearance.hand.GetComponent<SpriteRenderer>().color;
+                bod.GetComponent<SpriteRenderer>().sprite = person.appearance.hand.GetComponent<SpriteRenderer>().sprite;
+                bod.GetComponent<SpriteRenderer>().color = person.appearance.hand.GetComponent<SpriteRenderer>().color;
                 
                 break;
         }
 
         //stats
         for(int i = 0; i <equipment.modifiers.Length; i++){
-            activePerson.stats[(int)equipment.modifiers[i].affectedStat].value -= equipment.modifiers[i].offset;
+            person.stats[(int)equipment.modifiers[i].affectedStat].value -= equipment.modifiers[i].offset;
         }
-        ApplyStats(activePerson.id);
+        ApplyStats(person.id);
     }
     public void EquipWeapon(int itemId, List<Part> partsUsed, int charId = -1)
     {
@@ -315,6 +329,51 @@ public class Player : MonoBehaviour
 
         EquipWeapon(100000, new List<Part>(), charId);
     }
+    public void ResetAllArmorLooks() {
+        for (int i = 0; i < characters.Count; i++)
+        {
+            try{
+            GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Head, false)).gameObject;
+            bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.head.visual.GetComponent<SpriteRenderer>().sprite;
+            bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.head.visual.GetComponent<SpriteRenderer>().color;
+            }catch(NullReferenceException e){}
+            try{
+            GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Chest, false)).gameObject;
+            bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.chest.visual.GetComponent<SpriteRenderer>().sprite;
+            bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.chest.visual.GetComponent<SpriteRenderer>().color;
+            }catch(NullReferenceException e){}
+            try{
+            GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Pauldron, false)).gameObject;
+            bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.rightPauldron.visual.GetComponent<SpriteRenderer>().sprite;
+            bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.rightPauldron.visual.GetComponent<SpriteRenderer>().color;
+            }catch(NullReferenceException e){}
+            try{
+            GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Pauldron, true)).gameObject;
+            bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.leftPauldron.visual.GetComponent<SpriteRenderer>().sprite;
+            bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.leftPauldron.visual.GetComponent<SpriteRenderer>().color;
+            }catch(NullReferenceException e){}
+            try{
+            GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Hand, false)).gameObject;
+            bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.rightHand.visual.GetComponent<SpriteRenderer>().sprite;
+            bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.rightHand.visual.GetComponent<SpriteRenderer>().color;
+            }catch(NullReferenceException e){}
+            try{
+            GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Hand, true)).gameObject;
+            bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.leftHand.visual.GetComponent<SpriteRenderer>().sprite;
+            bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.leftHand.visual.GetComponent<SpriteRenderer>().color;
+            }catch(NullReferenceException e){}
+            try{
+            GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Foot, false)).gameObject;
+            bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.rightFoot.visual.GetComponent<SpriteRenderer>().sprite;
+            bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.rightFoot.visual.GetComponent<SpriteRenderer>().color;
+            }catch(NullReferenceException e){}
+            try{
+            GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Foot, true)).gameObject;
+            bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.leftFoot.visual.GetComponent<SpriteRenderer>().sprite;
+            bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.leftFoot.visual.GetComponent<SpriteRenderer>().color;
+            }catch(NullReferenceException e){}
+        }
+    }
     public void ApplyStats(int charId = -1) {
         if (charId == -1) charId = activeCharId;
         FriendlyChar person = GetCharById(charId);
@@ -331,7 +390,7 @@ public class Player : MonoBehaviour
             person.hitbox.damageMax = dmg * 1.5f;
             person.hitbox.friendlyOwner = person.controller;
             // CHEAT (this is supposed to only go on when hitting but that is not whats happening)
-            person.hitbox.hitting=true;
+            // person.hitbox.hitting=true;
         }
         // 12 = armor stat
         person.controller.armorDefense = person.stats[12].value;
@@ -353,7 +412,7 @@ public class Player : MonoBehaviour
         } else if (value.damageType == DamageType.Magic) {
             dmg += person.stats[5].value; // 5 is stat for magic damage
         }
-
+        dmg += person.stats[14].value; // 14 is stat for all damages
 
         for(int i = 0; i <partsUsed.Count; i++){
             for(int j = 0; j <partsUsed[i].modifiers.Length; j++){
@@ -569,14 +628,16 @@ public class Player : MonoBehaviour
         controller.moveSpeed = 1.6f; // TODO: Unhardcode
         controller.turnSpeed = 5f; // TODO: Unhardcode
         controller.feetSpeed = 0.5f; // TODO: Unhardcode
-        controller.DoStart();
 
         // Settings on GameObject
         neutral.tag = "Character";
         neutral.name = neutralScript.person.name;
         GameObject nameplate = Instantiate(GameOverlord.Instance.namePlate);
+        nameplate.name = "NamePlate";
         nameplate.transform.parent = neutral.transform;
         nameplate.transform.localPosition = new Vector2(0.43f, 0);
+
+        controller.DoStart();
         
         UIManager.Instance.RemoveMonsterIndicator(neutralScript.indicatorIndex);
 
@@ -657,5 +718,30 @@ public class Player : MonoBehaviour
 
         // may still be able to level up again, but only do it twice
         if(!limited)PlayerLevelProgression(ind, true);
+    }
+    public Equipment GetEquippedBySlot(Slot slot, int charInd, bool left=false ){
+        switch (slot) {
+
+            case (Slot.Head):
+                return characters[charInd].equipped.head;
+                break;
+            case (Slot.Chest):
+                return characters[charInd].equipped.chest;
+                break;
+            case (Slot.Pauldron):
+                if (left)return characters[charInd].equipped.leftPauldron;
+                else return characters[charInd].equipped.rightPauldron;
+                break;
+            case (Slot.Foot):
+                if (left)return characters[charInd].equipped.leftFoot;
+                else return characters[charInd].equipped.rightFoot;
+                break;
+            case (Slot.Hand):
+                if (left)return characters[charInd].equipped.leftHand;
+                else return characters[charInd].equipped.rightHand;
+                break;
+            
+        }
+        return null;
     }
 }

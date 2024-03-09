@@ -3,6 +3,15 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 
+public enum RegionPlacement
+{
+    Central,
+    West,
+    North,
+    South,
+    East,
+}
+
 public enum ConnectionPart
 {
     Grass,
@@ -10,6 +19,14 @@ public enum ConnectionPart
     Street,
     Mountain,
     Void,
+}
+[Serializable]
+public class RegionTransition
+{
+    public int regionId;
+    public RegionPlacement placement;
+    public Color transitionLightColor;
+
 }
 [Serializable]
 public class Tile 
@@ -48,6 +65,8 @@ public class TileVillage
 {
     public int id;
     public Tile[] villageTiles;
+    public int minX;
+    public int minY;
     public int maxX;
     public int maxY;
 }
@@ -66,8 +85,14 @@ public class MapMaker : MonoBehaviour
     public int riverLength;
     public int mapHeight = 100;
 
+    public RegionTransition[] regionTransitions;
+    public int[] regionBounds; // 0=north=+y  1=east=+x  2=south=-y  3=west=-x
+
     public GameObject grass;
     public float grassLength = 17.7f;
+
+    public GameObject transitionLight;
+    public GameObject transitionFog;
 
     private Tile[][] tileMap;
 
@@ -85,11 +110,15 @@ public class MapMaker : MonoBehaviour
     }
     void Start()
     {
+        DoStart();
+    }
+    public void DoStart()
+    {
         debugMarker = Instantiate(debugMarker);
         tileMap = new Tile[mapHeight][];
         
-        MapLine(riverLength, ConnectionPart.River, true, 0, 0);
-        MapLine(riverLength, ConnectionPart.River, true, 0, 20);
+        MapLine(riverLength, ConnectionPart.River, true, 23, 18);
+        MapLine(riverLength, ConnectionPart.River, true, 19, 21);
         MapLine(100, ConnectionPart.Street, false, 0, 30);
         for (int i = 0; i < PreMapped.Count; i++)
         {
@@ -97,9 +126,9 @@ public class MapMaker : MonoBehaviour
         }
         for (int i = 0; i < PreMappedVillages.Count; i++)
         {
-            MapTileGroup(PreMappedVillages[i].villageTiles, PreMappedVillages[i].maxX, PreMappedVillages[i].maxY);
+            MapTileGroup(PreMappedVillages[i].villageTiles, PreMappedVillages[i].maxX, PreMappedVillages[i].maxY,PreMappedVillages[i].minX, PreMappedVillages[i].minY);
         }
-        GenerateFirstTile();
+        // GenerateFirstTile();
         BerkeleyManager.Instance.DoStart();
     }
     public void DeleteTileAt(int x, int y) {
@@ -147,12 +176,12 @@ public class MapMaker : MonoBehaviour
         tileMap[xPos][yPos] = tile.Clone();
         tileMap[xPos][yPos].tileObject = SpawnTile(tile, xPos, yPos); 
     }
-    void MapTileGroup(Tile[] tile, int maxX, int maxY) {
-        int xPos = UnityEngine.Random.Range(30, maxX);
-        int yPos = UnityEngine.Random.Range(30, maxY);
+    void MapTileGroup(Tile[] tile, int maxX, int maxY, int minX, int minY) {
+        int xPos = UnityEngine.Random.Range(minX, maxX);
+        int yPos = UnityEngine.Random.Range(minY, maxY);
         do {
-            xPos = UnityEngine.Random.Range(30, maxX);
-            yPos = UnityEngine.Random.Range(30, maxY);
+            xPos = UnityEngine.Random.Range(minX, maxX);
+            yPos = UnityEngine.Random.Range(minY, maxY);
             if (tileMap[xPos] == null) tileMap[xPos] = new Tile[mapHeight];
             if (tileMap[xPos+1] == null) tileMap[xPos+1] = new Tile[mapHeight];
         } while (xPos>=mapHeight || yPos<=0 || tileMap[xPos][yPos] !=null || tileMap[xPos+1][yPos] !=null || tileMap[xPos][yPos-1] !=null || tileMap[xPos+1][yPos-1] !=null);
@@ -252,7 +281,11 @@ public class MapMaker : MonoBehaviour
             return skip;
         }
         // k now we really got nothing, this bad
-        Debug.LogError("No tile was found to match at " + x +", " + y);
+        Debug.LogError("No tile was found to match at " + x +", " + y );
+        try {Debug.Log("\n north="+tileMap[x][y+1].southCon); } catch{}
+        try {Debug.Log("\n east="+tileMap[x+1][y].westCon); } catch{}
+        try {Debug.Log("\n south="+tileMap[x][y-1].northCon); } catch{}
+        try {Debug.Log("\n west="+tileMap[x-1][y].eastCon); } catch{}
         return null;
     }
     // Update is called once per frame
@@ -340,22 +373,33 @@ public class MapMaker : MonoBehaviour
         controller.x = x; controller.y = y; controller.hasRoadOrRiver=isRiver||tile.southCon==ConnectionPart.Street||tile.northCon==ConnectionPart.Street||tile.westCon==ConnectionPart.Street||tile.eastCon==ConnectionPart.Street;
         tile.controller = controller;
     }
-    GameObject SpawnTile(Tile tile, float x, float y ){
+    void CheckRegionalLights(int x, int y) {
+        if (y >= regionBounds[0]) {  
+            GameObject light = Instantiate(y==regionBounds[0]? transitionLight:transitionFog, new Vector2(x*tileLength, y*tileLength), Quaternion.Euler(0,0,0));
+            light.GetComponent<SpriteRenderer>().color =  regionTransitions[1].transitionLightColor;
+            light.GetComponent<TransitionLight>().regionIndex = 1;
+        } else if (x >= regionBounds[1]) {   
+            GameObject light = Instantiate(x==regionBounds[1]? transitionLight:transitionFog, new Vector2(x*tileLength, y*tileLength), Quaternion.Euler(0,0,270f));
+            light.GetComponent<SpriteRenderer>().color =  regionTransitions[2].transitionLightColor;
+            light.GetComponent<TransitionLight>().regionIndex = 2;
+        } else if (y <= regionBounds[2]) {   
+            GameObject light = Instantiate(y==regionBounds[2]? transitionLight:transitionFog, new Vector2(x*tileLength, y*tileLength), Quaternion.Euler(0,0,180f));
+            light.GetComponent<SpriteRenderer>().color =  regionTransitions[3].transitionLightColor;
+            light.GetComponent<TransitionLight>().regionIndex = 3;
+        } else if (x <= regionBounds[3]) {   
+            GameObject light = Instantiate(x==regionBounds[3]? transitionLight:transitionFog, new Vector2(x*tileLength, y*tileLength), Quaternion.Euler(0,0,90f));
+            light.GetComponent<SpriteRenderer>().color =  regionTransitions[4].transitionLightColor;
+            light.GetComponent<TransitionLight>().regionIndex = 4;
+        }
+    }
+    GameObject SpawnTile(Tile tile, int x, int y ){
         GameObject inst = Instantiate(tile.tileObject,
             new Vector3(x * tileLength, y * tileLength, 0), tile.tileObject.transform.rotation);
         inst.transform.SetParent(transform);
+        CheckRegionalLights(x,y);
         return inst;
     }
-    void SpawnGrass(float x, float y ){
-        int random = UnityEngine.Random.Range(0, 5);
-        float z = 90f;
-        if (random == 0) z = 0;
-        if (random == 2) z = 270f;
-        if (random == 3) z = 180f;
-        GameObject inst = Instantiate(grass,
-            new Vector3(x * grassLength, y * grassLength, 0), new Quaternion (0,0,z,0));
-        inst.transform.SetParent(transform.Find("grass"));
-    }
+
     public Tile GetTileAtCoordinates(float cx, float cy) {
         int x =(int)Math.Round(cx/tileLength);
         int y =(int)Math.Round(cy/tileLength);

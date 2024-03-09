@@ -2,11 +2,12 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Linq;
 
 public class Berkeley : MonoBehaviour
 {
     public LayerMask unMatchable; 
-    public int size = 5;
+    public float size = 5;
     public int spawnableId;
     public bool indistructible = false;
 
@@ -21,7 +22,7 @@ public class Berkeley : MonoBehaviour
         // if (gameObject.name.Contains("olf")) {Debug.Log(spawnableId+gameObject.name + " - "+BerkeleyManager.Instance.spawnables[spawnableId].currentQuantity);}
         BerkeleyManager.Instance.spawnables[spawnableId].currentQuantity++;
         BeforeCheck();
-        if(gameObject.tag != "Monster")Check();
+        if(!GameOverlord.Instance.fightingBerkeleyTags.Contains (gameObject.tag))Check();
         ContinuedStart();
         if (showIndicator) {
             // HARDCODED 6 = neutral spawnableId
@@ -109,6 +110,9 @@ public class Berkeley : MonoBehaviour
             BerkeleyManager.Instance.spawnables[spawnableId].currentQuantity--;
         if (showIndicator) {
             UIManager.Instance.RemoveMonsterIndicator(indicatorIndex);
+        }
+        if (gameObject.tag == "Rsrc"){
+            GameOverlord.Instance.nearbyRsrc.Remove(gameObject);
         }
         Destroy(gameObject);
     }

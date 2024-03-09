@@ -7,6 +7,7 @@ using System;
 using UnityEngine.UI;
 using TMPro;
 using System.Text.RegularExpressions;
+using UnityEngine.SceneManagement;
 
 public enum Menu
 {
@@ -77,8 +78,12 @@ public class UIManager : MonoBehaviour
     public GameObject detailedToolTipPrefab;
 
     public GameObject exitGameButton;
+    public GameObject restartGameButton;
 
-    private float toolTipTime=0.03f;
+    public GameObject regionPanel;
+    public GameObject changeRegionButton;
+
+    private float toolTipTime=0.03f; // will change
     private float toolTipTimer=0;
     private int toolTipStep=0;
 
@@ -99,6 +104,7 @@ public class UIManager : MonoBehaviour
         monsterArrows = new List<GameObject>();
         monsterArrowTargets = new List<GameObject>();
         exitGameButton.GetComponent<Button>().onClick.AddListener(() => ExitGame());
+        restartGameButton.GetComponent<Button>().onClick.AddListener(() => RestartGame());
     }
     void Start()
     {
@@ -138,11 +144,16 @@ public class UIManager : MonoBehaviour
         for (int i = 0; i < Player.Instance.engagedMonster.Count; i++)
         {
             if (Player.Instance.engagedMonster[i] == null)debuggerText+="Destroyed\n";
-            else debuggerText+=Player.Instance.engagedMonster[i].name.Replace("(Clone)","").Replace("(Clone)","") + "\n";
+            else {
+                Combatant monster = Player.Instance.engagedMonster[i].GetComponent<Combatant>();
+                debuggerText+=monster.named;
+                float lifePercentage = monster.life/monster.maxLife*100f;
+                string color = lifePercentage >= 99 ? "white" : lifePercentage >= 85 ? "green" : lifePercentage >= 63 ? "#dfff00" : lifePercentage >= 50 ? "yellow" :  lifePercentage >= 30 ? "#FFBF00" : lifePercentage >= 15 ? "orange" : "red";
+                debuggerText+= color=="white"?"\n": " <color="+color+">"+lifePercentage.ToString("0")+"%</color>"+ "\n";
+            }
         }
         // debuggerText += Player.Instance.engagementTime.ToString() +" - "+ Player.Instance.engagementTimer.ToString() +"\n";
         // debuggerText += Player.Instance.EngagedFor().ToString();
-        // Regex.Replace(debuggerText, @"[0-9]", "");
         debugger.text = debuggerText;
     }
 
@@ -222,7 +233,9 @@ public class UIManager : MonoBehaviour
         // weapon parts
         AutoEquipWeapons();
         
-        
+        // auto craft armor (very important comment)
+        AutoCraftArmor();
+        AutoCraftAmmo();
     }
     public void AutoEquipArmor() {
         if (!autoEquipping) return;
@@ -291,19 +304,23 @@ public class UIManager : MonoBehaviour
                 }
                 break;
                 case (Slot.Foot):
-                if (Player.Instance.characters[i].equipped.rightFoot == null) {
+                if (Player.Instance.characters[i].equipped.rightFoot == null
+                    || armor.value >  Player.Instance.characters[i].equipped.rightFoot.value) {
                     canEquip = true;
                 }
-                else if (Player.Instance.characters[i].equipped.leftFoot == null) {
+                else if (Player.Instance.characters[i].equipped.leftFoot == null
+                    || armor.value >  Player.Instance.characters[i].equipped.leftFoot.value) {
                     canEquip = true;
                     left = true;
                 }
                 break;
             }
             if (canEquip) {
+                Player.Instance.Unequip(armor.slot ,left, Player.Instance.characters[i].id);
                 Player.Instance.EquipArmor(armor, left, Player.Instance.characters[i].id);
                 Player.Instance.RemoveEquipment(armorId);
                 armorNeedsUpdate = true;
+                Player.Instance.ResetAllArmorLooks();
                 return true;
             }
         }
@@ -316,6 +333,7 @@ public class UIManager : MonoBehaviour
 
         int qualifier = -1;
         bool partHaving = false;
+        bool alreadyHasWeapon = false;
 
         {
         List<int> tried = new List<int>();
@@ -328,7 +346,7 @@ public class UIManager : MonoBehaviour
                 i = UnityEngine.Random.Range(0, Player.Instance.characters.Count);
             } while (tried.Contains(i) && tried.Count < Player.Instance.characters.Count && mr>0);
             tried.Add(i);
-
+            alreadyHasWeapon = false;
             
             if ( Player.Instance.characters[i].equipped.primaryWeapon == null 
             ||Player.Instance.characters[i].equipped.primaryWeapon.id == 100000) {
@@ -339,23 +357,39 @@ public class UIManager : MonoBehaviour
                 Player.Instance.ClearPartsBeingUsed(Player.Instance.characters[i].id);
                 break;
             }
-            else if (Player.Instance.characters[i].equipped.partsBeingUsed.Count == 1) {
+            else if (Player.Instance.characters[i].equipped.partsBeingUsed.Count == 1 && !Player.Instance.characters[i].oddities.Contains(Oddity.Monk)) {
                 // qualified for an autoequip
                 qualifier = (i);
                 partHaving = (true);
                 break;
             }
+            else if (
+                (Player.Instance.characters[i].oddities.Contains(Oddity.Woodsman) && Player.Instance.characters[i].equipped.primaryWeapon.id != 100002)
+             || (Player.Instance.characters[i].oddities.Contains(Oddity.Miner) && Player.Instance.characters[i].equipped.primaryWeapon.id != 100004)
+             || (Player.Instance.characters[i].oddities.Contains(Oddity.Monk) && Player.Instance.characters[i].equipped.primaryWeapon.id != 100003)
+             || (Player.Instance.characters[i].oddities.Contains(Oddity.TriggerHappy) && Player.Instance.characters[i].equipped.primaryWeapon.damageType != DamageType.Ranged)
+             || (Player.Instance.characters[i].oddities.Contains(Oddity.Daredevil) && Player.Instance.characters[i].equipped.primaryWeapon.damageType != DamageType.Melee)
+             || (Player.Instance.characters[i].oddities.Contains(Oddity.Mystical) && Player.Instance.characters[i].equipped.primaryWeapon.damageType != DamageType.Magic)
+               ){
+                qualifier = (i);
+                partHaving = (true);
+                alreadyHasWeapon = true;
+                
+                break;
+               }
         }
         }
+        if (qualifier == -1) return;
+
         // turn list of parts into list of FittablePart enum
         List<FittablePart> partTypesOwned = Player.Instance.parts.Select( x => x.fittablePart).ToList();
-        if (qualifier == -1) return;
         
         List<Weapon> sortedAllWeapons = new List<Weapon>(GameLib.Instance.allWeapons);
         sortedAllWeapons.Shuffle();
-        // check for weapons that can be made. Start at 1 to skip disarmed
-        for(int i = 1; i <sortedAllWeapons.Count; i++){
+        // check for weapons that can be made.
+        for(int i = 0; i <sortedAllWeapons.Count; i++){
             // don't look if it's the equipped weapon
+            if (sortedAllWeapons[i].id == 100000) continue; //unarmed
             if (Player.Instance.characters[qualifier].equipped.primaryWeapon != null && sortedAllWeapons[i].id == Player.Instance.characters[qualifier].equipped.primaryWeapon.id) continue; 
             bool soFarSoGood = true;
             
@@ -374,7 +408,7 @@ public class UIManager : MonoBehaviour
                 }
             }
             // check you have ammo it may need
-            if (sortedAllWeapons[i]. damageType == DamageType.Ranged) {
+            if (sortedAllWeapons[i].damageType == DamageType.Ranged) {
                 if ((sortedAllWeapons[i].ammo == ConsumableType.Rock && Player.Instance.GetPartsByType(sortedAllWeapons[i].ammo).Count < 1 )
                  || Player.Instance.GetConsumablesByType(sortedAllWeapons[i].ammo).Count <1) { // no ammo of needed type
                     soFarSoGood = false; // ranged weapon works but you dont have ammo for it
@@ -383,13 +417,30 @@ public class UIManager : MonoBehaviour
             if (!soFarSoGood){
                 continue; // part missing, so skip this weapon as a possibility
             }
-            // we have all parts, so this weapon is getting equipped
+            // we have all parts, so this weapon can get equipped
+            // but if they already have a weapon, is this an improvement?
+            if (alreadyHasWeapon &&(
+                (Player.Instance.characters[qualifier].oddities.Contains(Oddity.Woodsman) && sortedAllWeapons[i].id!=100002)
+             || (Player.Instance.characters[qualifier].oddities.Contains(Oddity.Miner) && sortedAllWeapons[i].id != 100004)
+             || (Player.Instance.characters[qualifier].oddities.Contains(Oddity.Monk) && sortedAllWeapons[i].id != 100003)
+             || (Player.Instance.characters[qualifier].oddities.Contains(Oddity.TriggerHappy) && sortedAllWeapons[i].damageType != DamageType.Ranged)
+             || (Player.Instance.characters[qualifier].oddities.Contains(Oddity.Daredevil) && sortedAllWeapons[i].damageType != DamageType.Melee)
+             || (Player.Instance.characters[qualifier].oddities.Contains(Oddity.Mystical) && sortedAllWeapons[i].damageType != DamageType.Magic)
+            )){
+                    // not the weapon we are looking for as an improvement
+                    continue;
+                }
+
+            // ok so we either need this weapon or its an improvement over the current one due to oddities
             somethingHappened = true;
             int id = Player.Instance.characters[qualifier].id;
             if (partHaving) {
                 // if they alredy had 1 part, just re-add it them to make things simple
-                int partId = Player.Instance.characters[qualifier].equipped.partsBeingUsed[0].id;
-                Player.Instance.AddPart(partId);
+                for (int k = 0; k < Player.Instance.characters[qualifier].equipped.partsBeingUsed.Count; k++)
+                {
+                    int partId = Player.Instance.characters[qualifier].equipped.partsBeingUsed[k].id;
+                    Player.Instance.AddPart(partId);
+                }
             }
             Player.Instance.EquipWeapon(
                 sortedAllWeapons[i].id,
@@ -412,6 +463,159 @@ public class UIManager : MonoBehaviour
             AutoEquipWeapons(++count);
         }
     }
+        
+    public void AutoCraftArmor() {
+        // Debug.Log("Checking AUTO ARMOR CRAFT");
+        bool hasCrafter = false;
+        for (int i = 0; i < Player.Instance.characters.Count; i++)
+        {
+            if (Player.Instance.characters[i].oddities.Contains(Oddity.Armorer)) {
+                hasCrafter = true;
+            }
+        }
+        // if (! hasCrafter) Debug.Log("NO CRAFTER. BYE BYE YAA");
+        if (! hasCrafter) return;
+
+        // we have someone who can craft, now lets see what armor can be crafted
+
+        // list of owned part ids
+        List<int> parsOwned = Player.Instance.parts.Select( x => x.id).ToList();
+        List<int> originalList = new List<int>(parsOwned);
+        bool somethingGotMade = false;
+        for (int i = 0; i < GameLib.Instance.allEquipments.Length; i++)
+        {
+            // ignore equipments with no parts needed, not craftable
+            if (GameLib.Instance.allEquipments[i].partsNeeded.Length==0)continue;
+
+            bool haveParts = true;
+            // check if player has materials for it
+            for(int j = 0; j <GameLib.Instance.allEquipments[i].partsNeeded.Length; j++){
+
+                if (!parsOwned.Contains(GameLib.Instance.allEquipments[i].partsNeeded[j])){
+                    haveParts = false;
+                    break; // part missing, so stop looking at parts
+                }
+                // if we do have, then remove for next iteration, in cases we need 2
+                parsOwned.Remove(GameLib.Instance.allEquipments[i].partsNeeded[j]);
+            }
+            if (!haveParts) {
+                // reset local parts list for next loop
+                parsOwned =new List<int>(originalList);
+                continue;
+            }
+            // Debug.Log("Have parts for "+GameLib.Instance.allEquipments[i].name);
+
+            // player does have materials for it, but does anybody need this?
+            bool someoneCanUseit = false;
+            for(int j = 0; j <Player.Instance.characters.Count; j++){
+
+                Equipment equipped = Player.Instance.GetEquippedBySlot(GameLib.Instance.allEquipments[i].slot, j);
+                
+                if (equipped == null || equipped.value < GameLib.Instance.allEquipments[i].value){
+                    someoneCanUseit = true;
+                    break; // someone can use it so no need to keep checking
+                }
+                // could have a left side to check
+                if (GameLib.Instance.allEquipments[i].slot == Slot.Pauldron 
+                    || GameLib.Instance.allEquipments[i].slot == Slot.Hand
+                    || GameLib.Instance.allEquipments[i].slot == Slot.Foot ) {
+
+                        equipped = Player.Instance.GetEquippedBySlot(GameLib.Instance.allEquipments[i].slot, j, true);
+                
+                        if (equipped == null || equipped.value < GameLib.Instance.allEquipments[i].value){
+                            someoneCanUseit = true;
+                            break; // someone can use it so no need to keep checking
+                        }
+                    }
+            }
+            if (!someoneCanUseit) continue;
+            // Debug.Log("Found user for "+GameLib.Instance.allEquipments[i].name);
+            // We can make this, AND someone can use it! Let's get crafing!
+            somethingGotMade=true;
+            // remove parts from player. local list here should already have them removed
+            for(int j = 0; j <GameLib.Instance.allEquipments[i].partsNeeded.Length; j++){
+                Player.Instance.RemovePart(GameLib.Instance.allEquipments[i].partsNeeded[j]);
+            }
+            Player.Instance.AddEquipment(GameLib.Instance.allEquipments[i].id);
+            
+        }
+        // if (! somethingGotMade) Debug.Log("NOTHING GOT MADE");
+        if (somethingGotMade) {
+            // Debug.Log("!!!!SUCCESSS!!!!!");
+            AutoEquipArmor();
+        }
+        
+    }
+    // Fletcher
+    public bool AutoCraftAmmo() {
+        bool hasCrafter = false;
+        for (int i = 0; i < Player.Instance.characters.Count; i++)
+        {
+            if (Player.Instance.characters[i].oddities.Contains(Oddity.Fletcher)) {
+                hasCrafter = true;
+            }
+        }
+        if (! hasCrafter) return false;
+
+        // we have someone who can craft, now lets see what arrows can be crafted
+
+        // list of owned part ids
+        List<FittablePart> partTypesOwned = Player.Instance.parts.Select( x => x.fittablePart).ToList();
+        List<FittablePart> originalList = new List<FittablePart>(partTypesOwned);
+        bool somethingGotMade = false;
+        for (int i = 0; i < GameLib.Instance.allConsumables.Length; i++)
+        {
+            // ignore equipments with no parts needed, not craftable
+            if (GameLib.Instance.allConsumables[i].partsNeeded.Length==0)continue;
+
+            bool haveParts = true;
+            // check if player has materials for it
+            for(int j = 0; j <GameLib.Instance.allConsumables[i].partsNeeded.Length; j++){
+
+                if (!partTypesOwned.Contains(GameLib.Instance.allConsumables[i].partsNeeded[j])){
+                    haveParts = false;
+                    break; // part missing, so stop looking at parts
+                }
+                // if we do have, then remove for next iteration, in cases we need 2
+                partTypesOwned.Remove(GameLib.Instance.allConsumables[i].partsNeeded[j]);
+            }
+            if (!haveParts) {
+                // reset local parts list for next loop
+                partTypesOwned =new List<FittablePart>(originalList);
+                continue;
+            }
+
+            // player does have materials for it, but does anybody need this?
+            bool someoneCanUseit = false;
+            for(int j = 0; j <Player.Instance.characters.Count; j++){
+
+                Weapon equipped = Player.Instance.characters[j].equipped.primaryWeapon;
+                
+                if ((equipped != null && equipped.damageType == DamageType.Ranged && equipped.ammo == GameLib.Instance.allConsumables[i].consumableType)
+                    || Player.Instance.characters[j].oddities.Contains(Oddity.TriggerHappy)){
+                    someoneCanUseit = true;
+                    break; // someone can use it so no need to keep checking
+                }
+
+            }
+            if (!someoneCanUseit) continue;
+            // We can make this, AND someone can use it! Let's get crafing!
+            somethingGotMade=true;
+            // remove parts from player. local list here should already have them removed
+            List<Part> partsUsed = Player.Instance.FindNeededParts(GameLib.Instance.allConsumables[i].partsNeeded);
+            for(int j = 0; j <partsUsed.Count; j++){
+                Player.Instance.RemovePart(partsUsed[j].id);
+            }
+            for (int j = 0; j < GameLib.Instance.allConsumables[i].quantityLimit; j++)
+            {
+                Player.Instance.AddConsumable(GameLib.Instance.allConsumables[i].id);   
+            }
+            
+        }
+
+        return somethingGotMade;
+    }
+    
     public void ShowItemPickedUp(string itemName, Sprite icon) {
         ShowIndicator( "+ 1 "+itemName, icon);
     }
@@ -475,6 +679,9 @@ public class UIManager : MonoBehaviour
             arrow.GetComponent<Image>().color = color;
         }
     } 
+
+    
+    
     public int AddMonsterIndicator(GameObject target, bool friendly=false) {
         int indicatorIndex = lastIndicatorId;
         GameObject newArrow = Instantiate(friendly ? friendArrowPrefab : monsterArrowPrefab);
@@ -500,14 +707,22 @@ public class UIManager : MonoBehaviour
         Vector2 position,
         string title,
         string subTitle,
-        string detail
+        string detail,
+        bool fromGraphics = false
     ) {
         detailedToolTipPrefab.transform.Find("content/description").GetComponent<TextMeshProUGUI>().text = detail;
         detailedToolTipPrefab.transform.Find("content/title").GetComponent<TextMeshProUGUI>().text = title;
         detailedToolTipPrefab.transform.Find("content/subTitle").GetComponent<TextMeshProUGUI>().text = subTitle;
         detailedToolTipPrefab.transform.position = position;
+        toolTipTime = fromGraphics ? 0.1f : 0.03f;
         toolTipTimer=toolTipTime;
         toolTipStep=1;
+        
+        Canvas.ForceUpdateCanvases();
+        detailedToolTipPrefab.transform.Find("content").GetComponent<VerticalLayoutGroup>().enabled = false;
+        detailedToolTipPrefab.GetComponent<VerticalLayoutGroup>().enabled = false;
+        detailedToolTipPrefab.transform.Find("content").GetComponent<VerticalLayoutGroup>().enabled = true;
+        detailedToolTipPrefab.GetComponent<VerticalLayoutGroup>().enabled = true;
     }
     public void HideToolTips() {
         detailedToolTipPrefab.transform.position = new Vector2(3200f,3200f);
@@ -517,9 +732,24 @@ public class UIManager : MonoBehaviour
         Debug.Log("Exit");
          Application.Quit();
     }
+    public void RestartGame() {
+        Debug.Log("Restart");
+        SceneManager.LoadScene("TopDown");
+    }
 
     public void PageChange(int offset) {
         if (uIPage + offset > -1)
         uIPage += offset;
+    }
+    public void ShowRegionTransition(int regionIndex) {
+        Region region = GameLib.Instance.regions[regionIndex];
+        regionPanel.transform.Find("Content").gameObject.SetActive(true);
+        regionPanel.transform.Find("Content/Text").GetComponent<TextMeshProUGUI>().text = "Go to "+region.name+"?";
+        regionPanel.transform.Find("Content").GetComponent<Image>().sprite = region.uiImage;
+        regionPanel.transform.Find("Content/Button").GetComponent<Button>().onClick.RemoveAllListeners();
+        regionPanel.transform.Find("Content/Button").GetComponent<Button>().onClick.AddListener(() => GameOverlord.Instance.ChangeRegion(regionIndex));
+    }
+    public void HideRegionTransition() {
+        regionPanel.transform.Find("Content").gameObject.SetActive(false);
     }
 }

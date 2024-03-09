@@ -11,13 +11,17 @@ public class ItemDrop : Berkeley
 	private float targetAngle;
 	private Vector2 targetFall;
 	private Vector2 currentPosition;
+	private float existenceDuration;
 	void Start(){
+		existenceDuration = 20f; // 20 seconds is plenty to get an item people
 		Vector2 currentPosition = transform.position;
 		targetAngle = Random.Range(1, 360);
 		targetFall = new Vector2(
 			Random.Range(currentPosition.x -2, currentPosition.x + 2),
 			Random.Range(currentPosition.y -2, currentPosition.y + 2)
 		);
+		
+		GameOverlord.Instance.nearbyDrops.Add(gameObject);
 	}
     void FixedUpdate()
     {
@@ -29,6 +33,12 @@ public class ItemDrop : Berkeley
 			transform.rotation = Quaternion.Slerp (transform.rotation, 
 		                                       Quaternion.Euler (0, 0, targetAngle + 180), 
 		                                       1.5f*Time.deltaTime);
+		} else if (existenceDuration> 0) {
+			existenceDuration -= Time.deltaTime;
+			return;
+		} else {
+			GameOverlord.Instance.nearbyDrops.Remove(gameObject);
+			Destroy(gameObject);
 		}
 		if (spawnTimer > 0.9f) {
 			transform.localScale = new Vector2(1.3f, 1.3f);
@@ -74,9 +84,10 @@ public class ItemDrop : Berkeley
 	void Collided(Collider2D collided)
 	{
 		if (!pickable) return;
-		// TODO: give to picker and not just player
+		
+		GameOverlord.Instance.nearbyDrops.Remove(gameObject);
         Player.Instance.PickupItem(itemType, id);
         if (itemType==ItemType.Part||itemType==ItemType.Equipment)UIManager.Instance.CheckAutoEquips();
-		Destroy(transform.gameObject);
+		Destroy(gameObject);
 	}
 }

@@ -79,6 +79,7 @@ public class CraftablePart : MonoBehaviour
             Player.Instance.AddPart(showingItemId);
             if (!multiple)UpdateUI();
             UIManager.Instance.AutoEquipWeapons();
+            UIManager.Instance.AutoCraftArmor();
             return true;
         }
         return false;

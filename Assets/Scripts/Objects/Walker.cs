@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System;
 
 public class Walker : MonoBehaviour
 {
@@ -26,17 +27,20 @@ public class Walker : MonoBehaviour
 			
         Vector2 target = moveDirection + currentPosition;
         if (Vector3.Distance(transform.position, nextPoint) > 0.2f) {
-            if (!isStunned)
-            transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
+            if (isStunned) transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (currentPosition, target, 0));
+            else transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (currentPosition, target, speed * Time.deltaTime));
 
             float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.Slerp (transform.rotation, 
-                                            Quaternion.Euler (0, 0, targetAngle + 180), 
-                                            turnRate * Time.deltaTime);
+            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
+                                            Quaternion.Euler (0, 0, targetAngle + 180f), 
+                                            turnRate * Time.deltaTime));
             
             StepAnim();
         }
         else {
+            transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (currentPosition, target, 0));
+            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
+                                            Quaternion.Euler (0, 0, 0),0));
             StopAnim();
         }
 	}

@@ -132,7 +132,7 @@ public class Save : MonoBehaviour
     void Start()
      {
         //  LoadFile();
-         
+         StartNew();
          Player.Instance.DoStart();
         // start all characters to make them right
         for(int i = 0; i <Player.Instance.characters.Count; i++){
@@ -158,6 +158,121 @@ public class Save : MonoBehaviour
     //     }
     //  }
      
+     void StartNew() {
+         // load confirmed
+        // destroy starting characters
+        GameObject[] gos = GameObject.FindGameObjectsWithTag("Character");
+        foreach(GameObject go in gos)
+            Destroy(go);
+
+         // leader setting
+        Player.Instance.activeCharId = 0;
+
+        BodyLook[] parts = GameLib.Instance.allBodyParts; 
+        Player.Instance.characters = new List<FriendlyChar>();
+        for(int i = 0; i <2; i++){
+            int head, chest, foot, hand, clothing;
+            head = chest = foot = hand = clothing = -1;
+            FriendlyChar chara = new FriendlyChar();
+
+            chara.isMale = UnityEngine.Random.Range(0,2) == 1;
+            chara.name = GameLib.Instance.GenerateName(chara.isMale);
+            chara.id = i;
+            chara.experience = 0;
+            chara.level = 0;
+            chara.appearance = new Appearance();
+            while (chest == -1) {
+                int index = UnityEngine.Random.Range(0, parts.Length);
+                if (parts[index].slot == Slot.Chest && (parts[index].xChromossomes == 0 ||
+                    ((chara.isMale && parts[index].xChromossomes == 1) ||
+                    (!chara.isMale && parts[index].xChromossomes == 2)))
+                ) {
+                    chest = index;
+                }
+            }
+            while (head == -1) {
+                int index = UnityEngine.Random.Range(0, parts.Length);
+                if (parts[index].slot == Slot.Head && (parts[index].xChromossomes == 0 ||
+                    ((chara.isMale && parts[index].xChromossomes == 1) ||
+                    (!chara.isMale && parts[index].xChromossomes == 2)))
+                ) {
+                    head = index;
+                }
+            }
+            while (clothing == -1) {
+                int index = UnityEngine.Random.Range(0, parts.Length);
+                if (parts[index].slot == Slot.Clothing && (parts[index].xChromossomes == 0 ||
+                    ((chara.isMale && parts[index].xChromossomes == 1) ||
+                    (!chara.isMale && parts[index].xChromossomes == 2)))
+                ) {
+                    clothing = index;
+                }
+            }
+            while (hand == -1) {
+                int index = UnityEngine.Random.Range(0, parts.Length);
+                if (parts[index].slot == Slot.Hand && (parts[index].xChromossomes == 0)
+                ) {
+                    hand = index;
+                }
+            }
+            while (foot == -1) {
+                int index = UnityEngine.Random.Range(0, parts.Length);
+                if (parts[index].slot == Slot.Foot && (parts[index].xChromossomes == 0)
+                ) {
+                    foot = index;
+                }
+            }
+            chara.personality = (Personality)(typeof(Personality).GetRandomEnumValue());
+            chara.oddities = GameLib.Instance.MakeListOfOddities();
+            chara.formation = GameLib.Instance.TakeAvailableFormtion();
+
+            GameObject inst = Instantiate(characterObject, new Vector2(867.3f + chara.formation.x, 867.3f + chara.formation.y), transform.rotation);
+            inst.name = chara.name;
+            chara.controller = inst.gameObject.GetComponent<ZombieController>();
+            chara.controller.charId = chara.id;
+            
+            // leader setting
+            if (0 == chara.id) {
+                // this is leader
+                chara.controller.leader = true;
+                Player.Instance.controller = inst.gameObject.GetComponent<ZombieController>();
+                Player.Instance.controller.charId = chara.id;
+            }
+            // lastly add the char to array
+            Player.Instance.characters.Add(chara);
+
+            // Skin Color 
+            int cIndex = UnityEngine.Random.Range(0, GameLib.Instance.skinColorPresets.Length);
+            Color color = GameLib.Instance.skinColorPresets[cIndex];
+            chara.appearance.skinColor = cIndex;
+            // setting everything on the game object
+            chara.appearance.bodyLooks = new int[] {head, chest, hand, foot, clothing};
+            inst.transform.Find("Player/Body/Head").GetComponent<SpriteRenderer>().sprite 
+            = GameLib.Instance.allBodyParts[head].look;
+            inst.transform.Find("Player/Body/Head").GetComponent<SpriteRenderer>().color = color;
+
+            inst.transform.Find("Player/Body/LFoot").GetComponent<SpriteRenderer>().sprite 
+            = GameLib.Instance.allBodyParts[foot].look;
+            inst.transform.Find("Player/Body/LFoot").GetComponent<SpriteRenderer>().color = color;
+            inst.transform.Find("Player/Body/RFoot").GetComponent<SpriteRenderer>().sprite 
+            = GameLib.Instance.allBodyParts[foot].look;
+            inst.transform.Find("Player/Body/RFoot").GetComponent<SpriteRenderer>().color = color;
+
+            inst.transform.Find("Player/Body/Chest").GetComponent<SpriteRenderer>().sprite 
+            = GameLib.Instance.allBodyParts[chest].look;
+            inst.transform.Find("Player/Body/Chest").GetComponent<SpriteRenderer>().color = color;
+            inst.transform.Find("Player/Body/Chest/Chest").GetComponent<SpriteRenderer>().sprite 
+            = GameLib.Instance.allBodyParts[clothing].look;
+
+            inst.transform.Find("Player/Body/Instance/LHand").GetComponent<SpriteRenderer>().sprite 
+            = GameLib.Instance.allBodyParts[hand].look;
+            inst.transform.Find("Player/Body/Instance/LHand").GetComponent<SpriteRenderer>().color = color;
+            inst.transform.Find("Player/Body/Instance/RHand").GetComponent<SpriteRenderer>().sprite 
+            = GameLib.Instance.allBodyParts[hand].look;
+            inst.transform.Find("Player/Body/Instance/RHand").GetComponent<SpriteRenderer>().color = color;
+
+        }
+     }
  
      public void SaveFile()
      {

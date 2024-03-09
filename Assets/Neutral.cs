@@ -37,6 +37,8 @@ public class Neutral : Combatant
     private bool attacking = false;
 	private bool hovering = false;
 
+    private string personalityString = "";
+
     void Update() {
         ListenForClick();
     }
@@ -61,6 +63,11 @@ public class Neutral : Combatant
         shadowColor = Color.black;
 		shadowColor.a = 0.2f;
 		selectionColor = Color.white;
+        for (int i = 0; i < person.oddities.Length; i++)
+        {
+            if (i!=0)personalityString+=", ";
+            personalityString+=person.oddities[i].ToString();
+        }
         
         Equip(startingWeaponId, parts);
     }
@@ -77,6 +84,7 @@ public class Neutral : Combatant
             // 6 = hardcoded npc spawnwable index !!!!!!
             BerkeleyManager.Instance.spawnables[6].currentQuantity--;
             Player.Instance.ConvertNeutral(gameObject);
+            UIManager.Instance.HideToolTips();
 		}
 	}
 
@@ -205,12 +213,15 @@ public class Neutral : Combatant
     void OnMouseOver()
     {
 		hovering = true;
+        UIManager.Instance.ShowDetailedToolTip(Camera.main.WorldToScreenPoint (transform.position)*1.15f,
+                person.name, person.personality.ToString(), personalityString, true);
 		shadow.GetComponent<SpriteRenderer>().color = selectionColor;
     }
 	void OnMouseExit()
     {
 		hovering = false;
 		shadow.GetComponent<SpriteRenderer>().color = shadowColor;
+        UIManager.Instance.HideToolTips();
     }
 }
     

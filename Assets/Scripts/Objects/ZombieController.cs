@@ -70,6 +70,19 @@ public class ZombieController : Walker {
 	private float skillRunTime =0f;
 	private List<Combatant> skillHits;
 
+	private GameObject aiGoingForObject = null;
+	private bool aiGoingForFight = false;
+
+	private float aiPositionCheckTimer = 2f;
+	private Vector2 aiPositionCheckLastPosition;
+	private List<int> pointlessGoals = new List<int>();
+
+	public string intention;
+	public GameObject engage;
+	private string personalityString = "";
+
+	private NamePlate namePlate;
+
 	public void DoStart()
 	{
 		Player.Instance.EquipWeapon(100000, new List<Part>(), charId);
@@ -77,6 +90,8 @@ public class ZombieController : Walker {
 		shadowColor = Color.black;
 		shadowColor.a = 0.2f;
 		selectionColor = Color.white;
+		namePlate=transform.Find("NamePlate").GetComponent<NamePlate>();
+		SaySomething(GameLib.Instance.GetLine(LineUsage.OnStart, self.personality));
 		
 		Reset();
 		ResetAppearance();
@@ -118,6 +133,12 @@ public class ZombieController : Walker {
 			hitBox = weaponObject.transform.Find(weapon.collidablePart.ToString()).gameObject.GetComponent<PolygonCollider2D>();
 			hitBox.isTrigger = true;
 		}
+		personalityString="";
+		for (int i = 0; i < self.oddities.Length; i++)
+        {
+            if (i!=0)personalityString+=", ";
+            personalityString+=self.oddities[i].ToString();
+        }
 		
 	}
 	 void EquipStartingGear() {
@@ -181,9 +202,15 @@ public class ZombieController : Walker {
 	private bool isLClickHeld = false;
 	private Vector2 nextPoint;
 
-	void Update () {
-		if (self == null) return;
+	void Update() {
 		ListenForClick();
+		if (Input.GetButtonDown("Fire1") && !UIManager.Instance.IsPointerOverUIElement() && !Player.Instance.isTeamHovered) 
+			isLClickHeld = true;
+		if (Input.GetButtonUp("Fire1")) isLClickHeld = false;
+	}
+
+	void FixedUpdate () {
+		if (self == null) return;
 		ControllerWalk();
 		Attack();
 		Die();
@@ -199,16 +226,18 @@ public class ZombieController : Walker {
 	void ControllerWalk() {
 		Vector2 currentPosition = transform.position;
 		if (boredTimer > 0)boredTimer -=Time.deltaTime;
-		if (Input.GetButtonDown("Fire1") && !UIManager.Instance.IsPointerOverUIElement() && !Player.Instance.isTeamHovered) 
-			isLClickHeld = true;
-		if (Input.GetButtonUp("Fire1")) isLClickHeld = false;
+		
 		if (isLClickHeld) {
 			boredTimer = boredTime;
 			Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 			// if a follower, gotta offset this move target
 			if (!leader) {
-				moveTowards.x+=self.formation.x;
-				moveTowards.y+=self.formation.y;
+				if (self.personality == Personality.Clingy) {
+					moveTowards = Player.Instance.controller.transform.position;
+				}
+					moveTowards.x+=self.formation.x;
+					moveTowards.y+=self.formation.y;
+				
 			}
 			// Leader goes straight to click, non-leader has a chance to ignore, resulting in delay to match move position. This is here to simulate reaction time of ofllowers
 			if (leader) // || UnityEngine.Random.Range(0, 52) > 50) // moved to AI
@@ -508,7 +537,10 @@ public class ZombieController : Walker {
 	void SkillMoveAnim() {
 		if (!skillMoveLocked || isBeingTossed) return;
 		if (Vector3.Distance(transform.position, skillMoveTarget) > skillMoveProximity) {
-			transform.position = Vector3.Lerp (transform.position, skillMoveTarget, (castingSkill.moveSystem==3?99f : castingSkill.speed) * Time.deltaTime);
+			transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (transform.position, skillMoveTarget, (castingSkill.moveSystem==3?99f : castingSkill.speed) * Time.deltaTime));
+			
+            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
+                                            Quaternion.Euler (0, 0, 0),0));
 		} else {
 			EndSkill();
 			lastClick=transform.position;
@@ -614,11 +646,12 @@ public class ZombieController : Walker {
             KnockedBack(target, hitter.knockBack);
 
 			Combatant attacker = collided.transform.parent.GetComponent<Combatant>();
-			if (attacker!=null)
+			if (attacker!=null){
 				Player.Instance.Engage(attacker.gameObject);
 			} else if (GameOverlord.Instance.nearbyMonsters.Count>0) {
 				Player.Instance.Engage(GameOverlord.Instance.nearbyMonsters[0]);
 			}
+		}
 	}
 	void Shot(Collider2D collided)
 	{
@@ -692,12 +725,15 @@ public class ZombieController : Walker {
 		hovering = true;
 		Player.Instance.isTeamHovered = true;
 		if(!leader)shadow.GetComponent<SpriteRenderer>().color = selectionColor;
+		if(!isLClickHeld)UIManager.Instance.ShowDetailedToolTip(Camera.main.WorldToScreenPoint (transform.position)*1.15f,
+                self.name, self.personality.ToString(), personalityString, true);
     }
 	void OnMouseExit()
     {
 		hovering = false;
 		Player.Instance.isTeamHovered = false;
 		shadow.GetComponent<SpriteRenderer>().color = shadowColor;
+        UIManager.Instance.HideToolTips();
     }
 
 	/**
@@ -710,15 +746,22 @@ public class ZombieController : Walker {
 		if (Player.Instance.controller == null) {
 			Debug.LogError("Controller was null, which it should never be! " + Player.Instance.activeCharId+" - "+Player.Instance.characters.Count);
 		}
-		float speed = leader ? moveSpeed : moveSpeed + 0.1f*(float)(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x));
+		float speed = moveSpeed + 0.1f*(float)(Vector2.Distance(currentPosition, lastNpcClick)- (Math.Abs(self.formation.x)+Math.Abs(self.formation.y)));
 		if (((tempPersonality != Personality.Coward && Player.Instance.EngagedFor() > 0.3f) || Player.Instance.EngagedFor() > 2.5f) && Player.Instance.engagedMonster.Count > 0) {
 			// Conditions for normally cahsing/fighting, if these are not met, behaviour will depend on personality
-			GameObject engage = Player.Instance.engagedMonster[0];
+			int lastEngageId = engage == null ? 0 : engage.GetInstanceID();
+
+			engage = Player.Instance.engagedMonster[0];
 			if (self.oddities.Contains(Oddity.Individualistic)) {
 				engage = Player.Instance.engagedMonster[Player.Instance.engagedMonster.Count-1];
 			}
-			if (engage != null)
-			AiFight(engage, speed);
+			if (engage != null){
+				AiFight(engage, speed);
+				if (engage.GetInstanceID() != lastEngageId) {
+					SaySomething(GameLib.Instance.GetLine(LineUsage.OnEngage, self.personality).Replace("*", engage.GetComponent<Combatant>().named));
+				}
+			}
+			intention="Group Fight";
 			return;
 		}
 		bool justFollow = false;
@@ -726,8 +769,16 @@ public class ZombieController : Walker {
 			case (Personality.Hothead):
 				if (GameOverlord.Instance.nearbyMonsters.Count > 0) {
 					try{
-					GameObject monster = GameOverlord.Instance.nearbyMonsters[0].gameObject;
-					AiFight(monster, speed);
+					int lastEngageId = engage == null ? 0 : engage.GetInstanceID();
+
+					engage = GameOverlord.Instance.nearbyMonsters[0].gameObject;
+					if (engage != null){
+						AiFight(engage, speed);
+						if (engage.GetInstanceID() != lastEngageId) {
+							SaySomething(GameLib.Instance.GetLine(LineUsage.OnEngage, self.personality).Replace("*", engage.GetComponent<Combatant>().named));
+						}
+					}
+					intention="Picking Fight";
 					
 					} catch (MissingReferenceException e){
 						justFollow = true;
@@ -746,53 +797,148 @@ public class ZombieController : Walker {
 				break;
 		}
 		if (justFollow) {
-			if ((tempPersonality != Personality.Lazy && UnityEngine.Random.Range(0, 52) > 50) || UnityEngine.Random.Range(0, 102) > 100)
-				lastClick = lastNpcClick;
-			nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);
-			Walk(
-				leader ? moveSpeed : moveSpeed + 0.1f*(float)Math.Pow(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x), 2),
-				nextPoint
-			);
+
+			// deciding how likely they choose to follow at each frame
+			if (   (tempPersonality == Personality.Clingy && UnityEngine.Random.Range(0, 67) > 50) 
+				|| (tempPersonality != Personality.Lazy && UnityEngine.Random.Range(0, 52) > 50) 
+				|| UnityEngine.Random.Range(0, 102) > 100)
+					lastClick = lastNpcClick;
+			
+			bool goingForItem = false;
+			if (weapon.damageType == DamageType.Melee){
+
+
+				// Oddities 
+				if (aiGoingForObject != null) {
+					goingForItem=true;
+
+					// pointless goal check
+					if (aiPositionCheckTimer > 0) {
+						aiPositionCheckTimer -= Time.deltaTime;
+						
+						// go for saved object
+						if (Vector3.Distance(transform.position, aiGoingForObject.transform.position) > GameLib.Instance.acquisitionDistance||(aiGoingForObject.tag == "Rsrc" && aiGoingForObject.GetComponent<CollectableRsrc>().exhausted)) aiGoingForObject=null;
+						if (aiGoingForFight){
+							AiFight(aiGoingForObject, moveSpeed);
+							intention="Exctracting resource";
+						}
+						else if (aiGoingForObject != null){
+							nextPoint = GameOverlord.Instance.Pathfind(currentPosition, aiGoingForObject.transform.position);
+							Walk(moveSpeed,nextPoint);
+							intention="Picking up drop";
+						} 
+						return;
+					} else {// check time
+						if (Vector3.Distance(transform.position, aiPositionCheckLastPosition) < 0.1f) {
+							// been stuck for 2 seconds after this, give it up
+							pointlessGoals.Add(aiGoingForObject.GetInstanceID());
+							aiGoingForObject = null;
+						}
+						aiPositionCheckTimer=2f;
+						aiPositionCheckLastPosition = transform.position;
+					}
+				}
+
+				
+				// LOOTER effect
+				if (!goingForItem && self.oddities.Contains(Oddity.Looter) && GameOverlord.Instance.nearbyDrops.Count>0) {
+					List<GameObject> newList = GameOverlord.Instance.nearbyDrops;
+					newList.Shuffle();
+					for (int i = 0; i < newList.Count; i++)
+					{
+						if ( Vector3.Distance(transform.position, newList[i].transform.position) <= GameLib.Instance.acquisitionDistance 
+						&& !pointlessGoals.Contains(newList[i].GetInstanceID())){
+							goingForItem=true;
+							aiGoingForObject = newList[i];
+							aiGoingForFight=false;
+							nextPoint = GameOverlord.Instance.Pathfind(currentPosition, aiGoingForObject.transform.position);
+							intention="Picking up drop2";
+							break;
+						}
+					}
+				}
+				// WOODSMAN and MINER
+				 if (!goingForItem && (self.oddities.Contains(Oddity.Woodsman) || self.oddities.Contains(Oddity.Miner))
+					&& GameOverlord.Instance.nearbyRsrc.Count>0) {
+					List<GameObject> newList = GameOverlord.Instance.nearbyRsrc;
+					newList.Shuffle();
+					for (int i = 0; i < newList.Count; i++)
+					{	
+						CollectableRsrc component = newList[i].GetComponent<CollectableRsrc>();
+						if (!component.exhausted && !pointlessGoals.Contains(newList[i].GetInstanceID()) &&
+							( (self.oddities.Contains(Oddity.Miner) && component.damageRsrcTypeNeeded == DamageRsrcType.Pickaxe) ||  (self.oddities.Contains(Oddity.Woodsman) && component.damageRsrcTypeNeeded == DamageRsrcType.Axe)  ) &&
+							Vector3.Distance(transform.position, newList[i].transform.position) <= GameLib.Instance.acquisitionDistance ){
+						
+							aiGoingForObject = newList[i];
+							aiGoingForFight=true;
+							AiFight(aiGoingForObject, moveSpeed);
+							intention="Exctracting resource2";
+							return;
+						}
+					}
+
+				}
+			}
+
+			// just follow sorta
+			if (!goingForItem){
+				nextPoint = GameOverlord.Instance.Pathfind(currentPosition, lastClick);
+				intention="Just following";
+			}
+			Walk(speed,nextPoint);
 		}
 	}
 	void AiFight( GameObject engage, float speed) {
+		if (engage == null) {
+			aiGoingForObject = null;
+			return;
+		} if (isStunned) return;
 		Vector2 target;
 		Vector2 currentPosition = transform.position;
 		Vector2 threateningTar = engage.transform.position;
-		nextPoint = GameOverlord.Instance.Pathfind(currentPosition, threateningTar);
+
+		float dist = Vector3.Distance(transform.position, threateningTar);
+
+		float monsterSize;
+		try {
+			monsterSize = engage.GetComponent<Berkeley>().size;
+		} catch (NullReferenceException) {
+			monsterSize = 1f;
+		}
+		// continue walking directly if pathfinding is not moving us
+		if (dist<monsterSize) {
+			nextPoint=threateningTar;
+		} else {
+			nextPoint = GameOverlord.Instance.Pathfind(currentPosition, threateningTar);
+		}
+		
 		moveDirection = nextPoint - currentPosition;
 		moveDirection.Normalize();
 		target = moveDirection + currentPosition;
 
-		float dist = Vector3.Distance(transform.position, threateningTar);
-		float monsterSize;
-		try {
-			monsterSize = engage.GetComponent<Monster>().size;
-		} catch (NullReferenceException) {
-			monsterSize = 2;
-		}
+
 			// HARDCODED arrow distance
 		if (weapon.damageType == DamageType.Ranged) monsterSize += 180f;
 		AiSkills(dist);
-		if (dist < monsterSize)AttemptAttack();
-		if (dist > monsterSize * 0.5f) {
+		if (dist <= monsterSize)AttemptAttack();
+		if (dist > monsterSize * (weapon.damageType == DamageType.Ranged ? 1f : 0.05f)) {
 			float usedSpeed = self.personality == Personality.Coward && attackCooldownTimer > 0 ? -1f*speed 
 				: speed;
-			transform.position = Vector3.Lerp (currentPosition, target, usedSpeed * Time.deltaTime);
+			transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (currentPosition, target, usedSpeed * Time.deltaTime));
 			StepAnim();
 		}
 		else {
 			StopAnim();
 		}
 		float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-			transform.rotation = Quaternion.Slerp (transform.rotation, 
-											Quaternion.Euler (0, 0, targetAngle + 180), 
-											turnSpeed * Time.deltaTime);
+			transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
+											Quaternion.Euler (0, 0, targetAngle + UnityEngine.Random.Range(175f, 185f)), 
+											turnSpeed * Time.deltaTime));
 											
 	}
 	void AiSkills( float dist) {
 		if (UnityEngine.Random.Range(0, 121) < 120) return;
-		if (self.oddities!=null && self.oddities.Contains(Oddity.Conservative)&& UnityEngine.Random.Range(0, 171) < 170) return;
+		if (self.oddities!=null && self.oddities.Contains(Oddity.Conservative)&& UnityEngine.Random.Range(0, 172) < 170) return;
 		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
 		{
 			CharSkill caste = self.skills[i];
@@ -829,7 +975,7 @@ public class ZombieController : Walker {
 	void BeTossed() {
 		if (!isBeingTossed) return;
 		if (Vector3.Distance(transform.position, knockBackLandPosition) > 0.2f) {
-			transform.position = Vector3.Lerp (transform.position, knockBackLandPosition, 3f * Time.deltaTime);
+			transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (transform.position, knockBackLandPosition, 3f * Time.deltaTime));
 		} else {
 			isBeingTossed = false;
 			lastClick=transform.position;
@@ -841,5 +987,9 @@ public class ZombieController : Walker {
     }
 	public bool IsRanged() {
 		return attackDamageType == DamageType.Ranged;
+	}
+
+	public void SaySomething(string line) {
+		namePlate.LineUpLine(line);
 	}
 }

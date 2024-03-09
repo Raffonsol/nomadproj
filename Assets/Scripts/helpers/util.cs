@@ -54,8 +54,14 @@ public static class Util
             return 0;
             case ("Monster"):
             return 1;
-            case ("Neutral"):
+            case ("Npc"):
             return 2;
+            case ("Marauder"):
+            return 3;
+            case ("Regional"):
+            return 4;
+            case ("Mimic"):
+            return 5;
         }
         return -1;
     }
@@ -80,6 +86,23 @@ public static class Util
             pos = "Chest/Chest";
         }
         return pos;
+    }
+
+    public static string FittablePartToString(FittablePart part, bool withEg = false)
+    {
+        string value = part.ToString();
+        switch (part) {
+            case FittablePart.BluntObject:
+                value = "Blunt Object";
+                if (withEg) value+=" (rock)";
+                break;
+            case FittablePart.ShortStick:
+                value = "Short Stick";
+                if (withEg) value+=" (wood)";
+                break;
+        }
+
+        return value;
     }
 
 }

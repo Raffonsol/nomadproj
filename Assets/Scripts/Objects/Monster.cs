@@ -93,13 +93,13 @@ public class Monster : Combatant
         if (attackTimer > (attackCooldown / 2)) {
             transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().color = aboutToAttackColor;
 
-            
+            Stay();
             moveDirection = chaseTargetPosition - currentPosition;
             moveDirection.Normalize();
             float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.Slerp (transform.rotation, 
+            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
 		                                       Quaternion.Euler (0, 0, targetAngle + 180), 
-		                                       turnSpeed * Time.deltaTime);
+		                                       turnSpeed * Time.deltaTime));
         }
         else if (attackTimer > 0)
         {
@@ -112,7 +112,7 @@ public class Monster : Combatant
                 hitBox.isTrigger = false;
 
                 Vector2 target = moveDirection + currentPosition;
-                transform.position = Vector3.Lerp (currentPosition, target, attackSpeed * Time.deltaTime);
+                Move(target, attackSpeed );
 			} else if (!projectileGoing && attackDamageType == DamageType.Ranged) {
                 
                 projectileGoing = true;
@@ -127,6 +127,8 @@ public class Monster : Combatant
 				arrow.gameObject.GetComponent<ProjectileItem>().playerParty = false;
 				arrow.gameObject.GetComponent<ProjectileItem>().consumableId = projectileId;
                 arrow.gameObject.GetComponent<ProjectileItem>().Go();
+                Stay();
+                transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, transform.rotation,0));
 				
 			}
            
@@ -153,6 +155,9 @@ public class Monster : Combatant
             MonsterSkill skill = skills[skillCastId];
             if (skillInImpact) {
                 if (skillImpactingTimer > 0) {
+                    // in impact
+                    Stay();
+                    transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, transform.rotation,0));
                     skillImpactingTimer-= Time.deltaTime;
                 } else {
                     //Impact end

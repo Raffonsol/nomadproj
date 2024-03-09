@@ -46,7 +46,7 @@ public class CraftableArmor : MonoBehaviour, IPointerEnterHandler
         }
     }
 
-    void UpdateUI() {Debug.Log(page);
+    void UpdateUI() { 
         if (page > showingItemId.Length-1) {
             page = showingItemId.Length-1;
             UIManager.Instance.uIPage = page;

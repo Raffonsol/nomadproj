@@ -1,7 +1,9 @@
 using System.Collections;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
+
 public enum Routine
 {
     Patrolling,
@@ -17,6 +19,7 @@ public enum Routine
 
 public class Combatant : Berkeley
 {
+    public string named;
     // 0=inGroup 1=hostile 2=neutral
     public int faction = 2;
     public int[] hatesFactions;
@@ -27,6 +30,7 @@ public class Combatant : Berkeley
     public float invincibilityTime = 0.3f;
     public float runSpeed = 1.5f;
     public bool movesOnAttackCD = true;
+    public bool heavy = false;
 
     public float attackDistance = 0.73f;
     public float attackCooldown = 1f;
@@ -64,7 +68,7 @@ public class Combatant : Berkeley
     protected bool engaged = false;
 
     protected Routine routine;
-    protected float life;
+    public float life;
 
     protected float cooldownTimer;
     protected float patrolTimer;
@@ -109,7 +113,8 @@ public class Combatant : Berkeley
 
     protected void SwitchRoutine(Routine newRoutine)
     {
-        // starter setups for each routine
+        
+        // close-ups for each routine
         switch (routine) {
         case (Routine.Patrolling):
             ResetPatrol();
@@ -118,6 +123,7 @@ public class Combatant : Berkeley
             break;
         case (Routine.Attacking):
             attackTimer = attackCooldown;
+            hitBox.isTrigger = true;
             break;
         case (Routine.Searching):
             originPosition = Camera.main.transform.position;
@@ -201,27 +207,28 @@ public class Combatant : Berkeley
             // pathblock checking
             if (Vector2.Distance(currentPosition, patrolTarget) < blockDistance || blockDistance > 10f) {
                 // gonna keep going
-                transform.position = Vector3.Lerp (currentPosition, target, patrolSpeed * Time.deltaTime);
+                Move( target, patrolSpeed);
 
 			    float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-                transform.rotation = Quaternion.Slerp (transform.rotation, 
+                transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
 		                                       Quaternion.Euler (0, 0, targetAngle + 180), 
-		                                       turnSpeed * Time.deltaTime);
+		                                       turnSpeed * Time.deltaTime));
 			    if (StuckCheck()) {
                     ResetPatrol();
                 }
             }
             else {
+                Stay();
+                StopAnim();
+                transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, transform.rotation,0));
                 // find a path
                 ResetPatrol();
             }
             if(DetectEnemy())
             {
                 SwitchRoutine(Routine.Chasing);
-                Player.Instance.Engage(gameObject);
                 engaged = true;
             }
-            StepAnim();
 			
 		}
 		else {
@@ -257,6 +264,20 @@ public class Combatant : Berkeley
 
         
     }
+    protected void Stay() {
+        if (heavy) {
+            transform.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Static;
+        } else {
+            transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (transform.position, transform.position,0));
+        }
+    }
+    protected void Move(Vector2 target, float speed, bool step=true) {
+        if(step)StepAnim();
+        if (heavy) {
+            transform.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Dynamic;
+        }
+        transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (transform.position, target, speed * Time.deltaTime));
+    }
     protected void Chase()
     {
         RunSkillTimers();
@@ -288,20 +309,22 @@ public class Combatant : Berkeley
             ) {
 			if (Vector3.Distance(currentPosition, chaseTargetPosition) > attackDistance || movesOnAttackCD) // second check needed so he doesnt attack on cooldown
             {
-                transform.position = Vector3.Lerp (currentPosition, target, runSpeed * Time.deltaTime);
-                StepAnim();
+                Move(target, runSpeed );
+            } else {
+                Stay();
             }
             float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.Slerp (transform.rotation, 
+            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
                                             Quaternion.Euler (0, 0, targetAngle + 180), 
-                                            turnSpeed * Time.deltaTime);
+                                            turnSpeed * Time.deltaTime));
             if (StuckCheck()) {
                 // For now just resetting into patrol when stuck
                 SwitchRoutine(Routine.Patrolling);
             }
 		}
 		else {
-			StopAnim();
+            Stay();
+            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, transform.rotation,0));
             bool usedSkill = false;
             usedSkill = CheckSkills();
             if (!usedSkill) SwitchRoutine(Routine.Attacking);
@@ -343,8 +366,7 @@ public class Combatant : Berkeley
     }
     protected bool DetectEnemy()
     {
-        // only monster seek out fights for now
-        if (faction != 1) return false;
+        if (!GameOverlord.Instance.factionsThatSeekOutFight.Contains( faction)) return false;
 
         // if very far, switch to a lower code searching script
         if ( Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*2f) {
@@ -362,10 +384,10 @@ public class Combatant : Berkeley
             visionTimer -= Time.deltaTime;
         } else {
             visionTimer = 1f;
-
             if (vision.peopleInDetection.Count > 0 && Array.IndexOf(hatesFactions, Util.TagToFaction(vision.peopleInDetection[0].tag)) > -1){
                 chaseTarget = vision.peopleInDetection[0];
                 Debug.Log("Huh?" + vision.peopleInDetection[0].name);
+                if (chaseTarget.tag == "Character") Player.Instance.Engage(gameObject);
                 return true;
             }
         }
@@ -382,6 +404,10 @@ public class Combatant : Berkeley
 	}
     void OnTriggerEnter2D(Collider2D collided)
 	{
+        if (collided.CompareTag("Hitbox"))
+		{
+			Collided(collided);
+		}
 		if (collided.CompareTag("Projectile"))
 		{
 			Shot(collided);
@@ -389,6 +415,10 @@ public class Combatant : Berkeley
 	}
     void OnTriggerStay2D(Collider2D collided)
 	{
+        if (collided.CompareTag("Hitbox"))
+		{
+			Collided(collided);
+		}
 		if (collided.CompareTag("Projectile"))
 		{
 			Shot(collided);
@@ -408,7 +438,6 @@ public class Combatant : Berkeley
 	void Collided(Collider2D collided)
 	{
 		GameObject target = collided.gameObject;
-
 		HitBox hitter = target.GetComponent<HitBox>();
 		if (hitter.hitting && hitter.faction != faction && invincibleTimer < 0) {
             if (defensive) {
@@ -420,6 +449,7 @@ public class Combatant : Berkeley
 
 			    float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
                 TakeDamage(damage);
+                Debug.Log("damage, "+collided.gameObject.name + " - "+" -\n"+collided.gameObject.transform.position);
                 KnockedBack(target, hitter.knockBack);
                 if (hitter.playerParty ){ 
                     Player.Instance.Engage(gameObject);
@@ -532,7 +562,7 @@ public class Combatant : Berkeley
     }
 	void BeTossed() {
 		if (Vector3.Distance(transform.position, knockBackLandPosition) > 0.2f) {
-			transform.position = Vector3.Lerp (transform.position, knockBackLandPosition, 3f * Time.deltaTime);
+			Move(knockBackLandPosition, 3f, false);
 		} else {
 			SwitchRoutine(Routine.Chasing);
 		}

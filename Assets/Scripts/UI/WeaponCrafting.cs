@@ -131,14 +131,16 @@ public class WeaponCrafting : MonoBehaviour
             PartLooks partLook = itemsPlaced[i].partLooks.Length > 0 && matchingWeapon != null ? 
                 Array.Find(itemsPlaced[i].partLooks, look => 
                     look.weaponId == matchingWeapon.id
-                ) :
-                null;
+                ) : null;
 
             temp.GetComponent<Image>().sprite = partLook == null ?
                 itemsPlaced[i].visual.GetComponent<SpriteRenderer>().sprite :
                 partLook.look.GetComponent<SpriteRenderer>().sprite;
                     
-            temp.GetComponent<Image>().color = itemsPlaced[i].visual.GetComponent<SpriteRenderer>().color;
+            temp.GetComponent<Image>().color =  partLook == null 
+                ? itemsPlaced[i].visual.GetComponent<SpriteRenderer>().color
+                : partLook.look.GetComponent<SpriteRenderer>().color;
+            
             temp.GetComponent<Transform>().localScale = itemsPlaced[i].visual.GetComponent<Transform>().localScale;
             temp.GetComponent<Image>().SetNativeSize();
             if (partLook != null) {

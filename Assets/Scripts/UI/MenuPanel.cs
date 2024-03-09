@@ -29,9 +29,9 @@ public class MenuPanel : MonoBehaviour, IPointerExitHandler
             content.SetActive(
                 (!dependOnMenu || UIManager.Instance.openMenu == menuType) &&
                 (!dependOnTab || UIManager.Instance.openTab == TabType || UIManager.Instance.openTab == secondaryTab));
-            if (content.activeSelf && !wasActive) {
-                UIManager.Instance.uIPage = 0;
-            }
+            // if (content.activeSelf && !wasActive) {
+            //     UIManager.Instance.uIPage = 0;
+            // }
         }
         if (!pageChangerChecked)
         {
