@@ -10,13 +10,15 @@ public class HitBox : MonoBehaviour
     public bool hitting = false;
     public bool playerParty = false;
     public DamageRsrcType damageRsrcType;
+    public ZombieController friendlyOwner;
+    public bool recordHits = false;
 
     // 0 for in group 1 for hostile
     public int faction;
     // Start is called before the first frame update
-    void Start()
+    public void SetFriendlyOwner(ZombieController owner)
     {
-        
+        friendlyOwner = owner;
     }
 
     // Update is called once per frame

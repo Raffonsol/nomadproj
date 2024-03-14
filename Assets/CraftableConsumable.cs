@@ -3,8 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.EventSystems;
 
-public class CraftableConsumable : MonoBehaviour
+public class CraftableConsumable : MonoBehaviour, IPointerEnterHandler
 {
     private float checkTimer = 0f;
     public int showingItemId;
@@ -93,5 +94,17 @@ public class CraftableConsumable : MonoBehaviour
             oneMade = CraftOne(true);
         }
         UpdateUI();
+    } 
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        string name1 = Util.FittablePartToString(showingItem.partsNeeded[0], true);
+        string name2 = Util.FittablePartToString(showingItem.partsNeeded[1], true);
+        if (name1.Equals(name2)) {
+            UIManager.Instance.ShowDetailedToolTip(new Vector2(transform.position.x+1.2f,transform.position.y-152f),
+                showingItem.name,"", "Needs two "+name1);
+        } else
+            UIManager.Instance.ShowDetailedToolTip(new Vector2(transform.position.x+1.2f,transform.position.y-152f),
+                showingItem.name,"", "Needs one "+name1+", and one "+name2);
+        
     }
 }

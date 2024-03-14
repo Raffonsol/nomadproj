@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Linq;
 using System;
+using System.Collections.Generic;
 
 public class CameraController : MonoBehaviour {
 
@@ -28,34 +29,37 @@ public class CameraController : MonoBehaviour {
 
 	void OnTriggerEnter2D(Collider2D collided)
 	{
-		if (collided.CompareTag("Monster"))
+		if (GameOverlord.Instance.fightingBerkeleyTags.Contains( collided.gameObject.tag))
 		{
-			// HARDCODED 1 = angry faction
-			if (collided.gameObject.GetComponent<Monster>().faction == 1)
 			GameOverlord.Instance.nearbyMonsters.Add(collided.transform.gameObject);
 		}
-		if (collided.CompareTag("Npc"))
+		if (collided.gameObject.tag == "Rsrc")
 		{
-			// HARDCODED 1 = angry faction
-			if (collided.gameObject.GetComponent<Neutral>().faction == 1)
-			GameOverlord.Instance.nearbyMonsters.Add(collided.transform.gameObject);
+			GameOverlord.Instance.nearbyRsrc.Add(collided.transform.gameObject);
 		}
+
 	}
 	void OnTriggerExit2D(Collider2D collided)
 	{
-		if (collided.CompareTag("Monster"))
+		if (GameOverlord.Instance.fightingBerkeleyTags.Contains( collided.gameObject.tag))
 		{
-			if (collided.gameObject.GetComponent<Monster>().faction == 1)
 			try {
 				GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == collided.gameObject.name ) );
 			} catch (InvalidOperationException) {
 
+			} catch (MissingReferenceException e) {
+				GameOverlord.Instance.nearbyMonsters = new List<GameObject>();
+				Debug.LogError("Deleted monster somehow left camra bounds?"+e);
 			}
 		}
-		if (collided.CompareTag("Npc"))
+		if (collided.gameObject.tag == "Rsrc")
 		{
-			if (collided.gameObject.GetComponent<Neutral>().faction == 1)
-			GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == collided.transform.gameObject.name ) );
+			try {GameOverlord.Instance.nearbyRsrc.Remove(collided.transform.gameObject);} 
+			catch (MissingReferenceException e) {
+				GameOverlord.Instance.nearbyRsrc = new List<GameObject>();
+				Debug.LogError("Deleted rsrc somehow left camra bounds?"+e);
+			}
 		}
+
 	}
 }

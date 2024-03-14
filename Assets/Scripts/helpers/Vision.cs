@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
 public class Vision : MonoBehaviour
 {
@@ -24,6 +25,9 @@ public class Vision : MonoBehaviour
         if (collided.gameObject.CompareTag("Npc")) {
             peopleInDetection.Add(collided.gameObject);
         }
+        if (GameOverlord.Instance.fightingBerkeleyTags.Contains(collided.gameObject.tag)) {
+            peopleInDetection.Add(collided.gameObject);
+        }
     }
     void OnTriggerExit2D(Collider2D collided)
     {
@@ -31,6 +35,9 @@ public class Vision : MonoBehaviour
             peopleInDetection.Remove(collided.gameObject);
         }
         if (collided.gameObject.CompareTag("Npc")) {
+            peopleInDetection.Remove(collided.gameObject);
+        }
+        if (GameOverlord.Instance.fightingBerkeleyTags.Contains(collided.gameObject.tag)) {
             peopleInDetection.Remove(collided.gameObject);
         }
         

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Threading.Tasks;
 
 
-public class ZombieController : MonoBehaviour {
+public class ZombieController : Walker {
 	
 	public float moveSpeed;
 	public float turnSpeed;
@@ -27,8 +27,8 @@ public class ZombieController : MonoBehaviour {
 
 	public float armorDefense=0;
 
-	private Vector2 moveDirection;
 	private Vector2 lastClick;
+	private Vector2 lastNpcClick;
 
 	private float moveTimer1 = 0;
 	private float moveTimer2 = 0;
@@ -59,18 +59,29 @@ public class ZombieController : MonoBehaviour {
 	private float regenInterval = 1f;
 	private float regenTimer = 1f;
 
-    private Vector2 knockBackLandPosition;
-	private bool isBeingTossed = false;
-
 	private bool usingSkill = false;
 	private CharSkill castingSkill = null;
 	private Vector2 skillMoveTarget;
 	private GameObject skillTargetTarget;
-	private bool skillMoveLocked = false;
 	private float skillKnockBack = 0f;
 	private float knockTimer = 0f;
+	private float stunTimer = 0f;
 	private float skillMoveProximity =0.2f;
 	private float skillRunTime =0f;
+	private List<Combatant> skillHits;
+
+	private GameObject aiGoingForObject = null;
+	private bool aiGoingForFight = false;
+
+	private float aiPositionCheckTimer = 2f;
+	private Vector2 aiPositionCheckLastPosition;
+	private List<int> pointlessGoals = new List<int>();
+
+	public string intention;
+	public GameObject engage;
+	private string personalityString = "";
+
+	private NamePlate namePlate;
 
 	public void DoStart()
 	{
@@ -79,6 +90,8 @@ public class ZombieController : MonoBehaviour {
 		shadowColor = Color.black;
 		shadowColor.a = 0.2f;
 		selectionColor = Color.white;
+		namePlate=transform.Find("NamePlate").GetComponent<NamePlate>();
+		SaySomething(GameLib.Instance.GetLine(LineUsage.OnStart, self.personality));
 		
 		Reset();
 		ResetAppearance();
@@ -88,7 +101,9 @@ public class ZombieController : MonoBehaviour {
 	public void Reset() {
 		
 		lastClick = transform.position;
+		lastNpcClick = lastClick;
 		self = Player.Instance.GetCharById(charId);
+		turnRate = turnSpeed;
 
 		leftFoot = transform.Find("Player/Body/LFoot").gameObject;
 		rightFoot = transform.Find("Player/Body/RFoot").gameObject;
@@ -107,10 +122,7 @@ public class ZombieController : MonoBehaviour {
 		attackCooldown = self.equipped.primaryWeapon.cooldown;
 		attackCooldownTimer = attackCooldown;
 
-		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
-		{
-			self.skills[i].cooldownTimer = self.skills[i].cooldown;
-		}Debug.Log("a reset");
+		
 		attackTime = attackCooldown;
 		attackTimer = attackTime;
 		
@@ -121,6 +133,12 @@ public class ZombieController : MonoBehaviour {
 			hitBox = weaponObject.transform.Find(weapon.collidablePart.ToString()).gameObject.GetComponent<PolygonCollider2D>();
 			hitBox.isTrigger = true;
 		}
+		personalityString="";
+		for (int i = 0; i < self.oddities.Length; i++)
+        {
+            if (i!=0)personalityString+=", ";
+            personalityString+=self.oddities[i].ToString();
+        }
 		
 	}
 	 void EquipStartingGear() {
@@ -156,7 +174,6 @@ public class ZombieController : MonoBehaviour {
 			BodyLook look = GameLib.Instance.GetBodyPartById(self.appearance.bodyLooks[i]);
 			// don't overwrite armor
 			if (look.slot == Slot.Clothing && self.equipped.chest != null) continue;
-
 			GameObject current = gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(look.slot, left, true)).gameObject;
 			current.GetComponent<SpriteRenderer>().sprite = look.look;
 			if (look.slot != Slot.Clothing) // don't change clothing color
@@ -185,10 +202,16 @@ public class ZombieController : MonoBehaviour {
 	private bool isLClickHeld = false;
 	private Vector2 nextPoint;
 
-	void Update () {
-		if (self == null) return;
+	void Update() {
 		ListenForClick();
-		Walk();
+		if (Input.GetButtonDown("Fire1") && !UIManager.Instance.IsPointerOverUIElement() && !Player.Instance.isTeamHovered) 
+			isLClickHeld = true;
+		if (Input.GetButtonUp("Fire1")) isLClickHeld = false;
+	}
+
+	void FixedUpdate () {
+		if (self == null) return;
+		ControllerWalk();
 		Attack();
 		Die();
 		Regen();
@@ -198,6 +221,39 @@ public class ZombieController : MonoBehaviour {
 	void CountInvincibleTimer() {
 		if (invincibleTimer >= 0) {
 			invincibleTimer -= Time.deltaTime;
+		}
+	}
+	void ControllerWalk() {
+		Vector2 currentPosition = transform.position;
+		if (boredTimer > 0)boredTimer -=Time.deltaTime;
+		
+		if (isLClickHeld) {
+			boredTimer = boredTime;
+			Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+			// if a follower, gotta offset this move target
+			if (!leader) {
+				if (self.personality == Personality.Clingy) {
+					moveTowards = Player.Instance.controller.transform.position;
+				}
+					moveTowards.x+=self.formation.x;
+					moveTowards.y+=self.formation.y;
+				
+			}
+			// Leader goes straight to click, non-leader has a chance to ignore, resulting in delay to match move position. This is here to simulate reaction time of ofllowers
+			if (leader) // || UnityEngine.Random.Range(0, 52) > 50) // moved to AI
+			lastClick = moveTowards;
+			lastNpcClick = moveTowards;
+		}
+		nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);
+		
+		if (!leader)PerformAi(self.personality);
+		else if (isLClickHeld || boredTimer > 0) {
+			Walk(
+				leader ? moveSpeed : moveSpeed + 0.1f*(float)Math.Pow(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x), 2),
+				nextPoint
+			);
+		} else {
+			PerformAi(self.personality);
 		}
 	}
 
@@ -210,13 +266,16 @@ public class ZombieController : MonoBehaviour {
 		attackTimer -= Time.deltaTime;
 		if (skillTimer > 0)
 		skillTimer -= Time.deltaTime;
-		else skillMoveLocked = false;
+		else if(skillMoveLocked) skillMoveLocked = false;
 		if (skillRunTime > 0)
 		skillRunTime -= Time.deltaTime;
 		else if(usingSkill) EndSkill();
 		if (knockTimer > 0)
 		knockTimer -= Time.deltaTime;
-		else isBeingTossed = false;
+		else if(isBeingTossed) isBeingTossed = false;
+		if (stunTimer > 0)
+		stunTimer -= Time.deltaTime;
+		else if(isStunned) isStunned = false;
 		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
 		{
 			self.skills[i].cooldownTimer -= Time.deltaTime;
@@ -249,6 +308,8 @@ public class ZombieController : MonoBehaviour {
 		if (self.skills[skillIndex].cooldownTimer>0){
 			return;
 		}
+		skillHits = new List<Combatant>();
+		Player.Instance.GetCharById(charId).hitbox.recordHits=true;
 		if ((castSkill.skillTypes.Contains(SkillType.Move)&&castSkill.moveSystem>=2) 
 			||castSkill.skillTypes.Contains(SkillType.TargetedDamage)) {
 			switch (castSkill.targetSystem) {
@@ -324,13 +385,22 @@ public class ZombieController : MonoBehaviour {
 		castingSkill = castSkill;
 
 	}
+	public void AddSkillHit(Combatant combatant) {
+		skillHits.Add(combatant);
+		if (castingSkill.skillTypes.Contains(SkillType.TargetedLifesteal) && castingSkill.targetSystem==4){
+			Heal(castingSkill.offset);
+		}
+	}
 	void AttemptAttack() {
 		if (attackCooldownTimer <= 0) {
 			// Attack confirmed (but it might be ranged with no arrows)
 			boredTimer = boredTime;
 			attackCooldownTimer = attackCooldown;
+			if (self.personality == Personality.Lazy || self.personality == Personality.Coward)
+				attackCooldownTimer*= UnityEngine.Random.Range(1.1f,1.7f);
 			attackTimer = attackTime;
-
+			if (self.personality == Personality.Lazy)
+				attackTimer *=UnityEngine.Random.Range(1.1f,1.7f);
 			attacking = true;
 			
 			if (attackDamageType == DamageType.Melee) {
@@ -404,6 +474,8 @@ public class ZombieController : MonoBehaviour {
 		}
 	}
 	public void BecomeLeader() {
+		
+		SaySomething(GameLib.Instance.GetLine(LineUsage.OnBecomeLeader, self.personality).Replace("*", Player.Instance.controller.gameObject.GetComponent<ZombieController>().name));
 		leader = true;
 		Player.Instance.controller.gameObject.GetComponent<ZombieController>().leader = false;
 		Player.Instance.activeCharId = charId;
@@ -413,58 +485,9 @@ public class ZombieController : MonoBehaviour {
 		hovering = false;
 		UIManager.Instance.armorNeedsUpdate = true;
 		UIManager.Instance.weaponNeedsUpdate = true;
-		UIManager.Instance.UpdateSkillSquare();
 	}
-	void Walk()
-	{
-		if (isBeingTossed || skillMoveLocked) return;
-		if (boredTimer > 0)boredTimer -=Time.deltaTime;
-		// if (!leader) {
-		// 	distToMain.x = transform.position.x - Player.Instance.controller.gameObject.transform.position.x;
-		// 	distToMain.y = transform.position.y - Player.Instance.controller.gameObject.transform.position.y;
-		// }
-		Vector2 currentPosition = transform.position;
-		float speed = leader ? moveSpeed : moveSpeed + 0.1f*(float)Math.Pow(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x), 2);
-		if (Input.GetButtonDown("Fire1") && !UIManager.Instance.IsPointerOverUIElement() && !Player.Instance.isTeamHovered) 
-			isLClickHeld = true;
-		if (Input.GetButtonUp("Fire1")) isLClickHeld = false;
-		if (isLClickHeld) {
-			boredTimer = boredTime;
-			Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-			// if a follower, gotta offset this move target
-			if (!leader) {
-				moveTowards.x+=self.formation.x;
-				moveTowards.y+=self.formation.y;
-			}
-			// Leader goes straight to click, non-leader has a chance to ignore, resulting in delay to match move position. This is here to simulate reaction time of ofllowers
-			if (leader || UnityEngine.Random.Range(0, 52) > 50)
-			lastClick = moveTowards;
-			
-		}
-		nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);
-		moveDirection = nextPoint - currentPosition;
-		moveDirection.Normalize();
-		if (!leader)PerformAi(self.personality);
-		else if (isLClickHeld || boredTimer > 0) {
-			Vector2 target = moveDirection + currentPosition;
-			if (Vector3.Distance(transform.position, lastClick) > 0.2f) {
-				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
-
-				float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-				transform.rotation = Quaternion.Slerp (transform.rotation, 
-												Quaternion.Euler (0, 0, targetAngle + 180), 
-												turnSpeed * Time.deltaTime);
-				
-				StepAnim();
-			}
-			else {
-				StopAnim();
-			}
-		} else {
-			PerformAi(self.personality);
-		}
-	}
-	void TakeDamage(float damage) {
+	
+	public void TakeDamage(float damage) {
         if (invincibleTimer < 0) {
             float minDmg = damage - armorDefense;
             if (minDmg < 0) minDmg = 0;
@@ -493,6 +516,8 @@ public class ZombieController : MonoBehaviour {
 		int steps = attackScripts.Length;
 		int stepToPlay = (int)Math.Round((skillTimer/castingSkill.speed)*steps, 0);
 		stepToPlay -= 1;
+		if (stepToPlay>(attackScripts.Length-1))
+			stepToPlay=(attackScripts.Length-1);
 		// Debug.Log(stepToPlay + " -" + attackTimer);
 		if (stepToPlay < 0) {
 			rightHand.transform.localPosition = new Vector3(weapon.instance.rightHandPos.x, weapon.instance.rightHandPos.y, -0.2f);
@@ -514,7 +539,10 @@ public class ZombieController : MonoBehaviour {
 	void SkillMoveAnim() {
 		if (!skillMoveLocked || isBeingTossed) return;
 		if (Vector3.Distance(transform.position, skillMoveTarget) > skillMoveProximity) {
-			transform.position = Vector3.Lerp (transform.position, skillMoveTarget, (castingSkill.moveSystem==3?99f : castingSkill.speed) * Time.deltaTime);
+			transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (transform.position, skillMoveTarget, (castingSkill.moveSystem==3?99f : castingSkill.speed) * Time.deltaTime));
+			
+            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
+                                            Quaternion.Euler (0, 0, 0),0));
 		} else {
 			EndSkill();
 			lastClick=transform.position;
@@ -528,6 +556,7 @@ public class ZombieController : MonoBehaviour {
 		Player.Instance.GetCharById(charId).hitbox.hitting = false;
 		GetComponent<CircleCollider2D>().isTrigger = false;
 		if (attackDamageType == DamageType.Melee) hitBox.isTrigger = true;
+		Player.Instance.GetCharById(charId).hitbox.recordHits=false;
 	}
 
 	void SwingAnim() {
@@ -538,6 +567,7 @@ public class ZombieController : MonoBehaviour {
 		int steps = attackScripts.Length;
 		int stepToPlay = (int)Math.Round((attackTimer/attackTime)*steps, 0);
 		stepToPlay -= 1;
+		if (stepToPlay>attackScripts.Length-1)stepToPlay=attackScripts.Length-1;
 		// Debug.Log(stepToPlay + " -" + attackTimer);
 		if (stepToPlay < 0) {
 			rightHand.transform.localPosition = new Vector3(weapon.instance.rightHandPos.x, weapon.instance.rightHandPos.y, -0.2f);
@@ -562,7 +592,7 @@ public class ZombieController : MonoBehaviour {
 	/**
 	* 1 - always counting timer 1 or 2, moves tight foot on timer 1 and left on timer 2.	
 	*/
-	void StepAnim()
+	protected override void StepAnim()
 	{
 		if (attacking) return;
 		if (moveTimer1 > 0) {
@@ -582,7 +612,7 @@ public class ZombieController : MonoBehaviour {
 			}
 		}
 	}
-	void StopAnim()
+	protected override void StopAnim()
 	{
 			rightFoot.transform.localPosition = new Vector3(0.3f, 0.13f, feetZ);
 			leftFoot.transform.localPosition =  new Vector3(-0.3f, 0.13f, feetZ);
@@ -616,6 +646,13 @@ public class ZombieController : MonoBehaviour {
 			float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
 			TakeDamage(damage);
             KnockedBack(target, hitter.knockBack);
+
+			Combatant attacker = collided.transform.parent.GetComponent<Combatant>();
+			if (attacker!=null){
+				Player.Instance.Engage(attacker.gameObject);
+			} else if (GameOverlord.Instance.nearbyMonsters.Count>0) {
+				Player.Instance.Engage(GameOverlord.Instance.nearbyMonsters[0]);
+			}
 		}
 	}
 	void Shot(Collider2D collided)
@@ -627,6 +664,10 @@ public class ZombieController : MonoBehaviour {
 			TakeDamage(damage);
             KnockedBack(target, hitter.projectileSettings.knockBack);
 		}
+		if (GameOverlord.Instance.nearbyMonsters.Count>0) {
+			Player.Instance.Engage(GameOverlord.Instance.nearbyMonsters[0]);
+		}
+		
 	}
 
 	void Die() {
@@ -686,12 +727,15 @@ public class ZombieController : MonoBehaviour {
 		hovering = true;
 		Player.Instance.isTeamHovered = true;
 		if(!leader)shadow.GetComponent<SpriteRenderer>().color = selectionColor;
+		if(!isLClickHeld)UIManager.Instance.ShowDetailedToolTip(Camera.main.WorldToScreenPoint (transform.position)*1.15f,
+                self.name, self.personality.ToString(), personalityString, true);
     }
 	void OnMouseExit()
     {
 		hovering = false;
 		Player.Instance.isTeamHovered = false;
 		shadow.GetComponent<SpriteRenderer>().color = shadowColor;
+        UIManager.Instance.HideToolTips();
     }
 
 	/**
@@ -699,40 +743,26 @@ public class ZombieController : MonoBehaviour {
 	*/
 	void PerformAi(Personality tempPersonality) {
 		
-		Vector2 target;
 		Vector2 currentPosition = transform.position;
-		float speed = leader ? moveSpeed : moveSpeed + 0.1f*(float)(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x));
-		if (((tempPersonality != Personality.Coward && Player.Instance.engagementTimer > 0.3f) || Player.Instance.engagementTimer > 3f) && Player.Instance.engagedMonster.Count > 0) {
-			GameObject engage = Player.Instance.engagedMonster[0];
-			if (engage == null) return;
-			Vector2 threateningTar = engage.transform.position;
-			nextPoint = GameOverlord.Instance.Pathfind(currentPosition, threateningTar);
-			moveDirection = nextPoint - currentPosition;
-			moveDirection.Normalize();
-			target = moveDirection + currentPosition;
+		if (Player.Instance.controller == null) {
+			Debug.LogError("Controller was null, which it should never be! " + Player.Instance.activeCharId+" - "+Player.Instance.characters.Count);
+		}
+		float speed = moveSpeed + 0.1f*(float)(Vector2.Distance(currentPosition, lastNpcClick)- (Math.Abs(self.formation.x)+Math.Abs(self.formation.y)));
+		if (((tempPersonality != Personality.Coward && Player.Instance.EngagedFor() > 0.3f) || Player.Instance.EngagedFor() > 2.5f) && Player.Instance.engagedMonster.Count > 0) {
+			// Conditions for normally cahsing/fighting, if these are not met, behaviour will depend on personality
+			int lastEngageId = engage == null ? 0 : engage.GetInstanceID();
 
-			float dist = Vector3.Distance(transform.position, threateningTar);
-			float monsterSize;
-			try {
-				monsterSize = engage.GetComponent<Monster>().size;
-			} catch (NullReferenceException) {
-				monsterSize = 2;
+			engage = Player.Instance.engagedMonster[0];
+			if (self.oddities.Contains(Oddity.Individualistic)) {
+				engage = Player.Instance.engagedMonster[Player.Instance.engagedMonster.Count-1];
 			}
-			 // HARDCODED arrow distance
-			if (weapon.damageType == DamageType.Ranged) monsterSize += 300f;
-			AiSkills(dist);
-			if (dist < monsterSize)AttemptAttack();
-			if (dist > monsterSize * 0.5f) {
-				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
-				StepAnim();
+			if (engage != null){
+				AiFight(engage, speed);
+				if (engage.GetInstanceID() != lastEngageId) {
+					SaySomething(GameLib.Instance.GetLine(LineUsage.OnEngage, self.personality).Replace("*", engage.GetComponent<Combatant>().named));
+				}
 			}
-			else {
-				StopAnim();
-			}
-			float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-				transform.rotation = Quaternion.Slerp (transform.rotation, 
-												Quaternion.Euler (0, 0, targetAngle + 180), 
-												turnSpeed * Time.deltaTime);
+			intention="Group Fight";
 			return;
 		}
 		bool justFollow = false;
@@ -740,35 +770,22 @@ public class ZombieController : MonoBehaviour {
 			case (Personality.Hothead):
 				if (GameOverlord.Instance.nearbyMonsters.Count > 0) {
 					try{
-					GameObject monster = GameOverlord.Instance.nearbyMonsters[0].gameObject;
-					Vector2 angryTar = monster.transform.position;
-					nextPoint = GameOverlord.Instance.Pathfind(currentPosition, angryTar);
-					moveDirection = nextPoint - currentPosition;
-					moveDirection.Normalize();
-					target = moveDirection + currentPosition;
+					int lastEngageId = engage == null ? 0 : engage.GetInstanceID();
+
+					engage = GameOverlord.Instance.nearbyMonsters[0].gameObject;
+					if (engage != null){
+						AiFight(engage, speed);
+						if (engage.GetInstanceID() != lastEngageId) {
+							SaySomething(GameLib.Instance.GetLine(LineUsage.OnEngage, self.personality).Replace("*", engage.GetComponent<Combatant>().named));
+						}
+					}
+					intention="Picking Fight";
 					
-					float dist = Vector3.Distance(transform.position, angryTar);
-					float monsterSize;
-					try {
-						monsterSize = monster.GetComponent<Monster>().size;
-					} catch (NullReferenceException) {
-						monsterSize = monster.GetComponent<Neutral>().size;
+					} catch (MissingReferenceException){
+						justFollow = true;
+						GameOverlord.Instance.nearbyMonsters = new List<GameObject>();
 					}
-					if (weapon.damageType == DamageType.Ranged) monsterSize += 200f;
-					AiSkills(dist);
-					if (dist < monsterSize)AttemptAttack();
-					if (dist > monsterSize* 0.5f) {
-						transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
-						StepAnim();
-					}
-					else {
-						StopAnim();						
-					}
-					float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-					transform.rotation = Quaternion.Slerp (transform.rotation, 
-														Quaternion.Euler (0, 0, targetAngle + 180f), 
-														turnSpeed * Time.deltaTime);
-					} catch (MissingReferenceException e){
+					catch (NullReferenceException){
 						justFollow = true;
 						GameOverlord.Instance.nearbyMonsters = new List<GameObject>();
 					}
@@ -776,31 +793,153 @@ public class ZombieController : MonoBehaviour {
 				
 				break;
 			case (Personality.Clingy):
+			default:
 				justFollow = true;
 				break;
 		}
 		if (justFollow) {
-			nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);
-			moveDirection = nextPoint - currentPosition;
-			moveDirection.Normalize();
-			target = moveDirection + currentPosition;
-			if (Vector3.Distance(transform.position, lastClick) > 0.2f) {
-				transform.position = Vector3.Lerp (currentPosition, target, speed * Time.deltaTime);
 
-				float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-				transform.rotation = Quaternion.Slerp (transform.rotation, 
-												Quaternion.Euler (0, 0, targetAngle + 180), 
-												turnSpeed * Time.deltaTime);
+			// deciding how likely they choose to follow at each frame
+			if (   (tempPersonality == Personality.Clingy && UnityEngine.Random.Range(0, 67) > 50) 
+				|| (tempPersonality != Personality.Lazy && UnityEngine.Random.Range(0, 52) > 50) 
+				|| UnityEngine.Random.Range(0, 102) > 100)
+					lastClick = lastNpcClick;
+			
+			bool goingForItem = false;
+			if (weapon.damageType == DamageType.Melee){
+
+
+				// Oddities 
+				if (aiGoingForObject != null) {
+					goingForItem=true;
+
+					// pointless goal check
+					if (aiPositionCheckTimer > 0) {
+						aiPositionCheckTimer -= Time.deltaTime;
+						
+						// go for saved object
+						if (Vector3.Distance(transform.position, aiGoingForObject.transform.position) > GameLib.Instance.acquisitionDistance||(aiGoingForObject.tag == "Rsrc" && aiGoingForObject.GetComponent<CollectableRsrc>().exhausted)) aiGoingForObject=null;
+						if (aiGoingForFight){
+							AiFight(aiGoingForObject, moveSpeed);
+							intention="Exctracting resource";
+						}
+						else if (aiGoingForObject != null){
+							nextPoint = GameOverlord.Instance.Pathfind(currentPosition, aiGoingForObject.transform.position);
+							Walk(moveSpeed,nextPoint);
+							intention="Picking up drop";
+						} 
+						return;
+					} else {// check time
+						if (Vector3.Distance(transform.position, aiPositionCheckLastPosition) < 0.1f) {
+							// been stuck for 2 seconds after this, give it up
+							pointlessGoals.Add(aiGoingForObject.GetInstanceID());
+							aiGoingForObject = null;
+						}
+						aiPositionCheckTimer=2f;
+						aiPositionCheckLastPosition = transform.position;
+					}
+				}
+
 				
-				StepAnim();
+				// LOOTER effect
+				if (!goingForItem && self.oddities.Contains(Oddity.Looter) && GameOverlord.Instance.nearbyDrops.Count>0) {
+					List<GameObject> newList = GameOverlord.Instance.nearbyDrops;
+					newList.Shuffle();
+					for (int i = 0; i < newList.Count; i++)
+					{
+						if ( Vector3.Distance(transform.position, newList[i].transform.position) <= GameLib.Instance.acquisitionDistance 
+						&& !pointlessGoals.Contains(newList[i].GetInstanceID())){
+							goingForItem=true;
+							aiGoingForObject = newList[i];
+							aiGoingForFight=false;
+							nextPoint = GameOverlord.Instance.Pathfind(currentPosition, aiGoingForObject.transform.position);
+							intention="Picking up drop2";
+							break;
+						}
+					}
+				}
+				// WOODSMAN and MINER
+				 if (!goingForItem && (self.oddities.Contains(Oddity.Woodsman) || self.oddities.Contains(Oddity.Miner))
+					&& GameOverlord.Instance.nearbyRsrc.Count>0) {
+					List<GameObject> newList = GameOverlord.Instance.nearbyRsrc;
+					newList.Shuffle();
+					for (int i = 0; i < newList.Count; i++)
+					{	
+						CollectableRsrc component = newList[i].GetComponent<CollectableRsrc>();
+						if (!component.exhausted && !pointlessGoals.Contains(newList[i].GetInstanceID()) &&
+							( (self.oddities.Contains(Oddity.Miner) && component.damageRsrcTypeNeeded == DamageRsrcType.Pickaxe) ||  (self.oddities.Contains(Oddity.Woodsman) && component.damageRsrcTypeNeeded == DamageRsrcType.Axe)  ) &&
+							Vector3.Distance(transform.position, newList[i].transform.position) <= GameLib.Instance.acquisitionDistance ){
+						
+							aiGoingForObject = newList[i];
+							aiGoingForFight=true;
+							AiFight(aiGoingForObject, moveSpeed);
+							intention="Exctracting resource2";
+							return;
+						}
+					}
+
+				}
 			}
-			else {
-				StopAnim();
+
+			// just follow sorta
+			if (!goingForItem){
+				nextPoint = GameOverlord.Instance.Pathfind(currentPosition, lastClick);
+				intention="Just following";
 			}
+			Walk(speed,nextPoint);
 		}
+	}
+	void AiFight( GameObject engage, float speed) {
+		if (engage == null) {
+			aiGoingForObject = null;
+			return;
+		} if (isStunned) return;
+		Vector2 target;
+		Vector2 currentPosition = transform.position;
+		Vector2 threateningTar = engage.transform.position;
+
+		float dist = Vector3.Distance(transform.position, threateningTar);
+
+		float monsterSize;
+		try {
+			monsterSize = engage.GetComponent<Berkeley>().size;
+		} catch (NullReferenceException) {
+			monsterSize = 1f;
+		}
+		// continue walking directly if pathfinding is not moving us
+		if (dist<monsterSize) {
+			nextPoint=threateningTar;
+		} else {
+			nextPoint = GameOverlord.Instance.Pathfind(currentPosition, threateningTar);
+		}
+		
+		moveDirection = nextPoint - currentPosition;
+		moveDirection.Normalize();
+		target = moveDirection + currentPosition;
+
+
+			// HARDCODED arrow distance
+		if (weapon.damageType == DamageType.Ranged) monsterSize += 180f;
+		AiSkills(dist);
+		if (dist <= monsterSize)AttemptAttack();
+		if (dist > monsterSize || weapon.damageType != DamageType.Ranged ) {
+			float usedSpeed = self.personality == Personality.Coward && attackCooldownTimer > 0 ? -1f*speed 
+				: speed;
+			transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (currentPosition, target, usedSpeed * Time.deltaTime));
+			StepAnim();
+		}
+		else {
+			StopAnim();
+		}
+		float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
+			transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
+											Quaternion.Euler (0, 0, targetAngle + UnityEngine.Random.Range(175f, 185f)), 
+											turnSpeed * Time.deltaTime));
+											
 	}
 	void AiSkills( float dist) {
 		if (UnityEngine.Random.Range(0, 121) < 120) return;
+		if (self.oddities!=null && self.oddities.Contains(Oddity.Conservative)&& UnityEngine.Random.Range(0, 172) < 170) return;
 		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
 		{
 			CharSkill caste = self.skills[i];
@@ -828,23 +967,30 @@ public class ZombieController : MonoBehaviour {
 			self.life = self.stats[0].value;
 		}
 	}
-	void KnockedBack(GameObject source, float amount) {
+	public void KnockedBack(GameObject source, float amount) {
         if (amount <0.1f || skillMoveLocked) return;
         knockBackLandPosition = Vector3.MoveTowards(transform.position,source.transform.position, amount*-2f);
         isBeingTossed = true;
-		knockTimer = 2f;
-        // TODO: Implemenent knockback
+		knockTimer = 2f; 
     }
 	void BeTossed() {
 		if (!isBeingTossed) return;
-		if (Vector3.Distance(transform.position, knockBackLandPosition) > 0.2f) {
-			transform.position = Vector3.Lerp (transform.position, knockBackLandPosition, 3f * Time.deltaTime);
+		if (Vector3.Distance(transform.position, knockBackLandPosition) > 0.3f) {
+			transform.GetComponent<Rigidbody2D>().MovePosition(Vector3.Lerp (transform.position, knockBackLandPosition, 3f * Time.deltaTime));
 		} else {
 			isBeingTossed = false;
 			lastClick=transform.position;
 		}
 	}
+	public void Stun(float duration) {
+        stunTimer = duration;
+		isStunned = true;
+    }
 	public bool IsRanged() {
 		return attackDamageType == DamageType.Ranged;
+	}
+
+	public void SaySomething(string line) {
+		namePlate.LineUpLine(line);
 	}
 }

@@ -35,8 +35,8 @@ public enum FittablePart
     LongBlade,
     Hilt,
     Pommel,
-    HammerHead,
-    ArrowHead,
+    MaceHead,
+    BluntObject,
     Bowstring,
     Hand, // Leave this here, its for unarmed
     Fiber,
@@ -97,6 +97,7 @@ public enum CharacterStat
     ManaRegen,
     Armor,
     MovementSpeed,
+    AllDamages,
     
 }
 public enum SkillType
@@ -107,6 +108,9 @@ public enum SkillType
     TargetedHeal,
     Move,
     StanceScript,
+    EnterDefensiveMode,
+    TargetedStun,
+    TargetedLifesteal,
 }
 [Serializable]
 public class PowerUp
@@ -202,6 +206,7 @@ public class Part : Consumable
     public FittablePart fittablePart;
     public PlatingMaterial material;
     public PartLooks[] partLooks;
+    public int[] partIdsNeeded;
 }
 
 
@@ -268,7 +273,29 @@ public enum Personality
     Clingy,
     Coward,
     Lazy,
-    Giddy,
+}
+public enum Oddity
+{
+    Individualistic, // finds his own target
+    Looter,
+    Helper, // mines/cuts wood when leader doing it
+    Miner,
+    Woodsman,
+    Conservative, // less likely to use skills
+    Daredevil, // prefers melee
+    TriggerHappy, // prefers ranged
+    Mystical, // prefers magic
+    Armorer,
+    Fletcher,
+    Craftsman,
+    Monk
+}
+[Serializable]
+public class OddityChances {
+    public int id;
+    public Oddity oddity;
+    public int percentage;
+    public Oddity[] conflictsWith;
 }
 [Serializable]
 public class BodyLook {
@@ -395,6 +422,7 @@ public class FriendlyChar {
     public int id;
     public bool isMale;
     public Personality personality;
+    public Oddity[] oddities;
     public DistToMain formation;
     public ZombieController controller;
     public List<CurrentCharStat> stats;
@@ -408,8 +436,8 @@ public class FriendlyChar {
 
     public int level = 0;
     public int experience = 0;
-    public int experienceToFirstLevel = 10;
-    public int experienceIncrement = 5;
+    public int experienceToFirstLevel = 6;
+    public int experienceIncrement = 9;
     [SerializeField]
     public Appearance appearance;
     [SerializeField]
@@ -436,11 +464,13 @@ public class FriendlyChar {
     public List<PassiveAbility> ownedAbilities;
      
 }
+[Serializable]
 public class NeutralChar {
     public string name;
     public bool isMale;
     public Personality personality;
     public Appearance appearance;
+    public Oddity[] oddities;
 }
 
 public enum PassiveAbility
@@ -454,12 +484,14 @@ public enum BonusType
     PowerUp,
     PassiveAbility,
     Loot,
+    Setting
 }
 [Serializable]
 public class Bonus
 {
     public int id;
     public int minLvl;
+    public Oddity[] oddityRequirements; // OR list
     public string name;
     public Sprite icon;
     public string description;
@@ -486,6 +518,29 @@ public class NamePart
     public bool worksForMen;
     public bool worksForWomen;
 }
+public enum LineUsage
+{
+    OnStart,
+    OnCombatEnd,
+    OnCraft,
+    OnLevelUp,
+    OnBecomeLeader,
+    OnFriendDeath, // * replaced by name
+    OnLowLife,
+    OnLoot,
+    OnEngage,
+    OnRsrcExtract
+}
+[Serializable]
+public class PersonalityLine
+{
+    public int id;
+    public string value;
+    public LineUsage useWhen;
+    public Personality[] personalities;
+    public int chance;
+}
+
 // --------------- skills  -----------------
 
 [Serializable]
@@ -496,6 +551,8 @@ public class CombatSkill {
     public float channelingTime;
     public float impactTime;
     public float npcCastRange;
+    public bool castWhenAttacking = true;
+    public bool castWhenAttacked;
     // ---dmg ----
     public float knockBack;
     public float damageBase;
@@ -504,7 +561,7 @@ public class CombatSkill {
     public float healBase;
     public GameObject healCollision;
     // ---target ----
-    public int targetSystem; // 0 - nearst, 1 - random engaged, 2 - all engaged
+    public int targetSystem; // 0 - nearst, 1 - random engaged, 2 - all engaged, 3 - self, 4 - enemy hit by script
     // ---move ----
     public int moveSystem; // 0 - forward, 1 - backwards, 2 - towards target, 3 - tpToTarget
     public float offset;
@@ -531,30 +588,17 @@ public class CharSkill : CombatSkill {
     }
 }
 
-//  ----------------------- Caravan ----
+// --------------------Region ---------------
 
-public class Horse {
+[Serializable]
+public class Region
+{
+    public int id;
     public string name;
-    public int id;
-    public GameObject instance;
-}
-public class CraftRecipe {
-    public Material[] materials;
-    public ItemType productType;
-    public int productId;
-    public int lvlRequired;
-}
-public class CraftingTable {
-    public int id;
-    public CraftRecipe[] recipes;
-    public Sprite visual;
-}
-public class Cart {
-    public Horse leadingHorse;
-    public int id;
-    public GameObject instance;
-    // 4 item array | -1 means empty | numbers = CraftingTable ids
-    public int[] tableSlots;
+    public string description;
+    public Color floorColor;
+    public Sprite groundTexture;
+    public Sprite uiImage;
 }
 
 // ----------------- City ----------------------

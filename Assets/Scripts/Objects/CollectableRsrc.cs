@@ -22,6 +22,8 @@ public class CollectableRsrc : Berkeley
 
     public Mimic mimic;
 
+    public bool exhausted = false;
+
     private int currentLife;
 
     private int shakeCycles = 5;
@@ -60,13 +62,13 @@ public class CollectableRsrc : Berkeley
         if (invincibleTimer > 0)
         invincibleTimer -= Time.deltaTime;
     }
-    // void OnTriggerEnter2D(Collider2D collided)
-	// {
-	// 	if (collided.CompareTag("Hitbox"))
-	// 	{
-	// 		Collided(collided);
-	// 	}
-	// }
+    void OnTriggerEnter2D(Collider2D collided)
+	{
+		if (collided.CompareTag("Hitbox"))
+		{
+			Collided(collided);
+		}
+	}
 	void OnCollisionStay2D(Collision2D collision)
 	{
 		if (collision.collider.CompareTag("Hitbox"))
@@ -100,7 +102,7 @@ public class CollectableRsrc : Berkeley
             for(int i = 0; i <remainingDrops.Count; i++){
                 DropLoot(remainingDrops[i]);
             }
-            GetComponent<Berkeley>().DestroyAndRecount();
+            DestroyAndRecount();
         }
         
         
@@ -108,7 +110,9 @@ public class CollectableRsrc : Berkeley
     void BHit() {
         invincibleTimer = invincibleTime;
         shaking = true;
-        if (remainingDrops.Count < 1) return;
+        if (remainingDrops.Count < 1) {
+            exhausted=true;
+            return;}
         int i = Random.Range(0, remainingDrops.Count - 1);
         if (Random.Range(0, 101) <= remainingDrops[i].chance) {
             
@@ -167,7 +171,9 @@ public class CollectableRsrc : Berkeley
     }
     void RunMimicCheck(){
         if (!canBeMimic) return;
-        if (Random.Range(0, 102) < mimic.chance) {
+        int rando = Random.Range(0, 102);
+        Debug.Log("Mimic roll "+ rando );
+        if (rando < mimic.chance) {
             // become mimic
             becomingMimic=true;
             mimicAnimationTimer=mimic.frameDurations;
@@ -192,7 +198,7 @@ public class CollectableRsrc : Berkeley
             if (mimicAnimationIndex >= mimic.transformAnimation.Length) {
                 becomingMimic = false;
                 BerkeleySpawnable spawn = BerkeleyManager.Instance.spawnables[mimic.spawnableId];
-                Instantiate(spawn.obj, transform.position, transform.rotation);
+                Instantiate(spawn.obj, transform.position, Quaternion.Euler(0,0, transform.rotation.z+90f));
                 DestroyAndRecount();
             }
         }

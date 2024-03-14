@@ -6,6 +6,8 @@ public class PlayDeath : MonoBehaviour
 {
     public List<Sprite> steps;
     public float timePerStep = 0.4f;
+    public bool sticky = false;
+    public GameObject stickTarget;
     private float stepTimer;
     private int listStep = 0;
     // Start is called before the first frame update
@@ -24,9 +26,12 @@ public class PlayDeath : MonoBehaviour
             try {
                 gameObject.GetComponent<SpriteRenderer>().sprite = steps[listStep];
             }
-            catch {
+            catch { // Oh my god how lazy was I when I made this
                 Destroy(gameObject);
             }
+        }
+        if (sticky && stickTarget!=null) {
+            transform.position = stickTarget.transform.position;
         }
     }
 }

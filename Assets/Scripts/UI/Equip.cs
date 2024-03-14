@@ -342,7 +342,6 @@ public class Equip : MonoBehaviour
 
             bool goingWithLeft = false;
             bool sideMatters = false;
-            bool isEmpty = true;
             float distToL;
             float distToR;
             Equipment item = UIManager.Instance.lastDroppedArmor;
@@ -350,7 +349,6 @@ public class Equip : MonoBehaviour
             switch (item.slot) {
                 case Slot.Head:
                     if (headSlot.equippedId != 0) {
-                        isEmpty = false;
                         Player.Instance.AddEquipment(Player.Instance.activePerson.equipped.head.id);
 
                         temp = headSlot.square.transform.Find("DraggableEquipped").gameObject;
@@ -362,7 +360,6 @@ public class Equip : MonoBehaviour
                     break;
                 case Slot.Chest:
                     if (chestSlot.equippedId != 0){
-                         isEmpty = false;
                          Player.Instance.AddEquipment(Player.Instance.activePerson.equipped.head.id);
                          temp = chestSlot.square.transform.Find("DraggableEquipped").gameObject;
                     } else {
@@ -378,7 +375,6 @@ public class Equip : MonoBehaviour
                     if (distToL < distToR) {
                         goingWithLeft = true;
                         if (lPauldronSlot.equippedId != 0){
-                            isEmpty = false;
                             Player.Instance.AddEquipment(Player.Instance.activePerson.equipped.leftPauldron.id);
                             temp = lPauldronSlot.square.transform.Find("DraggableEquipped").gameObject;
                         } else {
@@ -388,7 +384,6 @@ public class Equip : MonoBehaviour
                         lPauldronSlot.equippedId = item.id;
                     } else {
                         if (rPauldronSlot.equippedId != 0){
-                            isEmpty = false;
                             Player.Instance.AddEquipment(Player.Instance.activePerson.equipped.rightPauldron.id);
                             temp = rPauldronSlot.square.transform.Find("DraggableEquipped").gameObject;
                         } else {
@@ -405,7 +400,6 @@ public class Equip : MonoBehaviour
                     if (distToL < distToR) {
                         goingWithLeft = true;
                         if (lHandSlot.equippedId != 0){
-                            isEmpty = false;
                             Player.Instance.AddEquipment(Player.Instance.activePerson.equipped.leftHand.id);
                             temp = lHandSlot.square.transform.Find("DraggableEquipped").gameObject;
                         } else {
@@ -415,7 +409,6 @@ public class Equip : MonoBehaviour
                         lHandSlot.equippedId = item.id;
                     } else {
                         if (rHandSlot.equippedId != 0){
-                            isEmpty = false;
                             Player.Instance.AddEquipment(Player.Instance.activePerson.equipped.rightHand.id);
                             temp = rHandSlot.square.transform.Find("DraggableEquipped").gameObject;
                         } else {
@@ -432,7 +425,6 @@ public class Equip : MonoBehaviour
                     if (distToL < distToR) {
                         goingWithLeft = true;
                         if (lBootSlot.equippedId != 0){
-                            isEmpty = false;
                             Player.Instance.AddEquipment(Player.Instance.activePerson.equipped.leftFoot.id);
                             temp = lBootSlot.square.transform.Find("DraggableEquipped").gameObject;
                         } else {
@@ -442,7 +434,6 @@ public class Equip : MonoBehaviour
                         lBootSlot.equippedId = item.id;
                     } else {
                         if (rBootSlot.equippedId != 0){
-                            isEmpty = false;
                             Player.Instance.AddEquipment(Player.Instance.activePerson.equipped.rightFoot.id);
                             temp = rBootSlot.square.transform.Find("DraggableEquipped").gameObject;
                         } else {

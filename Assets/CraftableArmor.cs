@@ -3,20 +3,29 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.EventSystems;
 
-public class CraftableArmor : MonoBehaviour
+public class CraftableArmor : MonoBehaviour, IPointerEnterHandler
 {
     private float checkTimer = 0f;
-    public int showingItemId;
+    public int[] showingItemId;
     public Sprite partNeeded1;
     public Sprite partNeeded2;
+
     private Equipment showingItem;
+    private int page = 0;
     // Start is called before the first frame update
     void Start()
     {
-        showingItem = GameLib.Instance.GetEquipmentById(showingItemId);
         transform.Find("craft1").GetComponent<Button>().onClick.AddListener(() => CraftOne());
         transform.Find("craftAll").GetComponent<Button>().onClick.AddListener(() => CraftAll());
+        Reset();
+    }
+    void Reset()
+    {
+        page = UIManager.Instance.uIPage;
+        if (page > showingItemId.Length-1) return;
+        showingItem = GameLib.Instance.GetEquipmentById(showingItemId[page]);
         partNeeded1 = GameLib.Instance.GetPartById(showingItem.partsNeeded[0]).icon;
         partNeeded2 = GameLib.Instance.GetPartById(showingItem.partsNeeded[1]).icon;
     }
@@ -32,15 +41,21 @@ public class CraftableArmor : MonoBehaviour
             checkTimer -= Time.deltaTime;
         } else {
             checkTimer = 0.4f;
+            Reset();
             UpdateUI();
         }
     }
 
-    void UpdateUI() {
+    void UpdateUI() { 
+        if (page > showingItemId.Length-1) {
+            page = showingItemId.Length-1;
+            UIManager.Instance.uIPage = page;
+            return;
+        }
         string name = showingItem.name;
         int count = 0;
         for(int i = 0; i <Player.Instance.equipments.Count; i++){
-            if (Player.Instance.equipments[i].id == showingItemId) {
+            if (Player.Instance.equipments[i].id == showingItemId[page]) {
                 count++;
             }
         }
@@ -78,9 +93,9 @@ public class CraftableArmor : MonoBehaviour
         if (part1Owned && part2Owned) {
             Player.Instance.RemoveItem(ItemType.Part, part1Id);
             Player.Instance.RemoveItem(ItemType.Part, part2Id);
-            Player.Instance.AddEquipment(showingItemId);
+            Player.Instance.AddEquipment(showingItemId[page]);
             if (!multiple)UpdateUI();
-            UIManager.Instance.AutoEquipSingleArmor(showingItemId);
+            UIManager.Instance.AutoEquipSingleArmor(showingItemId[page]);
             return true;
         }
         return false;
@@ -93,4 +108,17 @@ public class CraftableArmor : MonoBehaviour
         }
         UpdateUI();
     }
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        string name1 = GameLib.Instance.GetPartById(showingItem.partsNeeded[0]).name;
+        string name2 = GameLib.Instance.GetPartById(showingItem.partsNeeded[1]).name;
+        if (name1.Equals(name2)) {
+            UIManager.Instance.ShowDetailedToolTip(new Vector2(transform.position.x+1.2f,transform.position.y-152f),
+                showingItem.name,"", "Needs two pieces of "+name1);
+        } else
+            UIManager.Instance.ShowDetailedToolTip(new Vector2(transform.position.x+1.2f,transform.position.y-152f),
+                showingItem.name,"", "Needs one piece of "+name1+", and one of "+name2);
+        
+    }
+
 }

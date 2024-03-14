@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Linq;
 
 public enum BerkeleyType
 {
@@ -21,6 +22,7 @@ public class BerkeleySpawnable {
     public int currentQuantity;
     public int minLevel;
     public bool notOnRiverOrRoad=false;
+    public int[] regions;
 }
 public class BerkeleyManager : MonoBehaviour
 {
@@ -77,7 +79,7 @@ public class BerkeleyManager : MonoBehaviour
     void Update()
     {
         for(int i = 0; i <spawnables.Count; i++){
-            if (!spawnables[i].globalSpawn) continue;
+            if (!spawnables[i].globalSpawn || (spawnables[i].regions.Length>0 && !spawnables[i].regions.Contains(GameOverlord.Instance.currentRegion))) continue;
             if (spawnables[i].spawnTimer > 0) {
                 spawnables[i].spawnTimer -= Time.deltaTime;
             } else {
@@ -115,12 +117,11 @@ public class BerkeleyManager : MonoBehaviour
     void Spawn(BerkeleySpawnable spawn, int spawnableId, int attempt=0) {
         Vector2 CamPos = Camera.main.transform.position;
         float x = UnityEngine.Random.Range(CamPos.x-disappearDistance, CamPos.x+disappearDistance);
-        while (Math.Abs(x - Camera.main.transform.position.x) < 7) 
-            x = UnityEngine.Random.Range(CamPos.x-disappearDistance, CamPos.x+disappearDistance);
-        
         float y = UnityEngine.Random.Range(CamPos.y-disappearDistance, CamPos.y+disappearDistance);
-        while (Math.Abs(y - Camera.main.transform.position.y) < 7) 
+        while (Math.Abs(x - Camera.main.transform.position.x) < 7 && Math.Abs(y - Camera.main.transform.position.y) < 7) {
+            x = UnityEngine.Random.Range(CamPos.x-disappearDistance, CamPos.x+disappearDistance);
             y = UnityEngine.Random.Range(CamPos.y-disappearDistance, CamPos.y+disappearDistance);
+        }
         
         Tile tile = MapMaker.Instance.GetTileAtCoordinates(x,y);
         if (spawn.berkeleyType!=BerkeleyType.Monster &&

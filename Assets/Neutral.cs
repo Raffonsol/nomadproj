@@ -7,9 +7,9 @@ using UnityEngine;
 
 public class Neutral : Combatant
 {
-    public string name;
+    public new string name;
     [SerializeField]
-    public Appearance appearance;
+    public NeutralChar person;
 
     public int startingWeaponId;
     public int[] startingWeaponParts;
@@ -37,6 +37,8 @@ public class Neutral : Combatant
     private bool attacking = false;
 	private bool hovering = false;
 
+    private string personalityString = "";
+
     void Update() {
         ListenForClick();
     }
@@ -61,17 +63,28 @@ public class Neutral : Combatant
         shadowColor = Color.black;
 		shadowColor.a = 0.2f;
 		selectionColor = Color.white;
+        for (int i = 0; i < person.oddities.Length; i++)
+        {
+            if (i!=0)personalityString+=", ";
+            personalityString+=person.oddities[i].ToString();
+        }
         
         Equip(startingWeaponId, parts);
     }
 
-    public void ListenForClick() {
+    protected override void ListenForClick() {
         // Debug.Log(hovering, Input.GetButtonUp("Fire1"));
 		if (Input.GetButtonUp("Fire1") && hovering) {
-            Debug.Log("convert");
+            if (Player.Instance.characters.Count >= Player.Instance.maxPartySize) {
+                
+                GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, transform);
+                DamageText.GetComponent<DamageText>().textToDisplay = "Party is FULL!";
+                return;
+            }
             // 6 = hardcoded npc spawnwable index !!!!!!
             BerkeleyManager.Instance.spawnables[6].currentQuantity--;
             Player.Instance.ConvertNeutral(gameObject);
+            UIManager.Instance.HideToolTips();
 		}
 	}
 
@@ -144,7 +157,7 @@ public class Neutral : Combatant
         Destroy(gameObject.transform.Find("Player/Body/Instance/PrimaryWeapon").gameObject);
         GameObject newWeapon = Instantiate(value.visual);
         newWeapon.name = "PrimaryWeapon";
-        newWeapon.transform.parent = gameObject.transform.Find("Player/Body/Instance");
+        newWeapon.transform.SetParent(gameObject.transform.Find("Player/Body/Instance"));
         newWeapon.transform.localPosition = new Vector3(value.instance.weaponPos.x, value.instance.weaponPos.y, -9.3f);
         newWeapon.transform.localRotation =  Quaternion.Euler(0, 0, value.instance.weaponPos.z);
         weaponObject = newWeapon;
@@ -200,12 +213,15 @@ public class Neutral : Combatant
     void OnMouseOver()
     {
 		hovering = true;
+        UIManager.Instance.ShowDetailedToolTip(Camera.main.WorldToScreenPoint (transform.position)*1.15f,
+                person.name, person.personality.ToString(), personalityString, true);
 		shadow.GetComponent<SpriteRenderer>().color = selectionColor;
     }
 	void OnMouseExit()
     {
 		hovering = false;
 		shadow.GetComponent<SpriteRenderer>().color = shadowColor;
+        UIManager.Instance.HideToolTips();
     }
 }
     

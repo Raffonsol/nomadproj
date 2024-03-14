@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using System;
+using System.Linq;
 
 public class GameLib : MonoBehaviour
 {
@@ -37,7 +38,18 @@ public class GameLib : MonoBehaviour
     public CharSkill[] allCharSkills;
     [SerializeField]
     public CharSkill[] weaponSkills;
-    
+
+    [SerializeField]
+    public OddityChances[] oddityChances;
+
+    [SerializeField]
+    public Region[] regions;
+
+    [SerializeField]
+    public PersonalityLine[] allLines;
+
+    // settings
+    public float acquisitionDistance = 5f;
     
     // Singleton stuff
     private void Awake() 
@@ -54,11 +66,11 @@ public class GameLib : MonoBehaviour
         // weapoi.Add(weapoi[6]);
         // allWeapons = weapoi.ToArray();
         // List<Part> weapoi = new List<Part>(allParts);
-        // weapoi.Add(weapoi[2]);
+        // weapoi.Add(weapoi[3]);
         // allParts = weapoi.ToArray();
-        List<Equipment> weapoi = new List<Equipment>(allEquipments);
-        weapoi.Add(weapoi[0]);weapoi.Add(weapoi[1]);weapoi.Add(weapoi[2]);weapoi.Add(weapoi[3]);weapoi.Add(weapoi[4]);
-        allEquipments = weapoi.ToArray();
+        // List<Equipment> weapoi = new List<Equipment>(allEquipments);
+        // weapoi.Add(weapoi[0]);weapoi.Add(weapoi[1]);weapoi.Add(weapoi[2]);weapoi.Add(weapoi[3]);weapoi.Add(weapoi[4]);
+        // allEquipments = weapoi.ToArray();
     }
     public T GetItemById<T>(int id) {
         switch (typeof(T)){
@@ -144,9 +156,12 @@ public class GameLib : MonoBehaviour
         
         int j = 0;
         NamePart part = nameParts[j];
-        while (!(isMale && part.worksForMen) && !(!isMale && part.worksForWomen)) {
+        while (part==null || (!(isMale && part.worksForMen) && !(!isMale && part.worksForWomen))) {
             j++;
             part = nameParts[j];
+            if (part.type == NamePartType.FullName && UnityEngine.Random.Range(0, 101) < 75) {
+                part = null;
+            }
         }
         if (part.type == NamePartType.FullName) {
             return part.value;
@@ -187,9 +202,44 @@ public class GameLib : MonoBehaviour
             case (100007): {
                 return weaponSkills[3];
             }
+            case (100001): {
+                return weaponSkills[4];
+            }
         }
 
         return weaponSkills[0];
+    }
+
+    public Oddity[] MakeListOfOddities() {
+        List<Oddity> oddities = new List<Oddity>();
+        oddityChances.Shuffle();
+
+        for (int i = 0; i < oddityChances.Length; i++)
+        {
+            if (UnityEngine.Random.Range(0, 101) < oddityChances[i].percentage
+                && !oddities.Intersect(oddityChances[i].conflictsWith).Any()) {
+                oddities.Add(oddityChances[i].oddity);
+            }
+        }
+
+        return oddities.ToArray();
+    }
+
+    public string GetLine(LineUsage situation, Personality personality) {
+        allLines.Shuffle();
+        int i = 0;
+        PersonalityLine goWith = allLines[0];
+
+        while ((goWith.personalities.Length>0 && !goWith.personalities.Contains(personality))  ||  goWith.useWhen!= situation  ) {
+            i++;
+            if (i >= allLines.Length) return "";
+            goWith = allLines[i];
+        }
+        if (UnityEngine.Random.Range(0, 101) < goWith.chance) {
+            
+            return goWith.value;
+        }
+        return "";
     }
 
 }

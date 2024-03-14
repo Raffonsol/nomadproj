@@ -2,7 +2,8 @@ using System;
 using System.Collections.Generic;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-    
+using System.Linq;
+
 public static class MyExtensions
 {
     private static readonly Random rng = new Random();
@@ -19,6 +20,14 @@ public static class MyExtensions
             list[k] = list[n];
             list[n] = value;
         }
+    }
+    // https://stackoverflow.com/questions/3132126/how-do-i-select-a-random-value-from-an-enumeration
+    public static Enum GetRandomEnumValue(this Type t)
+    {
+        return Enum.GetValues(t)          // get values from Type provided
+            .OfType<Enum>()               // casts to Enum
+            .OrderBy(e => Guid.NewGuid()) // mess with order of results
+            .FirstOrDefault();            // take first item in result
     }
 }
 public static class UIHelper
@@ -45,8 +54,14 @@ public static class Util
             return 0;
             case ("Monster"):
             return 1;
-            case ("Neutral"):
+            case ("Npc"):
             return 2;
+            case ("Marauder"):
+            return 3;
+            case ("Regional"):
+            return 4;
+            case ("Mimic"):
+            return 5;
         }
         return -1;
     }
@@ -63,13 +78,31 @@ public static class Util
             if (!bare)
             pos = "Chest/";
         } else if (slot == Slot.Head) {
-            
+            if (!bare)
+            pos = "Head/";
         }
         pos = pos + slot.ToString();
         if (slot == Slot.Clothing) {
             pos = "Chest/Chest";
         }
         return pos;
+    }
+
+    public static string FittablePartToString(FittablePart part, bool withEg = false)
+    {
+        string value = part.ToString();
+        switch (part) {
+            case FittablePart.BluntObject:
+                value = "Blunt Object";
+                if (withEg) value+=" (rock)";
+                break;
+            case FittablePart.ShortStick:
+                value = "Short Stick";
+                if (withEg) value+=" (wood)";
+                break;
+        }
+
+        return value;
     }
 
 }

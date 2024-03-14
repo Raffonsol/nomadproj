@@ -1,5 +1,6 @@
 using System.Collections;
 using System;
+using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -65,12 +66,14 @@ public class Monster : Combatant
             (UnityEngine.Random.Range(transform.position.x - 20f, transform.position.x + 20f)),
             (UnityEngine.Random.Range(transform.position.y - 20f, transform.position.y + 20f)), 0);
     }
-    protected override bool CheckSkills()
+    protected override bool CheckSkills(bool attacking = true)
     {
+        if (routine == Routine.UsingSkill) return false;
         bool oneSkillFound = false;
         for (int i = 0; i < skills.Length; i++)
         {
-            if (skills[i].cooldownTimer<=0.03f) {
+            if ((attacking && !skills[i].castWhenAttacking) || (!attacking && !skills[i].castWhenAttacked)) continue;
+            if (skills[i].cooldownTimer<=0.01f) {
                 oneSkillFound=true;
                 skillCastId = i;
                 skillChannelingTimer = skills[i].channelingTime;
@@ -90,13 +93,13 @@ public class Monster : Combatant
         if (attackTimer > (attackCooldown / 2)) {
             transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().color = aboutToAttackColor;
 
-            
+            Stay();
             moveDirection = chaseTargetPosition - currentPosition;
             moveDirection.Normalize();
             float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.Slerp (transform.rotation, 
+            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
 		                                       Quaternion.Euler (0, 0, targetAngle + 180), 
-		                                       turnSpeed * Time.deltaTime);
+		                                       turnSpeed * Time.deltaTime));
         }
         else if (attackTimer > 0)
         {
@@ -109,7 +112,7 @@ public class Monster : Combatant
                 hitBox.isTrigger = false;
 
                 Vector2 target = moveDirection + currentPosition;
-                transform.position = Vector3.Lerp (currentPosition, target, attackSpeed * Time.deltaTime);
+                Move(target, attackSpeed, false );
 			} else if (!projectileGoing && attackDamageType == DamageType.Ranged) {
                 
                 projectileGoing = true;
@@ -124,6 +127,8 @@ public class Monster : Combatant
 				arrow.gameObject.GetComponent<ProjectileItem>().playerParty = false;
 				arrow.gameObject.GetComponent<ProjectileItem>().consumableId = projectileId;
                 arrow.gameObject.GetComponent<ProjectileItem>().Go();
+                Stay();
+                transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, transform.rotation,0));
 				
 			}
            
@@ -147,8 +152,12 @@ public class Monster : Combatant
         if  (skillChannelingTimer > 0) {
             skillChannelingTimer -= Time.deltaTime;
         } else {
+            MonsterSkill skill = skills[skillCastId];
             if (skillInImpact) {
                 if (skillImpactingTimer > 0) {
+                    // in impact
+                    Stay();
+                    transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, transform.rotation,0));
                     skillImpactingTimer-= Time.deltaTime;
                 } else {
                     //Impact end
@@ -159,34 +168,64 @@ public class Monster : Combatant
                     // damagingOnTouch = false;
                     // hitScript.hitting = false;
                     // hitBox.isTrigger = true;
+                    defensive = false;
+                    defensiveKnockback = 0;
+                    defensiveDamage = 0;
 
-                    skills[skillCastId].cooldownTimer = skills[skillCastId].cooldown;
+                    skill.cooldownTimer = skill.cooldown;
                     SwitchRoutine(Routine.Chasing);
                 }
             } else {
                 // impact start
                 skillInImpact = true;
-                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = skills[skillCastId].impact;
-                skillImpactingTimer = skills[skillCastId].impactTime;
+                transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = skill.impact;
+                skillImpactingTimer = skill.impactTime;
                 
+                if (skill.skillTypes.Contains(SkillType.EnterDefensiveMode)){
+                    defensive = true;
+                    defensiveKnockback = skill.knockBack;
+                    defensiveDamage = skill.damageBase;
+                }
 				 // start damaging;
                 // damagingOnTouch = true;
                 // hitScript.hitting = true;
                 // hitBox.isTrigger = false;
 
                 //create impact collision
-                GameObject aoe = Instantiate(skills[skillCastId].impactCollision,transform.position, transform.rotation);
-                Projectile newSettings = new Projectile();
-                newSettings.maxLife = 0.4f;
-                newSettings.minDamage = skills[skillCastId].damageBase;
-                newSettings.maxDamage = skills[skillCastId].damageBase*1.5f;
-                newSettings.knockBack = skills[skillCastId].knockBack;
-                newSettings.speed=0;
-                aoe.gameObject.GetComponent<ProjectileItem>().projectileSettings = newSettings;
-                aoe.gameObject.GetComponent<ProjectileItem>().faction = faction;
-                aoe.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
-				aoe.gameObject.GetComponent<ProjectileItem>().playerParty = false;
-                aoe.gameObject.GetComponent<ProjectileItem>().Go();
+                if (skill.skillTypes.Contains(SkillType.CreateDamageObject)){
+                    
+                    GameObject aoe = Instantiate(skill.impactCollision,transform.position, transform.rotation);
+                    Projectile newSettings = new Projectile();
+                    newSettings.maxLife = 0.4f;
+                    newSettings.minDamage = skill.damageBase;
+                    newSettings.maxDamage = skill.damageBase*1.5f;
+                    newSettings.knockBack = skill.knockBack;
+                    newSettings.speed=0;
+                    aoe.gameObject.GetComponent<ProjectileItem>().projectileSettings = newSettings;
+                    aoe.gameObject.GetComponent<ProjectileItem>().faction = faction;
+                    aoe.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
+                    aoe.gameObject.GetComponent<ProjectileItem>().playerParty = false;
+                    aoe.gameObject.GetComponent<ProjectileItem>().Go();
+                }
+                if (skill.skillTypes.Contains(SkillType.TargetedStun)){
+                    if (chaseTarget == null) return;
+                    GameObject aoe = Instantiate(skill.impactCollision,chaseTarget.transform.position, transform.rotation);
+                    PlayDeath anim = aoe.GetComponent<PlayDeath>();
+                    if (anim != null) {
+                        anim.stickTarget = chaseTarget;
+                        anim.sticky = true;
+                    }
+
+                    ZombieController tar = chaseTarget.GetComponent<ZombieController>();
+                    if (tar != null) {
+                        tar.Stun(skill.offset);
+                    }
+                    HitBox hitter = chaseTarget.GetComponent<HitBox>();
+                    if (hitter != null && hitter.friendlyOwner!=null) {
+                        tar = hitter.friendlyOwner;
+                        tar.Stun(skill.offset);
+                    }
+                }
             }
         }
 

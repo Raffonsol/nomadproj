@@ -55,6 +55,8 @@ public class WeaponCrafting : MonoBehaviour
     }
     void CheckDroppedItems() {
         if (UIManager.Instance.partDroppedOnCrafting) {
+            FriendlyChar person = Player.Instance.activePerson;
+            List<Part> partsBeingUsed = new List<Part>(person.equipped.partsBeingUsed);
             
             UIManager.Instance.partDroppedOnCrafting = false;
 
@@ -62,6 +64,17 @@ public class WeaponCrafting : MonoBehaviour
             // if (itemsPlaced.Count == 0 );
                 
             itemsPlaced.Add(item); 
+
+            // lose stats
+            if (person.equipped.primaryWeapon.id !=100000)
+            for(int i = 0; i <partsBeingUsed.Count; i++){
+                for (int j = 0; j < partsBeingUsed[i].modifiers.Length; j++)
+                {
+                    PowerUp mod = partsBeingUsed[i].modifiers[j];
+                    person.stats[(int)mod.affectedStat].value -= mod.offset;
+                    Debug.Log("- "+mod.affectedStat+" "+mod.offset);
+                }
+            }
 
             CheckWeaponsForMatchingParts();
             UpdateTemplateImage();
@@ -71,10 +84,12 @@ public class WeaponCrafting : MonoBehaviour
                 Player.Instance.EquipWeapon(matchingWeapon.id, itemsPlaced);
             } else { 
                 // disarmed
-                Player.Instance.EquipWeapon(100000, itemsPlaced);
+                Player.Instance.EquipWeapon(100000, new List<Part>());
             }
         }
         if (UIManager.Instance.partRemovedFromCrafting) {
+            FriendlyChar person = Player.Instance.activePerson;
+            List<Part> partsBeingUsed = new List<Part>(person.equipped.partsBeingUsed);
             
             UIManager.Instance.partRemovedFromCrafting = false;
 
@@ -86,13 +101,23 @@ public class WeaponCrafting : MonoBehaviour
                     break;
                 }
             }
+            // lose stats
+            if (person.equipped.primaryWeapon.id !=100000)
+            for(int i = 0; i <partsBeingUsed.Count; i++){
+                for (int j = 0; j < partsBeingUsed[i].modifiers.Length; j++)
+                {
+                    PowerUp mod = partsBeingUsed[i].modifiers[j];
+                    person.stats[(int)mod.affectedStat].value -= mod.offset;
+                    Debug.Log("- "+mod.affectedStat+" "+mod.offset);
+                }
+            }
 
             CheckWeaponsForMatchingParts();
             UpdateTemplateImage();
             if (matchingWeapon != null && isEquippable) {
                 Player.Instance.EquipWeapon(matchingWeapon.id, itemsPlaced);
             } else { 
-                Player.Instance.EquipWeapon(100000, itemsPlaced);
+                Player.Instance.EquipWeapon(100000, new List<Part>());
             }
             Player.Instance.PickupItem(ItemType.Part, item.id);
         }
@@ -106,14 +131,16 @@ public class WeaponCrafting : MonoBehaviour
             PartLooks partLook = itemsPlaced[i].partLooks.Length > 0 && matchingWeapon != null ? 
                 Array.Find(itemsPlaced[i].partLooks, look => 
                     look.weaponId == matchingWeapon.id
-                ) :
-                null;
+                ) : null;
 
             temp.GetComponent<Image>().sprite = partLook == null ?
                 itemsPlaced[i].visual.GetComponent<SpriteRenderer>().sprite :
                 partLook.look.GetComponent<SpriteRenderer>().sprite;
                     
-            temp.GetComponent<Image>().color = itemsPlaced[i].visual.GetComponent<SpriteRenderer>().color;
+            temp.GetComponent<Image>().color =  partLook == null 
+                ? itemsPlaced[i].visual.GetComponent<SpriteRenderer>().color
+                : partLook.look.GetComponent<SpriteRenderer>().color;
+            
             temp.GetComponent<Transform>().localScale = itemsPlaced[i].visual.GetComponent<Transform>().localScale;
             temp.GetComponent<Image>().SetNativeSize();
             if (partLook != null) {
