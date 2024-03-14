@@ -46,14 +46,14 @@ public class Berkeley : MonoBehaviour
             return;
         }
 
-        // if ((gameObject.tag == "Berkeley" || gameObject.tag == "Rsrc")
-        // && Vector3.Distance(transform.position, Camera.main.transform.position) > disappearDistance/4f ) {
-        //     if (checkTimer > 0) 
-        //     checkTimer -= Time.deltaTime;
-        //     else {
-        //         Check();
-        //     }
-        // }
+        if ((gameObject.tag == "Berkeley" || gameObject.tag == "Rsrc")
+        && Vector3.Distance(transform.position, Camera.main.transform.position) > disappearDistance/2f ) {
+            if (checkTimer > 0) 
+            checkTimer -= Time.deltaTime;
+            else {
+                Check();
+            }
+        }
         
         ContinuedUpdate();
     }
@@ -71,7 +71,7 @@ public class Berkeley : MonoBehaviour
                     potentialHit.gameObject.GetComponent<Berkeley>().DestroyAndRecount();
                 }   
                 catch (NullReferenceException e) {
-                    Debug.LogWarning("Something was just destroyed but not recounted - "+potentialHit.gameObject.name);
+                    Debug.LogWarning("Something was just destroyed but not recounted - "+potentialHit.gameObject.name + e);
                     Destroy(potentialHit.gameObject);
                 }
                 Debug.Log(gameObject.name+ " destroyed overlapped " + potentialHit.gameObject.name);
@@ -92,7 +92,7 @@ public class Berkeley : MonoBehaviour
                     potentialHit.gameObject.GetComponent<Berkeley>().DestroyAndRecount();
                 }   
                 catch (NullReferenceException e) {
-                    Debug.LogWarning("Something was just destroyed but not recounted - "+potentialHit.gameObject.name);
+                    Debug.LogWarning("Something was just destroyed but not recounted - "+potentialHit.gameObject.name+ e);
                     Destroy(potentialHit.gameObject);
                 }
                 Debug.Log(gameObject.name+ " destroyed overlapped " + potentialHit.gameObject.name);

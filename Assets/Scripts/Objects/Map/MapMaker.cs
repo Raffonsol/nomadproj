@@ -253,10 +253,10 @@ public class MapMaker : MonoBehaviour
             }
             // make sure the already mapped parts are there
             if (tileMap[x] != null && tileMap[x][y] != null && (
-            (tileMap[x][y].northCon != null && tileMap[x][y].northCon != ConnectionPart.Void && tileMap[x][y].northCon != source[i].northCon) ||
-            (tileMap[x][y].eastCon != null && tileMap[x][y].eastCon != ConnectionPart.Void && tileMap[x][y].eastCon != source[i].eastCon) ||
-            (tileMap[x][y].southCon != null && tileMap[x][y].southCon != ConnectionPart.Void && tileMap[x][y].southCon != source[i].southCon) ||
-            (tileMap[x][y].westCon != null && tileMap[x][y].westCon != ConnectionPart.Void && tileMap[x][y].westCon != source[i].westCon)
+            ( tileMap[x][y].northCon != ConnectionPart.Void && tileMap[x][y].northCon != source[i].northCon) ||         //tileMap[x][y].northCon != null &&
+            (tileMap[x][y].eastCon != ConnectionPart.Void && tileMap[x][y].eastCon != source[i].eastCon) ||         //tileMap[x][y].eastCon != null && 
+            ( tileMap[x][y].southCon != ConnectionPart.Void && tileMap[x][y].southCon != source[i].southCon) ||         //tileMap[x][y].southCon != null &&
+            (tileMap[x][y].westCon != ConnectionPart.Void && tileMap[x][y].westCon != source[i].westCon)            //tileMap[x][y].westCon != null && 
             )) {
                 isValid = false;
             }

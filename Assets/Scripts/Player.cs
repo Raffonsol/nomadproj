@@ -281,7 +281,7 @@ public class Player : MonoBehaviour
         }
         GameObject newWeapon = Instantiate(value.visual);
         newWeapon.name = "PrimaryWeapon";
-        newWeapon.transform.parent = person.controller.gameObject.transform.Find("Player/Body/Instance");
+        newWeapon.transform.SetParent(person.controller.gameObject.transform.Find("Player/Body/Instance"));
         newWeapon.transform.localPosition = new Vector3(value.instance.weaponPos.x, value.instance.weaponPos.y, -9.3f);
         newWeapon.transform.localRotation =  Quaternion.Euler(0, 0, value.instance.weaponPos.z);
         person.controller.gameObject.GetComponent<ZombieController>().weaponObject = newWeapon;
@@ -336,42 +336,42 @@ public class Player : MonoBehaviour
             GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Head, false)).gameObject;
             bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.head.visual.GetComponent<SpriteRenderer>().sprite;
             bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.head.visual.GetComponent<SpriteRenderer>().color;
-            }catch(NullReferenceException e){}
+            }catch(NullReferenceException ){}
             try{
             GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Chest, false)).gameObject;
             bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.chest.visual.GetComponent<SpriteRenderer>().sprite;
             bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.chest.visual.GetComponent<SpriteRenderer>().color;
-            }catch(NullReferenceException e){}
+            }catch(NullReferenceException ){}
             try{
             GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Pauldron, false)).gameObject;
             bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.rightPauldron.visual.GetComponent<SpriteRenderer>().sprite;
             bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.rightPauldron.visual.GetComponent<SpriteRenderer>().color;
-            }catch(NullReferenceException e){}
+            }catch(NullReferenceException ){}
             try{
             GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Pauldron, true)).gameObject;
             bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.leftPauldron.visual.GetComponent<SpriteRenderer>().sprite;
             bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.leftPauldron.visual.GetComponent<SpriteRenderer>().color;
-            }catch(NullReferenceException e){}
+            }catch(NullReferenceException ){}
             try{
             GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Hand, false)).gameObject;
             bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.rightHand.visual.GetComponent<SpriteRenderer>().sprite;
             bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.rightHand.visual.GetComponent<SpriteRenderer>().color;
-            }catch(NullReferenceException e){}
+            }catch(NullReferenceException ){}
             try{
             GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Hand, true)).gameObject;
             bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.leftHand.visual.GetComponent<SpriteRenderer>().sprite;
             bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.leftHand.visual.GetComponent<SpriteRenderer>().color;
-            }catch(NullReferenceException e){}
+            }catch(NullReferenceException ){}
             try{
             GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Foot, false)).gameObject;
             bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.rightFoot.visual.GetComponent<SpriteRenderer>().sprite;
             bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.rightFoot.visual.GetComponent<SpriteRenderer>().color;
-            }catch(NullReferenceException e){}
+            }catch(NullReferenceException ){}
             try{
             GameObject bod =characters[i].controller.gameObject.transform.Find("Player/Body/" +Util.SlotToBodyPosition(Slot.Foot, true)).gameObject;
             bod.GetComponent<SpriteRenderer>().sprite = characters[i].equipped.leftFoot.visual.GetComponent<SpriteRenderer>().sprite;
             bod.GetComponent<SpriteRenderer>().color = characters[i].equipped.leftFoot.visual.GetComponent<SpriteRenderer>().color;
-            }catch(NullReferenceException e){}
+            }catch(NullReferenceException ){}
         }
     }
     public void ApplyStats(int charId = -1) {
@@ -403,7 +403,7 @@ public class Player : MonoBehaviour
         List<Part> partsUsed = person.equipped.partsBeingUsed;
         Weapon value = person.equipped.primaryWeapon;
         
-        float dmg = 0; int slot = 3; // slot  is for the damage type, using hardcoded indexes
+        float dmg = 0;
         // Add stat bonuses
         if (value.damageType == DamageType.Melee) {
             dmg += person.stats[3].value; // 3 is stat for melee damage
@@ -416,21 +416,10 @@ public class Player : MonoBehaviour
 
         for(int i = 0; i <partsUsed.Count; i++){
             for(int j = 0; j <partsUsed[i].modifiers.Length; j++){
-                // melee
-                if (partsUsed[i].modifiers[j].affectedStat == CharacterStat.MeleeDamage && value.damageType == DamageType.Melee) {
-                    dmg += partsUsed[i].modifiers[j].offset; slot = 3;
-                }
-                // ranged
-                if (partsUsed[i].modifiers[j].affectedStat == CharacterStat.RangedDamage && value.damageType == DamageType.Ranged) {
-                    dmg += partsUsed[i].modifiers[j].offset; slot = 4;
-                }
-                // magic
-                if (partsUsed[i].modifiers[j].affectedStat == CharacterStat.MagicDamage && value.damageType == DamageType.Magic) {
-                    dmg += partsUsed[i].modifiers[j].offset; slot = 5;
-                }
+                dmg += partsUsed[i].modifiers[j].offset;
             }
         }
-        if (dmg == 0) dmg = 1;
+        if (dmg < 1) dmg = 1;
         // TODO: add modifiers
         // STATSET
         // person.stats[slot].value = (int)System.Math.Floor(dmg);
@@ -634,7 +623,7 @@ public class Player : MonoBehaviour
         neutral.name = neutralScript.person.name;
         GameObject nameplate = Instantiate(GameOverlord.Instance.namePlate);
         nameplate.name = "NamePlate";
-        nameplate.transform.parent = neutral.transform;
+        nameplate.transform.SetParent( neutral.transform);
         nameplate.transform.localPosition = new Vector2(0.43f, 0);
 
         controller.DoStart();
@@ -724,23 +713,17 @@ public class Player : MonoBehaviour
 
             case (Slot.Head):
                 return characters[charInd].equipped.head;
-                break;
             case (Slot.Chest):
                 return characters[charInd].equipped.chest;
-                break;
             case (Slot.Pauldron):
                 if (left)return characters[charInd].equipped.leftPauldron;
                 else return characters[charInd].equipped.rightPauldron;
-                break;
             case (Slot.Foot):
                 if (left)return characters[charInd].equipped.leftFoot;
                 else return characters[charInd].equipped.rightFoot;
-                break;
             case (Slot.Hand):
                 if (left)return characters[charInd].equipped.leftHand;
                 else return characters[charInd].equipped.rightHand;
-                break;
-            
         }
         return null;
     }

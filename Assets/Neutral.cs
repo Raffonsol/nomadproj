@@ -7,7 +7,7 @@ using UnityEngine;
 
 public class Neutral : Combatant
 {
-    public string name;
+    public new string name;
     [SerializeField]
     public NeutralChar person;
 
@@ -72,7 +72,7 @@ public class Neutral : Combatant
         Equip(startingWeaponId, parts);
     }
 
-    public void ListenForClick() {
+    protected override void ListenForClick() {
         // Debug.Log(hovering, Input.GetButtonUp("Fire1"));
 		if (Input.GetButtonUp("Fire1") && hovering) {
             if (Player.Instance.characters.Count >= Player.Instance.maxPartySize) {
@@ -157,7 +157,7 @@ public class Neutral : Combatant
         Destroy(gameObject.transform.Find("Player/Body/Instance/PrimaryWeapon").gameObject);
         GameObject newWeapon = Instantiate(value.visual);
         newWeapon.name = "PrimaryWeapon";
-        newWeapon.transform.parent = gameObject.transform.Find("Player/Body/Instance");
+        newWeapon.transform.SetParent(gameObject.transform.Find("Player/Body/Instance"));
         newWeapon.transform.localPosition = new Vector3(value.instance.weaponPos.x, value.instance.weaponPos.y, -9.3f);
         newWeapon.transform.localRotation =  Quaternion.Euler(0, 0, value.instance.weaponPos.z);
         weaponObject = newWeapon;

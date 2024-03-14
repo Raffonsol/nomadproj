@@ -101,6 +101,7 @@ public class GameOverlord : MonoBehaviour
             Player.Instance.AddPart(900006);
             Player.Instance.AddPart(900008);
             Player.Instance.AddPart(900010);
+            Player.Instance.AddPart(900012);
             Player.Instance.AddPart(900009);Player.Instance.AddPart(900009);Player.Instance.AddPart(900009);Player.Instance.AddPart(900009);Player.Instance.AddPart(900009);Player.Instance.AddPart(900009);
             Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);Player.Instance.AddConsumable(800000);
         }

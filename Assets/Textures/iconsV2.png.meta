@@ -758,10 +758,10 @@ TextureImporter:
       name: iconsV2_31
       rect:
         serializedVersion: 2
-        x: 712
+        x: 697
         y: 1231
-        width: 38
-        height: 56
+        width: 53
+        height: 63
       alignment: 0
       pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -1615,6 +1615,69 @@ TextureImporter:
       indices: 
       edges: []
       weights: []
+    - serializedVersion: 2
+      name: iconsV2_72
+      rect:
+        serializedVersion: 2
+        x: 507
+        y: 199
+        width: 100
+        height: 109
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 192ec8ea9ea99a548bf93c6f43ca8a21
+      internalID: 1663058520
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: iconsV2_73
+      rect:
+        serializedVersion: 2
+        x: 683
+        y: 198
+        width: 69
+        height: 77
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: c81806d27dd1e434f8462c666222fa53
+      internalID: -687571354
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: iconsV2_74
+      rect:
+        serializedVersion: 2
+        x: 812
+        y: 203
+        width: 58
+        height: 57
+      alignment: 9
+      pivot: {x: 0.5000011, y: 0.5165041}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: 0
+      bones: []
+      spriteID: 2882426bfe5762d46bdbd5debc2a0083
+      internalID: 469695056
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
     outline: []
     physicsShape: []
     bones: []
@@ -1659,6 +1722,7 @@ TextureImporter:
       iconsV2_52: 1978749491
       iconsV2_42: -751806055
       iconsV2_18: 852020444
+      iconsV2_74: 469695056
       iconsV2_45: -898589516
       iconsV2_35: -1960682170
       iconsV2_8: 1731679899
@@ -1680,6 +1744,7 @@ TextureImporter:
       iconsV2_47: 911744316
       iconsV2_71: -583102368
       iconsV2_69: -326040021
+      iconsV2_72: 1663058520
       iconsV2_22: 1120920502
       iconsV2_7: 913364471
       iconsV2_10: -596995694
@@ -1697,6 +1762,7 @@ TextureImporter:
       iconsV2_3: -1467923459
       iconsV2_5: 1936007700
       iconsV2_28: 1852073763
+      iconsV2_73: -687571354
       iconsV2_29: 1034007448
   spritePackingTag: 
   pSDRemoveMatte: 0

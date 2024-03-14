@@ -474,6 +474,8 @@ public class ZombieController : Walker {
 		}
 	}
 	public void BecomeLeader() {
+		
+		SaySomething(GameLib.Instance.GetLine(LineUsage.OnBecomeLeader, self.personality).Replace("*", Player.Instance.controller.gameObject.GetComponent<ZombieController>().name));
 		leader = true;
 		Player.Instance.controller.gameObject.GetComponent<ZombieController>().leader = false;
 		Player.Instance.activeCharId = charId;
@@ -741,7 +743,6 @@ public class ZombieController : Walker {
 	*/
 	void PerformAi(Personality tempPersonality) {
 		
-		Vector2 target;
 		Vector2 currentPosition = transform.position;
 		if (Player.Instance.controller == null) {
 			Debug.LogError("Controller was null, which it should never be! " + Player.Instance.activeCharId+" - "+Player.Instance.characters.Count);
@@ -780,11 +781,11 @@ public class ZombieController : Walker {
 					}
 					intention="Picking Fight";
 					
-					} catch (MissingReferenceException e){
+					} catch (MissingReferenceException){
 						justFollow = true;
 						GameOverlord.Instance.nearbyMonsters = new List<GameObject>();
 					}
-					catch (NullReferenceException e){
+					catch (NullReferenceException){
 						justFollow = true;
 						GameOverlord.Instance.nearbyMonsters = new List<GameObject>();
 					}
@@ -921,7 +922,7 @@ public class ZombieController : Walker {
 		if (weapon.damageType == DamageType.Ranged) monsterSize += 180f;
 		AiSkills(dist);
 		if (dist <= monsterSize)AttemptAttack();
-		if (dist > monsterSize * (weapon.damageType == DamageType.Ranged ? 1f : 0.05f)) {
+		if (dist > monsterSize || weapon.damageType != DamageType.Ranged ) {
 			float usedSpeed = self.personality == Personality.Coward && attackCooldownTimer > 0 ? -1f*speed 
 				: speed;
 			transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (currentPosition, target, usedSpeed * Time.deltaTime));
@@ -970,12 +971,12 @@ public class ZombieController : Walker {
         if (amount <0.1f || skillMoveLocked) return;
         knockBackLandPosition = Vector3.MoveTowards(transform.position,source.transform.position, amount*-2f);
         isBeingTossed = true;
-		knockTimer = 2f;
+		knockTimer = 2f; 
     }
 	void BeTossed() {
 		if (!isBeingTossed) return;
-		if (Vector3.Distance(transform.position, knockBackLandPosition) > 0.2f) {
-			transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (transform.position, knockBackLandPosition, 3f * Time.deltaTime));
+		if (Vector3.Distance(transform.position, knockBackLandPosition) > 0.3f) {
+			transform.GetComponent<Rigidbody2D>().MovePosition(Vector3.Lerp (transform.position, knockBackLandPosition, 3f * Time.deltaTime));
 		} else {
 			isBeingTossed = false;
 			lastClick=transform.position;

@@ -11,7 +11,7 @@ public class GrassScript : MonoBehaviour
     private float tileSize = 0;
 
     private float disappearDistance = 0;
-    private float checkTimer = 2f;
+    // private float checkTimer = 2f;
 
     bool started = false;
     // Start is called before the first frame update

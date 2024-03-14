@@ -96,7 +96,7 @@ public class Combatant : Berkeley
     protected Vision vision;
     protected float visionTimer;
 
-    protected AudioSource audio;
+    protected AudioSource audios;
 
     protected Vector2 knockBackLandPosition;
 
@@ -108,7 +108,7 @@ public class Combatant : Berkeley
     {
         originPosition = transform.position;
         vision = transform.Find("Vision").GetComponent<Vision>();
-        audio = GetComponent<AudioSource>();
+        audios = GetComponent<AudioSource>();
     }
 
     protected void SwitchRoutine(Routine newRoutine)
@@ -180,7 +180,7 @@ public class Combatant : Berkeley
         }
         
         Vector2 path;
-        path = GameOverlord.Instance.Pathfind(currentPosition, patrolTarget);
+        path =patrolTarget;
         lastFoundPath = path;
         pathFindTimer = pathFindTime;
 
@@ -266,7 +266,7 @@ public class Combatant : Berkeley
     }
     protected void Stay() {
         if (heavy) {
-            transform.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Static;
+            transform.GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezePositionY | RigidbodyConstraints2D.FreezePositionX ;
         } else {
             transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (transform.position, transform.position,0));
         }
@@ -274,7 +274,7 @@ public class Combatant : Berkeley
     protected void Move(Vector2 target, float speed, bool step=true) {
         if(step)StepAnim();
         if (heavy) {
-            transform.GetComponent<Rigidbody2D>().bodyType = RigidbodyType2D.Dynamic;
+            transform.GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.None;
         }
         transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (transform.position, target, speed * Time.deltaTime));
     }
@@ -449,7 +449,7 @@ public class Combatant : Berkeley
 
 			    float damage = UnityEngine.Random.Range(hitter.damageMin, hitter.damageMax);
                 TakeDamage(damage);
-                Debug.Log("damage, "+collided.gameObject.name + " - "+" -\n"+collided.gameObject.transform.position);
+                // Debug.Log("damage, "+collided.gameObject.name + " - "+" -\n"+collided.gameObject.transform.position);
                 KnockedBack(target, hitter.knockBack);
                 if (hitter.playerParty ){ 
                     Player.Instance.Engage(gameObject);

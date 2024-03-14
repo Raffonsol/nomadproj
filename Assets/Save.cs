@@ -127,8 +127,7 @@ public class GameData
 public class Save : MonoBehaviour
 {
     public GameObject characterObject;
-
-    private float saveTimer = 2;
+    
     void Start()
      {
         //  LoadFile();

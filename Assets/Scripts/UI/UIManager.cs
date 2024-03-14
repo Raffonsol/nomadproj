@@ -227,6 +227,9 @@ public class UIManager : MonoBehaviour
     }
 
     public void CheckAutoEquips() {
+        // craft parts first so they might be used down the code
+        AutoCraftParts();
+
         // armor
         AutoEquipArmor();
 
@@ -615,6 +618,66 @@ public class UIManager : MonoBehaviour
 
         return somethingGotMade;
     }
+    public bool AutoCraftParts() {
+        bool hasCrafter = false;
+        for (int i = 0; i < Player.Instance.characters.Count; i++)
+        {
+            if (Player.Instance.characters[i].oddities.Contains(Oddity.Craftsman)) {
+                hasCrafter = true;
+            }
+        }
+        if (! hasCrafter) return false;
+
+        // we have someone who can craft, now lets see what parts can be crafted
+
+        // list of owned part ids
+        List<int> parsOwned = Player.Instance.parts.Select( x => x.id).ToList();
+        List<int> originalList = new List<int>(parsOwned);
+        bool somethingGotMade = false;
+        for (int i = 0; i < GameLib.Instance.allParts.Length; i++)
+        {
+            // ignore equipments with no parts needed, not craftable
+            if (GameLib.Instance.allParts[i].partsNeeded.Length==0)continue;
+
+            bool haveParts = true;
+            // check if player has materials for it
+            for(int j = 0; j <GameLib.Instance.allParts[i].partIdsNeeded.Length; j++){
+
+                if (!parsOwned.Contains(GameLib.Instance.allParts[i].partIdsNeeded[j])){
+                    haveParts = false;
+                    break; // part missing, so stop looking at parts
+                }
+                // if we do have, then remove for next iteration, in cases we need 2
+                parsOwned.Remove(GameLib.Instance.allParts[i].partIdsNeeded[j]);
+            }
+            if (!haveParts) {
+                // reset local parts list for next loop
+                parsOwned =new List<int>(originalList);
+                continue;
+            }
+
+            // player does have materials for it, but only make it if we don't already have it
+            bool someoneCanUseit = true;
+
+            for(int j = 0; j <Player.Instance.parts.Count; j++){
+                if(Player.Instance.parts[j].id == GameLib.Instance.allParts[i].id)
+                    someoneCanUseit = false;
+            }
+            if (!someoneCanUseit) continue;
+            // We can make this, AND someone can use it! Let's get crafing!
+            somethingGotMade=true;
+            // remove parts from player. local list here should already have them removed
+            for(int j = 0; j <GameLib.Instance.allParts[i].partIdsNeeded.Length; j++){
+                Player.Instance.RemovePart(GameLib.Instance.allParts[i].partIdsNeeded[j]);
+            }
+
+            Player.Instance.AddPart(GameLib.Instance.allParts[i].id);   
+            
+            
+        }
+
+        return somethingGotMade;
+    }
     
     public void ShowItemPickedUp(string itemName, Sprite icon) {
         ShowIndicator( "+ 1 "+itemName, icon);
@@ -685,7 +748,7 @@ public class UIManager : MonoBehaviour
     public int AddMonsterIndicator(GameObject target, bool friendly=false) {
         int indicatorIndex = lastIndicatorId;
         GameObject newArrow = Instantiate(friendly ? friendArrowPrefab : monsterArrowPrefab);
-        newArrow.transform.parent = gameObject.transform;
+        newArrow.transform.SetParent(gameObject.transform);
         monsterArrows.Add(newArrow);
         monsterArrowTargets.Add(target);
         lastIndicatorId++;

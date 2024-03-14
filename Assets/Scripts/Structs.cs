@@ -35,7 +35,7 @@ public enum FittablePart
     LongBlade,
     Hilt,
     Pommel,
-    HammerHead,
+    MaceHead,
     BluntObject,
     Bowstring,
     Hand, // Leave this here, its for unarmed
@@ -206,6 +206,7 @@ public class Part : Consumable
     public FittablePart fittablePart;
     public PlatingMaterial material;
     public PartLooks[] partLooks;
+    public int[] partIdsNeeded;
 }
 
 

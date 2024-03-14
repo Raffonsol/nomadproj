@@ -85,14 +85,14 @@ public class InventoryItem : EventTrigger, IPointerEnterHandler, IPointerExitHan
 
         
     }
-    public void OnPointerEnter(PointerEventData eventData)
+    public override void OnPointerEnter(PointerEventData eventData)
     {
         
         UIManager.Instance.ShowSimpleToolTip(new Vector2(transform.position.x,transform.position.y*0.93f),itemName);
         
     }
 
-    public void OnPointerExit(PointerEventData eventData)
+    public override void OnPointerExit(PointerEventData eventData)
     {
         UIManager.Instance.HideToolTips();
     }

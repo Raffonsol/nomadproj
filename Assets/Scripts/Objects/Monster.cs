@@ -112,7 +112,7 @@ public class Monster : Combatant
                 hitBox.isTrigger = false;
 
                 Vector2 target = moveDirection + currentPosition;
-                Move(target, attackSpeed );
+                Move(target, attackSpeed, false );
 			} else if (!projectileGoing && attackDamageType == DamageType.Ranged) {
                 
                 projectileGoing = true;

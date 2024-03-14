@@ -3,20 +3,24 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using UnityEngine.EventSystems;
 
-public class CraftablePart : MonoBehaviour
+public class CraftablePart : MonoBehaviour, IPointerEnterHandler
 {
     private float checkTimer = 0f;
-    public int showingItemId;
+    public int[] showingItemId;
     public Sprite partNeeded1;
     public Sprite partNeeded2;
     private Part showingItem;
+    private int page = 0;
     // Start is called before the first frame update
     void Start()
     {
-        showingItem = GameLib.Instance.GetPartById(showingItemId);
-        transform.Find("craft1").GetComponent<Button>().onClick.AddListener(() => CraftOne());
-        transform.Find("craftAll").GetComponent<Button>().onClick.AddListener(() => CraftAll());
+        page = UIManager.Instance.uIPage;
+        if (page > showingItemId.Length-1) return;
+        showingItem = GameLib.Instance.GetPartById(showingItemId[page]);
+        partNeeded1 = GameLib.Instance.GetPartById(showingItem.partIdsNeeded[0]).icon;
+        partNeeded2 = GameLib.Instance.GetPartById(showingItem.partIdsNeeded[1]).icon;
     }
 
     // Update is called once per frame
@@ -35,10 +39,15 @@ public class CraftablePart : MonoBehaviour
     }
 
     void UpdateUI() {
+        if (page > showingItemId.Length-1) {
+            page = showingItemId.Length-1;
+            UIManager.Instance.uIPage = page;
+            return;
+        }
         string name = showingItem.name;
         int count = 0;
         for(int i = 0; i <Player.Instance.parts.Count; i++){
-            if (Player.Instance.parts[i].id == showingItemId) {
+            if (Player.Instance.parts[i].id == showingItemId[page]) {
                 count++;
             }
         }
@@ -57,7 +66,7 @@ public class CraftablePart : MonoBehaviour
         bool part2Owned = false;
         int part2Id = 0;
         for(int i = 0; i <Player.Instance.parts.Count; i++){
-            if (!part1Owned && Player.Instance.parts[i].fittablePart == showingItem.partsNeeded[0]) {
+            if (!part1Owned && Player.Instance.parts[i].id == showingItem.partIdsNeeded[0]) {
                 part1Owned = true;
                 part1Id =Player.Instance.parts[i].id;
                 
@@ -65,7 +74,7 @@ public class CraftablePart : MonoBehaviour
                 continue;
 
             } 
-            if (!part2Owned && Player.Instance.parts[i].fittablePart == showingItem.partsNeeded[1]) {
+            if (!part2Owned && Player.Instance.parts[i].id == showingItem.partIdsNeeded[1]) {
                 part2Owned = true;
                 part2Id =Player.Instance.parts[i].id;
 
@@ -74,9 +83,10 @@ public class CraftablePart : MonoBehaviour
         }
 
         if (part1Owned && part2Owned) {
+            Debug.Log("Crafting PArt");
             Player.Instance.RemoveItem(ItemType.Part, part1Id);
             Player.Instance.RemoveItem(ItemType.Part, part2Id);
-            Player.Instance.AddPart(showingItemId);
+            Player.Instance.AddPart(showingItemId[page]);
             if (!multiple)UpdateUI();
             UIManager.Instance.AutoEquipWeapons();
             UIManager.Instance.AutoCraftArmor();
@@ -91,5 +101,17 @@ public class CraftablePart : MonoBehaviour
             oneMade = CraftOne(true);
         }
         UpdateUI();
+    }
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        string name1 = GameLib.Instance.GetPartById(showingItem.partIdsNeeded[0]).name;
+        string name2 = GameLib.Instance.GetPartById(showingItem.partIdsNeeded[1]).name;
+        if (name1.Equals(name2)) {
+            UIManager.Instance.ShowDetailedToolTip(new Vector2(transform.position.x+1.2f,transform.position.y-152f),
+                showingItem.name,"", "Needs two pieces of "+name1);
+        } else
+            UIManager.Instance.ShowDetailedToolTip(new Vector2(transform.position.x+1.2f,transform.position.y-152f),
+                showingItem.name,"", "Needs one piece of "+name1+", and one of "+name2);
+        
     }
 }

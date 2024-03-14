@@ -8,7 +8,6 @@ using UnityEngine.EventSystems;
 public class SkillButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     public int skillKey;
-    bool mouse_over = false;
     // Start is called before the first frame update
     void Start()
     {
@@ -32,7 +31,6 @@ public class SkillButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        mouse_over = true;
         if (skillKey>1) {
             CharSkill skill = Player.Instance.activePerson.skills[skillKey-2];
             if (skill.id == 0) {
@@ -48,7 +46,6 @@ public class SkillButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHand
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        mouse_over = false;
         UIManager.Instance.HideToolTips();
     }
 }
