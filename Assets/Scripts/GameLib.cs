@@ -51,6 +51,8 @@ public class GameLib : MonoBehaviour
     // settings
     public float acquisitionDistance = 5f;
     
+    public AudioClip charHitSound;
+    
     // Singleton stuff
     private void Awake() 
     {   

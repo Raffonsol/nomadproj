@@ -39,10 +39,6 @@ public class Neutral : Combatant
 
     private string personalityString = "";
 
-    void Update() {
-        ListenForClick();
-    }
-
     // Start is called before the first frame update
     protected override void BeforeCheck()
     {

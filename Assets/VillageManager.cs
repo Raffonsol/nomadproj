@@ -101,13 +101,12 @@ public class VillageManager : MonoBehaviour
         
         
     }
-    public void SpawnNpc(float x, float y) {
+    public GameObject SpawnNpc(float x, float y) {
         GameObject spawnee = Instantiate(neutralTemplate, new Vector2(
             UnityEngine.Random.Range(x - 20f, x + 20f),
             UnityEngine.Random.Range(y - 20f, y + 20f)),
             transform.rotation
         );
-
         Neutral combatant = spawnee.GetComponent<Neutral>();
         NeutralChar person = new NeutralChar();
         person.appearance = new Appearance();
@@ -120,7 +119,6 @@ public class VillageManager : MonoBehaviour
         // parts
         int head, chest, foot, hand, clothing;
         head = chest = foot = hand = clothing = -1;
-
         BodyLook[] parts = GameLib.Instance.allBodyParts; 
         #region "Selecting all the part indexes"
         while (chest == -1) {
@@ -195,8 +193,9 @@ public class VillageManager : MonoBehaviour
         spawnee.transform.Find("Player/Body/Instance/RHand").GetComponent<SpriteRenderer>().sprite 
         = GameLib.Instance.allBodyParts[hand].look;
         spawnee.transform.Find("Player/Body/Instance/RHand").GetComponent<SpriteRenderer>().color = color;
-
+        
         // last settings
         combatant.person = person;
+        return spawnee;
     }
 }

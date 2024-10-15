@@ -10,7 +10,9 @@ public class GameOverlord : MonoBehaviour
     public GameObject damagePrefab;
     public GameObject itemDropPrefab;
     public GameObject deathPrefab;
+    public GameObject lvlUpPrefab;
     public GameObject namePlate;
+    public GameObject soundBox;
     public List<GameObject> nearbyMonsters;
     public List<GameObject> nearbyDrops;
     public List<GameObject> nearbyRsrc;

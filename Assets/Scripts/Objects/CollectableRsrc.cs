@@ -22,6 +22,11 @@ public class CollectableRsrc : Berkeley
 
     public Mimic mimic;
 
+    public AudioClip destroyedSound;
+    public AudioClip hitSound;
+    public AudioClip shakeSound;
+    public AudioClip mimicAwakeSound;
+
     public bool exhausted = false;
 
     private int currentLife;
@@ -42,6 +47,8 @@ public class CollectableRsrc : Berkeley
     private float mimicAnimationTimer = 0;
     private int mimicAnimationIndex = 0;
 
+    private AudioSource audioSource;
+
     // Start is called before the first frame update
     protected override void ContinuedStart()
     {
@@ -51,6 +58,7 @@ public class CollectableRsrc : Berkeley
         shakeCountdown = shakeCycles;
         nPosition = transform.position;
         invincibleTimer = invincibleTime;
+        audioSource = GetComponent<AudioSource>();
     }
 
     // Update is called once per frame
@@ -95,6 +103,7 @@ public class CollectableRsrc : Berkeley
         invincibleTimer = invincibleTime;
         currentLife -= 1;
         shaking = true;
+        audioSource.clip = hitSound; audioSource.Play();
         if (currentLife <= 0) {
             for(int i = 0; i <sfcDrops.Length; i++){
                 DropLoot(sfcDrops[i]);
@@ -102,6 +111,8 @@ public class CollectableRsrc : Berkeley
             for(int i = 0; i <remainingDrops.Count; i++){
                 DropLoot(remainingDrops[i]);
             }
+            GameObject soundBox = GameObject.Instantiate(GameOverlord.Instance.soundBox,transform.position, Quaternion.Euler(0,0,0));
+            AudioSource audiSource = soundBox.GetComponent<AudioSource>(); audiSource.clip = destroyedSound; audiSource.Play();
             DestroyAndRecount();
         }
         
@@ -110,6 +121,7 @@ public class CollectableRsrc : Berkeley
     void BHit() {
         invincibleTimer = invincibleTime;
         shaking = true;
+        audioSource.clip = shakeSound; audioSource.Play();
         if (remainingDrops.Count < 1) {
             exhausted=true;
             return;}
@@ -177,6 +189,7 @@ public class CollectableRsrc : Berkeley
             // become mimic
             becomingMimic=true;
             mimicAnimationTimer=mimic.frameDurations;
+            audioSource.clip = mimicAwakeSound; audioSource.Play();
         } else {
             // 50/50 chance to determine as not mimic
             if (Random.Range(0, 101) <= 50) canBeMimic=false;

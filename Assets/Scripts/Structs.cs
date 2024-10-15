@@ -184,6 +184,8 @@ public class Weapon : Item
     public DamageType damageType;
     public DamageRsrcType damageRsrcType;
 
+    public AudioClip attackSound;
+
     public ConsumableType ammo;
     public Weapon Clone()
     {
@@ -561,11 +563,13 @@ public class CombatSkill {
     public float healBase;
     public GameObject healCollision;
     // ---target ----
-    public int targetSystem; // 0 - nearst, 1 - random engaged, 2 - all engaged, 3 - self, 4 - enemy hit by script
+    public int targetSystem; // 0 - nearest, 1 - random engaged, 2 - all engaged, 3 - self, 4 - enemy hit by skill collision, 5 - random distance
     // ---move ----
-    public int moveSystem; // 0 - forward, 1 - backwards, 2 - towards target, 3 - tpToTarget
+    public int moveSystem; // 0 - forward, 1 - backwards, 2 - towards target, 3 - tpToTarget, 4 - away from target
     public float offset;
     public float speed;
+
+    public AudioClip audioClip;
 }
 [Serializable]
 public class MonsterSkill : CombatSkill {

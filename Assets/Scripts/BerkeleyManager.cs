@@ -63,10 +63,10 @@ public class BerkeleyManager : MonoBehaviour
     public void DoStart()
     {
         // TODO replace with glboal settings
-        berkeleyMax = 400;
-        monsterMax = 30;
-        rsrcMax = 200;
-        npcMax = 20;
+        berkeleyMax = 200;
+        monsterMax = 10;
+        rsrcMax = 20;
+        npcMax = 5;
 
         checkTimer = checkTime;
         for(int i = 0; i <spawnables.Count; i++){

@@ -95,11 +95,12 @@ public class Player : MonoBehaviour
         characters[ind].experience = 0;
         characters[ind].life = characters[ind].stats[0].value;
         characters[ind].controller.Reset();
-        GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, characters[ind].controller.transform);
-        DamageText.GetComponent<DamageText>().textToDisplay = "^";
+
+        // anim
+        GameObject lvlUpAnim = Instantiate(GameOverlord.Instance.lvlUpPrefab, characters[ind].controller.gameObject.transform);
+        lvlUpAnim.transform.parent = null;
 
         PlayerLevelProgression(ind);
-        // TODO:  Play some fun animation here
 
         // trigger UI to show bonus prompt
         UIManager.Instance.lvlUpQueue.Add(characters[ind].id);

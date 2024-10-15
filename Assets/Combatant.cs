@@ -30,6 +30,7 @@ public class Combatant : Berkeley
     public float invincibilityTime = 0.3f;
     public float runSpeed = 1.5f;
     public bool movesOnAttackCD = true;
+    public bool movesAwayOnAttackCD = false;
     public bool heavy = false;
 
     public float attackDistance = 0.73f;
@@ -59,6 +60,10 @@ public class Combatant : Berkeley
     public Drop[] drops;
 
     public bool searches =true;
+
+    public AudioClip attackSound;
+    public AudioClip hitSound;
+    public AudioClip deathSound;
 
     protected int skillCastId;
     protected float skillChannelingTimer;
@@ -96,7 +101,7 @@ public class Combatant : Berkeley
     protected Vision vision;
     protected float visionTimer;
 
-    protected AudioSource audios;
+    protected AudioSource audioSource;
 
     protected Vector2 knockBackLandPosition;
 
@@ -104,11 +109,12 @@ public class Combatant : Berkeley
     protected float pathFindTimer = 0f;
     protected Vector2 lastFoundPath;
 
+
     private void Awake() 
     {
         originPosition = transform.position;
         vision = transform.Find("Vision").GetComponent<Vision>();
-        audios = GetComponent<AudioSource>();
+        audioSource = GetComponent<AudioSource>();
     }
 
     protected void SwitchRoutine(Routine newRoutine)
@@ -299,7 +305,7 @@ public class Combatant : Berkeley
 
         Vector2 nextPoint = Pathfind(currentPosition, chaseTargetPosition);
         moveDirection = nextPoint - currentPosition;
-        if (runsAway)moveDirection = currentPosition-nextPoint;
+        if (runsAway || (movesAwayOnAttackCD && cooldownTimer > 0))moveDirection = currentPosition-nextPoint;
         moveDirection.Normalize();
         Vector2 target = moveDirection + currentPosition;
         if (Vector3.Distance(currentPosition, chaseTargetPosition) > giveUpDistance) {SwitchRoutine(Routine.Patrolling); return;}
@@ -440,7 +446,7 @@ public class Combatant : Berkeley
 		GameObject target = collided.gameObject;
 		HitBox hitter = target.GetComponent<HitBox>();
 		if (hitter.hitting && hitter.faction != faction && invincibleTimer < 0) {
-            if (defensive) {
+            if (defensive) { // defensive = skill where attackers take damage
                 if (hitter.friendlyOwner!=null) {
                     hitter.friendlyOwner.TakeDamage(defensiveDamage);
                     hitter.friendlyOwner.KnockedBack(gameObject, defensiveKnockback);
@@ -467,6 +473,7 @@ public class Combatant : Berkeley
                     hitter.friendlyOwner.AddSkillHit(this);
                 }
             }
+            audioSource.clip = hitSound; audioSource.Play();
 		}
 	}
     void Shot(Collider2D collided)
@@ -499,7 +506,8 @@ public class Combatant : Berkeley
                 } catch (NullReferenceException) {
                     // TODO: search in the direction projectile came from
                 }
-            }    
+            }   
+            audioSource.clip = hitSound; audioSource.Play(); 
 		}
 
 	}
@@ -532,6 +540,10 @@ public class Combatant : Berkeley
         }
         int exp = UnityEngine.Random.Range(minExpGiven, maxExpGiven);
         Player.Instance.GainExperience(exp);
+
+        GameObject soundBox = GameObject.Instantiate(GameOverlord.Instance.soundBox,transform.position, Quaternion.Euler(0,0,0));
+        AudioSource audiSource = soundBox.GetComponent<AudioSource>(); audiSource.clip = deathSound; audiSource.Play();
+
         // GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == transform.gameObject.name ) );
        gameObject.GetComponent<Berkeley>().DestroyAndRecount();
     }

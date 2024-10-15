@@ -31,6 +31,8 @@ public class Monster : Combatant
     private bool projectileGoing = false;
 
     private bool hovering = false;
+
+    private Vector2 skillTargetPosition;
     
 
     // Start is called before the first frame update
@@ -113,6 +115,9 @@ public class Monster : Combatant
 
                 Vector2 target = moveDirection + currentPosition;
                 Move(target, attackSpeed, false );
+
+                
+                audioSource.clip = attackSound; audioSource.Play(); 
 			} else if (!projectileGoing && attackDamageType == DamageType.Ranged) {
                 
                 projectileGoing = true;
@@ -156,8 +161,40 @@ public class Monster : Combatant
             if (skillInImpact) {
                 if (skillImpactingTimer > 0) {
                     // in impact
-                    Stay();
-                    transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, transform.rotation,0));
+                    if (skill.skillTypes.Contains(SkillType.Move)){
+                        Vector2 currentPosition = transform.position;
+                        Vector2 nextPoint = Pathfind(currentPosition, skillTargetPosition);
+                        moveDirection = nextPoint - currentPosition;
+                        if (skill.targetSystem == 1)moveDirection = currentPosition-nextPoint; 
+                        moveDirection.Normalize();
+                        Vector2 target = moveDirection + currentPosition;
+                        if (
+                            // COPY OF MOVE SYSTEM IN COMBATANT
+                            (Vector3.Distance(currentPosition, skillTargetPosition) > attackDistance || cooldownTimer > 0)
+                            ) {
+                            if (Vector3.Distance(currentPosition, skillTargetPosition) > attackDistance || movesOnAttackCD) // second check needed so he doesnt attack on cooldown
+                            {
+                                Move(target, runSpeed );
+                            } else {
+                                Stay();
+                            }
+                            float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
+                            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
+                                                            Quaternion.Euler (0, 0, targetAngle + 180), 
+                                                            turnSpeed * Time.deltaTime));
+                            if (StuckCheck()) {
+                                // For now just resetting into patrol when stuck
+                                SwitchRoutine(Routine.Patrolling);
+                            }
+                        }
+                        else {
+                            Stay();
+                        }
+                    }
+                    else {
+                        Stay();
+                        transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, transform.rotation,0));
+                    }
                     skillImpactingTimer-= Time.deltaTime;
                 } else {
                     //Impact end
@@ -175,11 +212,13 @@ public class Monster : Combatant
                     skill.cooldownTimer = skill.cooldown;
                     SwitchRoutine(Routine.Chasing);
                 }
-            } else {
+            }
+            else {
                 // impact start
                 skillInImpact = true;
                 transform.Find("Body").gameObject.GetComponent<SpriteRenderer>().sprite = skill.impact;
                 skillImpactingTimer = skill.impactTime;
+                audioSource.clip = skill.audioClip; audioSource.Play();
                 
                 if (skill.skillTypes.Contains(SkillType.EnterDefensiveMode)){
                     defensive = true;
@@ -195,17 +234,20 @@ public class Monster : Combatant
                 if (skill.skillTypes.Contains(SkillType.CreateDamageObject)){
                     
                     GameObject aoe = Instantiate(skill.impactCollision,transform.position, transform.rotation);
-                    Projectile newSettings = new Projectile();
-                    newSettings.maxLife = 0.4f;
-                    newSettings.minDamage = skill.damageBase;
-                    newSettings.maxDamage = skill.damageBase*1.5f;
-                    newSettings.knockBack = skill.knockBack;
-                    newSettings.speed=0;
-                    aoe.gameObject.GetComponent<ProjectileItem>().projectileSettings = newSettings;
-                    aoe.gameObject.GetComponent<ProjectileItem>().faction = faction;
-                    aoe.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
-                    aoe.gameObject.GetComponent<ProjectileItem>().playerParty = false;
-                    aoe.gameObject.GetComponent<ProjectileItem>().Go();
+                    if(aoe.GetComponent<ProjectileItem>() != null)
+                    {
+                        Projectile newSettings = new Projectile();
+                        newSettings.maxLife = 0.4f;
+                        newSettings.minDamage = skill.damageBase;
+                        newSettings.maxDamage = skill.damageBase*1.5f;
+                        newSettings.knockBack = skill.knockBack;
+                        newSettings.speed=0;
+                        aoe.gameObject.GetComponent<ProjectileItem>().projectileSettings = newSettings;
+                        aoe.gameObject.GetComponent<ProjectileItem>().faction = faction;
+                        aoe.gameObject.GetComponent<ProjectileItem>().shooter = gameObject;
+                        aoe.gameObject.GetComponent<ProjectileItem>().playerParty = false;
+                        aoe.gameObject.GetComponent<ProjectileItem>().Go();
+                    }
                 }
                 if (skill.skillTypes.Contains(SkillType.TargetedStun)){
                     if (chaseTarget == null) return;
@@ -224,6 +266,19 @@ public class Monster : Combatant
                     if (hitter != null && hitter.friendlyOwner!=null) {
                         tar = hitter.friendlyOwner;
                         tar.Stun(skill.offset);
+                    }
+                }
+                if (skill.skillTypes.Contains(SkillType.Move)){
+                    if (skill.targetSystem == 1) { // pick random engaged target unit location
+                        skillTargetPosition = chaseTargetPosition;
+                    }
+                    if (skill.targetSystem == 5) { // pick random target location are within offset
+                        skillTargetPosition = new Vector2(UnityEngine.Random.Range(transform.position.x - skill.offset, transform.position.x + skill.offset), UnityEngine.Random.Range(transform.position.y - skill.offset, transform.position.y + skill.offset));
+                    }
+
+                    if (skill.moveSystem == 3) { // teleport to target
+                        transform.position = skillTargetPosition;
+
                     }
                 }
             }
