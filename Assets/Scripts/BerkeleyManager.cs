@@ -21,6 +21,7 @@ public class BerkeleySpawnable {
     public int limit;
     public int currentQuantity;
     public int minLevel;
+    public int cluster = 1; 
     public bool notOnRiverOrRoad=false;
     public int[] regions;
 }
@@ -63,9 +64,9 @@ public class BerkeleyManager : MonoBehaviour
     public void DoStart()
     {
         // TODO replace with glboal settings
-        berkeleyMax = 200;
+        berkeleyMax = 250;
         monsterMax = 10;
-        rsrcMax = 20;
+        rsrcMax = 200;
         npcMax = 5;
 
         checkTimer = checkTime;
@@ -89,7 +90,12 @@ public class BerkeleyManager : MonoBehaviour
                   && spawnables[i].limit > spawnables[i].currentQuantity
                   && Player.Instance.playerLevel >=  spawnables[i].minLevel
                   ) {
-                        Spawn(spawnables[i], spawnables[i].id);
+                        if (i==24)// HARDOCDED zombie script
+                        {   
+                            VillageManager.Instance.SpawnNpc(transform.position.x,transform.position.y,spawnables[i].obj);
+                        }
+                        else
+                            Spawn(spawnables[i], spawnables[i].id);
                     }
                 spawnables[i].spawnTimer = spawnables[i].spawnTime;
             }
@@ -114,6 +120,7 @@ public class BerkeleyManager : MonoBehaviour
         rsrcCapped = berkeleyCapped || rsrcL > rsrcMax;
         npcCapped = berkeleyCapped || npcL > npcMax;
     }
+    // spawning also happens in possibleSpawn system
     void Spawn(BerkeleySpawnable spawn, int spawnableId, int attempt=0) {
         Vector2 CamPos = Camera.main.transform.position;
         float x = UnityEngine.Random.Range(CamPos.x-disappearDistance, CamPos.x+disappearDistance);
@@ -132,6 +139,7 @@ public class BerkeleyManager : MonoBehaviour
             // actually spawning
             if (spawn.berkeleyType!=BerkeleyType.Monster) tile.controller.contentCurrent++;
             GameObject inst = Instantiate(spawn.obj, new Vector2(x, y), Quaternion.Euler(0,0,UnityEngine.Random.Range(0,360)));
+             inst.transform.parent = MapMaker.Instance.transform;
             // Debug.Log("Spawning tree at " +x +","+y);
             // inst.GetComponent<Berkeley>().spawnableId = spawnableId;
         }

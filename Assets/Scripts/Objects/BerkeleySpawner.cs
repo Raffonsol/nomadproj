@@ -44,6 +44,7 @@ public class BerkeleySpawner : MonoBehaviour
     }
     void Spawn(GameObject obj, int spawnableId) {
         GameObject inst = Instantiate(obj, new Vector2(door.transform.position.x, door.transform.position.y), Quaternion.Euler(0,0,UnityEngine.Random.Range(0,360)));
+        inst.transform.parent = MapMaker.Instance.transform;
         inst.name = inst.name + BerkeleyManager.Instance.monsterGoingId++;
         inst.GetComponent<Berkeley>().spawnableId = spawnableId;
     }
