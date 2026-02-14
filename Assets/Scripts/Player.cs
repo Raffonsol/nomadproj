@@ -59,6 +59,28 @@ public class Player : MonoBehaviour
         }
     
 	}
+    void Update()
+    {
+        
+        if (engagementTimer > 0) {
+            engagementTimer -= Time.deltaTime;
+            engagementFor+= Time.deltaTime;
+        } 
+        else 
+        for (int i = 0; i < engagedMonster.Count; i++)
+        {
+            if (engagedMonster[i] == null) {
+                engagedMonster.RemoveAt(i);
+            } else if (Vector3.Distance(engagedMonster[i].transform.position, Camera.main.transform.position) > (BerkeleyManager.Instance.disappearDistance/6f)) {
+                engagedMonster.RemoveAt(i);
+            }
+        }
+        
+        if (engagedMonster.Count < 1) {
+            engagementTimer = 0;
+            engagementFor = 0;
+        }    
+    }
     public void ResetContol() {
         int index = Array.FindIndex(characters.ToArray(), c => c.id == activeCharId);
         activePerson = characters[index];
@@ -112,28 +134,13 @@ public class Player : MonoBehaviour
         }
         UIManager.Instance.UpdateSkillSquare();
     }
-    void Update()
+    public void GainSkill(int charInd, int skillId)
     {
-        
-        if (engagementTimer > 0) {
-            engagementTimer -= Time.deltaTime;
-            engagementFor+= Time.deltaTime;
-        } 
-        else 
-        for (int i = 0; i < engagedMonster.Count; i++)
-        {
-            if (engagedMonster[i] == null) {
-                engagedMonster.RemoveAt(i);
-            } else if (Vector3.Distance(engagedMonster[i].transform.position, Camera.main.transform.position) > (BerkeleyManager.Instance.disappearDistance/6f)) {
-                engagedMonster.RemoveAt(i);
-            }
-        }
-        
-        if (engagedMonster.Count < 1) {
-            engagementTimer = 0;
-            engagementFor = 0;
-        }    
+        int skillInd = Array.FindIndex(GameLib.Instance.allCharSkills, s => s.id == skillId);
+        characters[charInd].skills.Add(GameLib.Instance.allCharSkills[skillInd].Clone());
+        UIManager.Instance.UpdateSkillSquare();
     }
+
     public float EngagedFor() {
         return engagementFor;
     }
@@ -664,8 +671,7 @@ public class Player : MonoBehaviour
                 characters[index].bonuses.Add(bonus);
                 break;
             case (BonusType.Loot):
-                Debug.Log("arros");
-                for(int i = 0; i <bonus.items.Length; i++){Debug.Log("pickup"+bonus.items[i]);
+                for(int i = 0; i <bonus.items.Length; i++){
                     if (UnityEngine.Random.Range(0,2) == 1) // 50-50 chance
                     PickupItemId(bonus.items[i]);
                 }
@@ -679,6 +685,10 @@ public class Player : MonoBehaviour
                 if  (bonus.id ==15) { // 15 = Hardcoded bonus for max party size increase
                     Player.Instance.maxPartySize+=1;
                 }
+                break;
+            case (BonusType.Skill):
+                characters[index].bonuses.Add(bonus);
+                Player.Instance.GainSkill(index, bonus.skillId);
                 break;
         }
     }

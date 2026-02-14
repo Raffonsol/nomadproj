@@ -1,0 +1,539 @@
+fileFormatVersion: 2
+guid: 14058555305473049a4f987245138dfd
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 1621866632195341060
+    second: brokenGround_0
+  - first:
+      213: -5217944658729534678
+    second: brokenGround_1
+  - first:
+      213: -6391886832634913650
+    second: brokenGround_2
+  - first:
+      213: 8520179941711747083
+    second: brokenGround_3
+  - first:
+      213: -1901915030040707152
+    second: brokenGround_4
+  - first:
+      213: -7664797404463838923
+    second: brokenGround_5
+  - first:
+      213: 5970160244424897635
+    second: brokenGround_6
+  - first:
+      213: 7884030086247573387
+    second: brokenGround_7
+  - first:
+      213: -7117250319984831660
+    second: brokenGround_8
+  - first:
+      213: 5068812518431004721
+    second: brokenGround_9
+  - first:
+      213: 9178655431459684714
+    second: brokenGround_10
+  - first:
+      213: 4820161159424765230
+    second: brokenGround_11
+  - first:
+      213: -3116182176328929035
+    second: brokenGround_12
+  - first:
+      213: -2259546285957366012
+    second: brokenGround_13
+  - first:
+      213: 3852285236437676235
+    second: brokenGround_14
+  - first:
+      213: 5011340166225731337
+    second: brokenGround_15
+  - first:
+      213: -4870035695133933991
+    second: brokenGround_16
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 1
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 3
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 3
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: brokenGround_0
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 134
+        width: 28
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 40bff05eb17028610800000000000000
+      internalID: 1621866632195341060
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_1
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 77
+        width: 114
+        height: 83
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a2b77ce8af22697b0800000000000000
+      internalID: -5217944658729534678
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_2
+      rect:
+        serializedVersion: 2
+        x: 113
+        y: 141
+        width: 30
+        height: 51
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e8c9c489ac47b47a0800000000000000
+      internalID: -6391886832634913650
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_3
+      rect:
+        serializedVersion: 2
+        x: 27
+        y: 115
+        width: 13
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b081320e382cd3670800000000000000
+      internalID: 8520179941711747083
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_4
+      rect:
+        serializedVersion: 2
+        x: 10
+        y: 94
+        width: 27
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0bf72716b5a0b95e0800000000000000
+      internalID: -1901915030040707152
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_5
+      rect:
+        serializedVersion: 2
+        x: 23
+        y: 76
+        width: 7
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 539c897de5b21a590800000000000000
+      internalID: -7664797404463838923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_6
+      rect:
+        serializedVersion: 2
+        x: 40
+        y: 69
+        width: 27
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 364fa1d6c154ad250800000000000000
+      internalID: 5970160244424897635
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_7
+      rect:
+        serializedVersion: 2
+        x: 56
+        y: 43
+        width: 33
+        height: 33
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b8767419793b96d60800000000000000
+      internalID: 7884030086247573387
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_8
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 76
+        width: 42
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 453d4c3fa827a3d90800000000000000
+      internalID: -7117250319984831660
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_9
+      rect:
+        serializedVersion: 2
+        x: 106
+        y: 62
+        width: 9
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 138122a312a085640800000000000000
+      internalID: 5068812518431004721
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_10
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 67
+        width: 33
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a614ddbfb72216f70800000000000000
+      internalID: 9178655431459684714
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_11
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 55
+        width: 8
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e2de5a34907a4e240800000000000000
+      internalID: 4820161159424765230
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_12
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 45
+        width: 27
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5f0b28422d811c4d0800000000000000
+      internalID: -3116182176328929035
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_13
+      rect:
+        serializedVersion: 2
+        x: 29
+        y: 35
+        width: 18
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 40f35ffdf9a74a0e0800000000000000
+      internalID: -2259546285957366012
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_14
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 17
+        width: 13
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bc079532301167530800000000000000
+      internalID: 3852285236437676235
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_15
+      rect:
+        serializedVersion: 2
+        x: 116
+        y: 21
+        width: 25
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 90f1888745bdb8540800000000000000
+      internalID: 5011340166225731337
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: brokenGround_16
+      rect:
+        serializedVersion: 2
+        x: 71
+        y: 16
+        width: 12
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 95eb11c76582a6cb0800000000000000
+      internalID: -4870035695133933991
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    physicsShape: []
+    bones: []
+    spriteID: 5e97eb03825dee720800000000000000
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    nameFileIdTable:
+      brokenGround_0: 1621866632195341060
+      brokenGround_1: -5217944658729534678
+      brokenGround_10: 9178655431459684714
+      brokenGround_11: 4820161159424765230
+      brokenGround_12: -3116182176328929035
+      brokenGround_13: -2259546285957366012
+      brokenGround_14: 3852285236437676235
+      brokenGround_15: 5011340166225731337
+      brokenGround_16: -4870035695133933991
+      brokenGround_2: -6391886832634913650
+      brokenGround_3: 8520179941711747083
+      brokenGround_4: -1901915030040707152
+      brokenGround_5: -7664797404463838923
+      brokenGround_6: 5970160244424897635
+      brokenGround_7: 7884030086247573387
+      brokenGround_8: -7117250319984831660
+      brokenGround_9: 5068812518431004721
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

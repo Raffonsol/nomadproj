@@ -138,7 +138,7 @@ public class Projectile
     public float maxDamage;
     public float maxDistance;
     public float knockBack;
-    public float maxLife = 60f;
+    public float maxLife;
 }
 
 [Serializable]
@@ -486,7 +486,8 @@ public enum BonusType
     PowerUp,
     PassiveAbility,
     Loot,
-    Setting
+    Setting,
+    Skill
 }
 [Serializable]
 public class Bonus
@@ -505,6 +506,8 @@ public class Bonus
     public int[] items;
     // if passive ability
     public PassiveAbility PassiveAbility;
+    // if skill
+    public int skillId;
 }
 public enum NamePartType
 {

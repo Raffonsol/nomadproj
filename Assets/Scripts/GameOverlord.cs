@@ -55,8 +55,8 @@ public class GameOverlord : MonoBehaviour
         
         // Player.Instance.AddEquipment(4);
        
-        // Player.Instance.AddPart(900002);
-        // Player.Instance.AddPart(900007);
+        Player.Instance.AddPart(900002);
+        Player.Instance.AddPart(900007);
         
     }
     void Update() {
@@ -86,6 +86,7 @@ public class GameOverlord : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.L)) {
             Player.Instance.GainExperience(20);
+            Player.Instance.GainSkill(0, 2);
              Player.Instance.AddEquipment(1);
             Player.Instance.AddEquipment(1);
             Player.Instance.AddEquipment(2);

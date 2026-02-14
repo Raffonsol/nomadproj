@@ -298,6 +298,14 @@ public class ZombieController : Walker {
         {
 			AttemptSkill(0);
         }
+		if (leader && Input.GetKey(KeyCode.Alpha3))
+        {
+			AttemptSkill(1);
+        }
+		if (leader && Input.GetKey(KeyCode.Alpha4))
+        {
+			AttemptSkill(2);
+        }
 	}
 	public void TriggerSkill(int skill){
 		if (leader) {
@@ -323,7 +331,7 @@ public class ZombieController : Walker {
 		skillHits = new List<Combatant>();
 		Player.Instance.GetCharById(charId).hitbox.recordHits=true;
 		if ((castSkill.skillTypes.Contains(SkillType.Move)&&castSkill.moveSystem>=2) 
-			||castSkill.skillTypes.Contains(SkillType.TargetedDamage)) {
+			||castSkill.skillTypes.Contains(SkillType.TargetedDamage)||castSkill.skillTypes.Contains(SkillType.TargetedStun)) {
 			switch (castSkill.targetSystem) {
 				case 0: {
 					skillTargetTarget =GameOverlord.Instance.nearbyMonsters[0];// TODO proximity calculator
@@ -359,18 +367,36 @@ public class ZombieController : Walker {
 			} 
 			skillMoveLocked = true;
 		}
+		// TODO: villagers cant get targeted by skills that require targets
 		if (castSkill.skillTypes.Contains(SkillType.TargetedDamage)) {
 			Monster monster = skillTargetTarget.GetComponent<Monster>();
 			monster.TakeDamage(castSkill.damageBase);
             monster.KnockedBack(gameObject, castSkill.knockBack);
 		}
+		if (castSkill.skillTypes.Contains(SkillType.TargetedStun)) {
+			if (skillTargetTarget == null) return;
+			GameObject aoe = Instantiate(castSkill.impactCollision, skillTargetTarget.transform.position, transform.rotation);
+			PlayDeath anim = aoe.GetComponent<PlayDeath>();
+			if (anim != null) {
+				anim.stickTarget = skillTargetTarget;
+				anim.sticky = true;
+			}
+
+			Monster tar = skillTargetTarget.GetComponent<Monster>();
+			if (tar != null) {
+				tar.Stun(castSkill.impactTime);
+			}
+
+		}
 		if (castSkill.skillTypes.Contains(SkillType.CreateDamageObject)) {
 			GameObject arrow = Instantiate(castSkill.impactCollision,transform.position, transform.rotation);
-			Projectile newSettings = new Projectile();
+			Projectile newSettings = arrow.gameObject.GetComponent<ProjectileItem>().projectileSettings;
 			float dmg = castSkill.damageBase+Player.Instance.CalculateDamage(self.id);
 			newSettings.minDamage = dmg;
 			newSettings.maxDamage = dmg * 1.5f;
-			newSettings.speed=3f;newSettings.maxDistance=1000f;newSettings.maxLife=70f;
+			// newSettings.speed=castSkill.projectileSpeed; set on prefab
+			newSettings.maxDistance=1000f;
+			// newSettings.maxLife=70f; set on prefab
 			newSettings.knockBack=castSkill.knockBack;
 			arrow.gameObject.AddComponent<ProjectileItem>();
 			arrow.gameObject.GetComponent<ProjectileItem>().projectileSettings = newSettings;

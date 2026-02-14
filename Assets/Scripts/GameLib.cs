@@ -204,8 +204,12 @@ public class GameLib : MonoBehaviour
             case (100007): {
                 return weaponSkills[3];
             }
-            case (100001): {
+            case (100001): { // sword
                 return weaponSkills[4];
+            }
+            case (100010):
+            case (100011): { // mace and morningstar
+                return weaponSkills[5];
             }
         }
 
