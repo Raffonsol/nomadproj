@@ -41,6 +41,7 @@ public class ZombieController : Walker {
 	private float attackCooldown;
 	public float attackCooldownTimer;
 
+	private float leaderCooldown;
 	private float attackTime;
 	private float attackTimer;
 	private float skillTimer;
@@ -83,6 +84,9 @@ public class ZombieController : Walker {
 
 	private NamePlate namePlate;
 
+	private AudioSource audioSource;
+    private AudioClip hitSound;
+
 	public void DoStart()
 	{
 		Player.Instance.EquipWeapon(100000, new List<Part>(), charId);
@@ -91,6 +95,9 @@ public class ZombieController : Walker {
 		shadowColor.a = 0.2f;
 		selectionColor = Color.white;
 		namePlate=transform.Find("NamePlate").GetComponent<NamePlate>();
+		audioSource = GetComponent<AudioSource>();
+		hitSound = GameLib.Instance.charHitSound;
+		leaderCooldown = 5f; // hardcoded become leader cooldown after recruited
 		SaySomething(GameLib.Instance.GetLine(LineUsage.OnStart, self.personality));
 		
 		Reset();
@@ -215,12 +222,15 @@ public class ZombieController : Walker {
 		Attack();
 		Die();
 		Regen();
-		CountInvincibleTimer();
+		CountTimers();
 		BeTossed();
 	}
-	void CountInvincibleTimer() {
+	void CountTimers() {
 		if (invincibleTimer >= 0) {
 			invincibleTimer -= Time.deltaTime;
+		}
+		if (leaderCooldown >= 0) {
+			leaderCooldown -= Time.deltaTime;
 		}
 	}
 	void ControllerWalk() {
@@ -288,6 +298,14 @@ public class ZombieController : Walker {
         {
 			AttemptSkill(0);
         }
+		if (leader && Input.GetKey(KeyCode.Alpha3))
+        {
+			AttemptSkill(1);
+        }
+		if (leader && Input.GetKey(KeyCode.Alpha4))
+        {
+			AttemptSkill(2);
+        }
 	}
 	public void TriggerSkill(int skill){
 		if (leader) {
@@ -308,10 +326,12 @@ public class ZombieController : Walker {
 		if (self.skills[skillIndex].cooldownTimer>0){
 			return;
 		}
+		Debug.Log(self.name+ " is casting "+castSkill.name);
+		// skill start
 		skillHits = new List<Combatant>();
 		Player.Instance.GetCharById(charId).hitbox.recordHits=true;
 		if ((castSkill.skillTypes.Contains(SkillType.Move)&&castSkill.moveSystem>=2) 
-			||castSkill.skillTypes.Contains(SkillType.TargetedDamage)) {
+			||castSkill.skillTypes.Contains(SkillType.TargetedDamage)||castSkill.skillTypes.Contains(SkillType.TargetedStun)) {
 			switch (castSkill.targetSystem) {
 				case 0: {
 					skillTargetTarget =GameOverlord.Instance.nearbyMonsters[0];// TODO proximity calculator
@@ -347,18 +367,36 @@ public class ZombieController : Walker {
 			} 
 			skillMoveLocked = true;
 		}
+		// TODO: villagers cant get targeted by skills that require targets
 		if (castSkill.skillTypes.Contains(SkillType.TargetedDamage)) {
 			Monster monster = skillTargetTarget.GetComponent<Monster>();
 			monster.TakeDamage(castSkill.damageBase);
             monster.KnockedBack(gameObject, castSkill.knockBack);
 		}
+		if (castSkill.skillTypes.Contains(SkillType.TargetedStun)) {
+			if (skillTargetTarget == null) return;
+			GameObject aoe = Instantiate(castSkill.impactCollision, skillTargetTarget.transform.position, transform.rotation);
+			PlayDeath anim = aoe.GetComponent<PlayDeath>();
+			if (anim != null) {
+				anim.stickTarget = skillTargetTarget;
+				anim.sticky = true;
+			}
+
+			Monster tar = skillTargetTarget.GetComponent<Monster>();
+			if (tar != null) {
+				tar.Stun(castSkill.impactTime);
+			}
+
+		}
 		if (castSkill.skillTypes.Contains(SkillType.CreateDamageObject)) {
 			GameObject arrow = Instantiate(castSkill.impactCollision,transform.position, transform.rotation);
-			Projectile newSettings = new Projectile();
+			Projectile newSettings = arrow.gameObject.GetComponent<ProjectileItem>().projectileSettings;
 			float dmg = castSkill.damageBase+Player.Instance.CalculateDamage(self.id);
 			newSettings.minDamage = dmg;
 			newSettings.maxDamage = dmg * 1.5f;
-			newSettings.speed=3f;newSettings.maxDistance=1000f;newSettings.maxLife=70f;
+			// newSettings.speed=castSkill.projectileSpeed; set on prefab
+			newSettings.maxDistance=1000f;
+			// newSettings.maxLife=70f; set on prefab
 			newSettings.knockBack=castSkill.knockBack;
 			arrow.gameObject.AddComponent<ProjectileItem>();
 			arrow.gameObject.GetComponent<ProjectileItem>().projectileSettings = newSettings;
@@ -382,7 +420,9 @@ public class ZombieController : Walker {
 			self.hitbox.playerParty = true;
 		}
 		usingSkill = true;
+		audioSource.clip = castSkill.audioClip;audioSource.Play();
 		castingSkill = castSkill;
+
 
 	}
 	public void AddSkillHit(Combatant combatant) {
@@ -407,6 +447,7 @@ public class ZombieController : Walker {
 				self.hitbox.hitting = true;
 				self.hitbox.playerParty = true;
 				hitBox.isTrigger = false;
+				audioSource.clip = weapon.attackSound;audioSource.Play();
 			} else if (attackDamageType == DamageType.Ranged) {
 				// turn towards mouse
 				Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
@@ -433,7 +474,7 @@ public class ZombieController : Walker {
 					arrow.gameObject.GetComponent<ProjectileItem>().playerParty = true;
 					arrow.gameObject.GetComponent<ProjectileItem>().consumableId = itemId;
 					arrow.gameObject.GetComponent<ProjectileItem>().Go();
-					Debug.Log("rock shot");
+					audioSource.clip = weapon.attackSound;audioSource.Play();
 				}
 				else if (Player.Instance.GetConsumablesByType(weapon.ammo).Count > 0) {
 					
@@ -453,11 +494,12 @@ public class ZombieController : Walker {
 					arrow.gameObject.GetComponent<ProjectileItem>().playerParty = true;
 					arrow.gameObject.GetComponent<ProjectileItem>().consumableId = itemId;
 					arrow.gameObject.GetComponent<ProjectileItem>().Go();
+					audioSource.clip = weapon.attackSound;audioSource.Play();
 				} else {
-					if (!leader) {
+					// if (!leader) {
 						Player.Instance.UnequipWeapon(self.id);
 						UIManager.Instance.AutoEquipWeapons();
-					}
+					// }
 					GameObject DamageText = Instantiate(GameOverlord.Instance.damagePrefab, transform);
 					DamageText.GetComponent<DamageText>().textToDisplay = "No arrows";
 					return;
@@ -469,7 +511,7 @@ public class ZombieController : Walker {
 	}
 
 	public void ListenForClick() {
-		if (Input.GetButtonUp("Fire1") && hovering) {
+		if (Input.GetButtonUp("Fire1") && hovering && leaderCooldown<=0) {
 				if (!leader) BecomeLeader();
 		}
 	}
@@ -485,6 +527,7 @@ public class ZombieController : Walker {
 		hovering = false;
 		UIManager.Instance.armorNeedsUpdate = true;
 		UIManager.Instance.weaponNeedsUpdate = true;
+		leaderCooldown= 5f; // Hardcoded become leader cooldown after having become recently already
 	}
 	
 	public void TakeDamage(float damage) {
@@ -653,6 +696,7 @@ public class ZombieController : Walker {
 			} else if (GameOverlord.Instance.nearbyMonsters.Count>0) {
 				Player.Instance.Engage(GameOverlord.Instance.nearbyMonsters[0]);
 			}
+			audioSource.clip = hitSound; audioSource.Play();
 		}
 	}
 	void Shot(Collider2D collided)
@@ -663,11 +707,11 @@ public class ZombieController : Walker {
 			float damage = UnityEngine.Random.Range(hitter.projectileSettings.minDamage, hitter.projectileSettings.maxDamage);
 			TakeDamage(damage);
             KnockedBack(target, hitter.projectileSettings.knockBack);
+			audioSource.clip = hitSound; audioSource.Play();
 		}
 		if (GameOverlord.Instance.nearbyMonsters.Count>0) {
 			Player.Instance.Engage(GameOverlord.Instance.nearbyMonsters[0]);
 		}
-		
 	}
 
 	void Die() {

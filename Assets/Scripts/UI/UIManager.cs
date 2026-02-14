@@ -690,17 +690,48 @@ public class UIManager : MonoBehaviour
     }
     public void UpdateSkillSquare() {
         FriendlyChar person = Player.Instance.activePerson;
+        // Always show base attack in first slot
+        skillSquares[0].SetActive(true);
         skillSquares[0].transform.Find("Text").GetComponent<Image>().sprite = person.equipped.primaryWeapon.icon;
-        // additional skills
-        if (person.skills!=null && person.skills.Count>0 && person.equipped.primaryWeapon.id!=100000){
+
+        // Hide all other slots by default
+        for (int i = 1; i < skillSquares.Length; i++)
+            skillSquares[i].SetActive(false);
+
+        // If not level 1 yet, only show base attack
+        if (person.level < 1)
+            return;
+
+        // Show weapon skill in second slot if available
+        CharSkill weaponSkill = GameLib.Instance.getWeaponsSkill(person.equipped.primaryWeapon.id);
+        if (weaponSkill != null)
+        {
             skillSquares[1].SetActive(true);
-            CharSkill addSkill =person.skills[0];
-            if (person.skills[0].id == 0) {
-                // weapon skill
-                addSkill=GameLib.Instance.getWeaponsSkill(person.equipped.primaryWeapon.id);
-            } 
-            skillSquares[1].transform.Find("Text").GetComponent<Image>().sprite = addSkill.icon;
-        } else skillSquares[1].SetActive(false);
+            skillSquares[1].transform.Find("Text").GetComponent<Image>().sprite = weaponSkill.icon;
+        }
+
+        // Collect special skills (id != 0 and not the weapon skill)
+        List<CharSkill> specialSkills = new List<CharSkill>();
+        if (person.skills != null)
+        {
+            foreach (var skill in person.skills)
+            {
+                if (skill.id != 0 && (weaponSkill == null || skill.id != weaponSkill.id))
+                    specialSkills.Add(skill);
+            }
+        }
+
+        if (specialSkills.Count > 2)
+        {
+            Debug.LogError("Character has more than two special skills! Only two are allowed.");
+        }
+
+        // Show up to two special skills in slots 2 and 3
+        for (int i = 0; i < specialSkills.Count && i < 2; i++)
+        {
+            skillSquares[i + 2].SetActive(true);
+            skillSquares[i + 2].transform.Find("Text").GetComponent<Image>().sprite = specialSkills[i].icon;
+        }
     }
     public void UpdateDirectionArrow(Vector2 nextPoint, GameObject arrow, bool rotate, bool changeColor) {
 

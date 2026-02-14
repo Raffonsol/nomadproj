@@ -10,7 +10,9 @@ public class GameOverlord : MonoBehaviour
     public GameObject damagePrefab;
     public GameObject itemDropPrefab;
     public GameObject deathPrefab;
+    public GameObject lvlUpPrefab;
     public GameObject namePlate;
+    public GameObject soundBox;
     public List<GameObject> nearbyMonsters;
     public List<GameObject> nearbyDrops;
     public List<GameObject> nearbyRsrc;
@@ -23,7 +25,7 @@ public class GameOverlord : MonoBehaviour
     
     /* Factions
     0 - PlayerParty  |  1 - GoblinInvaders
-    2 - NeutralNPCS  |  3 - AggressiveNPCs
+    2 - NeutralNPCS  |  3 - AggressiveNPCs(*)
     4 - Regional     |  5 - Mimics
     */
     [SerializeField]
@@ -53,8 +55,8 @@ public class GameOverlord : MonoBehaviour
         
         // Player.Instance.AddEquipment(4);
        
-        // Player.Instance.AddPart(900002);
-        // Player.Instance.AddPart(900007);
+        Player.Instance.AddPart(900002);
+        Player.Instance.AddPart(900007);
         
     }
     void Update() {
@@ -78,11 +80,13 @@ public class GameOverlord : MonoBehaviour
             UIManager.Instance.OpenMenu(Menu.System);
         }
         if (Input.GetKeyDown(KeyCode.K)) {
-            Debug.Log(GameLib.Instance.GenerateName(true));
-            Debug.Log(GameLib.Instance.GenerateName(false));
+            UIManager.Instance.ShowRegionTransition(4);
+            // Debug.Log(GameLib.Instance.GenerateName(true));
+            // Debug.Log(GameLib.Instance.GenerateName(false));
         }
         if (Input.GetKeyDown(KeyCode.L)) {
             Player.Instance.GainExperience(20);
+            Player.Instance.GainSkill(0, 2);
              Player.Instance.AddEquipment(1);
             Player.Instance.AddEquipment(1);
             Player.Instance.AddEquipment(2);

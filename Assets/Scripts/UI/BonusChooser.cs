@@ -79,6 +79,20 @@ public class BonusChooser : MonoBehaviour
         for(int i = 0; i <upee.bonuses.Count; i++){
             pool.Remove(upee.bonuses[i]);
         }
+        // Remove skill bonuses if character already has two special skills
+        int specialSkillCount = 0;
+        if (upee.skills != null)
+        {
+            foreach (var skill in upee.skills)
+            {
+                if (skill.id != 0) // id=0 is weapon skill
+                    specialSkillCount++;
+            }
+        }
+        if (specialSkillCount >= 2)
+        {
+            pool.RemoveAll(b => b.bonusType == BonusType.Skill);
+        }
         if (pool.Count<3) return; // Crash prevention
 
         // find 3 bonus options

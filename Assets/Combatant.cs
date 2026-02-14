@@ -30,6 +30,7 @@ public class Combatant : Berkeley
     public float invincibilityTime = 0.3f;
     public float runSpeed = 1.5f;
     public bool movesOnAttackCD = true;
+    public bool movesAwayOnAttackCD = false;
     public bool heavy = false;
 
     public float attackDistance = 0.73f;
@@ -59,6 +60,10 @@ public class Combatant : Berkeley
     public Drop[] drops;
 
     public bool searches =true;
+
+    public AudioClip attackSound;
+    public AudioClip hitSound;
+    public AudioClip deathSound;
 
     protected int skillCastId;
     protected float skillChannelingTimer;
@@ -96,19 +101,33 @@ public class Combatant : Berkeley
     protected Vision vision;
     protected float visionTimer;
 
-    protected AudioSource audios;
+    protected AudioSource audioSource;
 
     protected Vector2 knockBackLandPosition;
 
-    protected float pathFindTime = 1f;
+    protected float pathFindTime = 2f;  // Increased from 1f to reduce recalculations
     protected float pathFindTimer = 0f;
     protected Vector2 lastFoundPath;
+
+    // Component caching for performance
+    protected Rigidbody2D rb;
+    protected SpriteRenderer bodyRenderer;
+    protected Transform bodyTransform;
+    protected int stuckCheckFrameCounter = 0;
+    protected int stuckCheckFrameInterval = 240;  // ~4 seconds at 60 FPS
+    protected float visionCheckInterval = 0.75f;
+    protected float visionCheckTimer = 0f;
 
     private void Awake() 
     {
         originPosition = transform.position;
         vision = transform.Find("Vision").GetComponent<Vision>();
-        audios = GetComponent<AudioSource>();
+        audioSource = GetComponent<AudioSource>();
+        rb = GetComponent<Rigidbody2D>();
+        bodyTransform = transform.Find("Body");
+        if (bodyTransform != null) {
+            bodyRenderer = bodyTransform.GetComponent<SpriteRenderer>();
+        }
     }
 
     protected void SwitchRoutine(Routine newRoutine)
@@ -207,11 +226,11 @@ public class Combatant : Berkeley
             // pathblock checking
             if (Vector2.Distance(currentPosition, patrolTarget) < blockDistance || blockDistance > 10f) {
                 // gonna keep going
-                Move( target, patrolSpeed);
+                Move(target, patrolSpeed);
 
-			    float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-                transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
-		                                       Quaternion.Euler (0, 0, targetAngle + 180), 
+			    float targetAngle = Mathf.Atan2(moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
+                rb.MoveRotation(Quaternion.Slerp(transform.rotation, 
+		                                       Quaternion.Euler(0, 0, targetAngle + 180), 
 		                                       turnSpeed * Time.deltaTime));
 			    if (StuckCheck()) {
                     ResetPatrol();
@@ -220,7 +239,7 @@ public class Combatant : Berkeley
             else {
                 Stay();
                 StopAnim();
-                transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, transform.rotation,0));
+                rb.MoveRotation(Quaternion.Slerp(transform.rotation, transform.rotation, 0));
                 // find a path
                 ResetPatrol();
             }
@@ -253,8 +272,7 @@ public class Combatant : Berkeley
         Vector2 target = moveDirection + currentPosition;
 		if (Vector3.Distance(currentPosition, nextPoint) > alertRange*2f) {
 
-            transform.position = Vector3.Lerp (currentPosition, target, patrolSpeed * 2f * Time.deltaTime);
-
+            transform.position = Vector3.Lerp(currentPosition, target, patrolSpeed * 2f * Time.deltaTime);
 
         }
 		else {
@@ -266,40 +284,32 @@ public class Combatant : Berkeley
     }
     protected void Stay() {
         if (heavy) {
-            transform.GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.FreezePositionY | RigidbodyConstraints2D.FreezePositionX ;
+            rb.constraints = RigidbodyConstraints2D.FreezePositionY | RigidbodyConstraints2D.FreezePositionX;
         } else {
-            transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (transform.position, transform.position,0));
+            rb.velocity = Vector2.zero;
         }
     }
-    protected void Move(Vector2 target, float speed, bool step=true) {
+    protected virtual void Move(Vector2 target, float speed, bool step=true) {
         if(step)StepAnim();
         if (heavy) {
-            transform.GetComponent<Rigidbody2D>().constraints = RigidbodyConstraints2D.None;
+            rb.constraints = RigidbodyConstraints2D.None;
         }
-        transform.GetComponent<Rigidbody2D>().MovePosition( Vector3.Lerp (transform.position, target, speed * Time.deltaTime));
+        rb.MovePosition(Vector3.Lerp(transform.position, target, speed * Time.deltaTime));
     }
     protected void Chase()
     {
         RunSkillTimers();
-        if (chaseTarget == null) SwitchRoutine(Routine.Patrolling);
+        if (chaseTarget == null || !chaseTarget.activeSelf) {
+            SwitchRoutine(Routine.Patrolling);
+            return;
+        }
         
         Vector2 currentPosition = transform.position;
-        try {
-            chaseTargetPosition = chaseTarget.transform.position;
-        } catch (NullReferenceException) {
-            // meaning they don't exist anymore
-            chaseTarget = null;
-            SwitchRoutine(Routine.Patrolling);
-        }
-         catch (MissingReferenceException) {
-            // meaning they don't exist anymore
-            chaseTarget = null;
-            SwitchRoutine(Routine.Patrolling);
-        }
+        chaseTargetPosition = chaseTarget.transform.position;
 
         Vector2 nextPoint = Pathfind(currentPosition, chaseTargetPosition);
         moveDirection = nextPoint - currentPosition;
-        if (runsAway)moveDirection = currentPosition-nextPoint;
+        if (runsAway || (movesAwayOnAttackCD && cooldownTimer > 0))moveDirection = currentPosition-nextPoint;
         moveDirection.Normalize();
         Vector2 target = moveDirection + currentPosition;
         if (Vector3.Distance(currentPosition, chaseTargetPosition) > giveUpDistance) {SwitchRoutine(Routine.Patrolling); return;}
@@ -314,8 +324,8 @@ public class Combatant : Berkeley
                 Stay();
             }
             float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
-            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
-                                            Quaternion.Euler (0, 0, targetAngle + 180), 
+            rb.MoveRotation(Quaternion.Slerp(transform.rotation, 
+                                            Quaternion.Euler(0, 0, targetAngle + 180), 
                                             turnSpeed * Time.deltaTime));
             if (StuckCheck()) {
                 // For now just resetting into patrol when stuck
@@ -324,7 +334,7 @@ public class Combatant : Berkeley
 		}
 		else {
             Stay();
-            transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, transform.rotation,0));
+            rb.MoveRotation(Quaternion.Slerp(transform.rotation, transform.rotation, 0));
             bool usedSkill = false;
             usedSkill = CheckSkills();
             if (!usedSkill) SwitchRoutine(Routine.Attacking);
@@ -354,9 +364,10 @@ public class Combatant : Berkeley
     }
     protected bool StuckCheck()
     {
-        stuckCheckTimer -= Time.deltaTime;
-        if (stuckCheckTimer < 0) {
-            stuckCheckTimer = stuckCheckTime;
+        stuckCheckFrameCounter++;
+        
+        if (stuckCheckFrameCounter >= stuckCheckFrameInterval) {
+            stuckCheckFrameCounter = 0;
             if (Vector2.Distance(transform.position, lastCheckPosition) < stuckDistanceLimit) {
                 return true;
             }
@@ -366,27 +377,29 @@ public class Combatant : Berkeley
     }
     protected bool DetectEnemy()
     {
-        if (!GameOverlord.Instance.factionsThatSeekOutFight.Contains( faction)) return false;
+        if (!GameOverlord.Instance.factionsThatSeekOutFight.Contains(faction)) return false;
 
         // if very far, switch to a lower code searching script
-        if ( Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*2f) {
-            if (searches){
+        if (Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*2f) {
+            if (searches) {
                 SwitchRoutine(Routine.Searching);
-                // disables collision tso we dont have to pathfind
+                // disables collision so we dont have to pathfind
                 GetComponent<CircleCollider2D>().isTrigger = true;
                 return false;
             } else if (Vector2.Distance(transform.position, Camera.main.transform.position) > alertRange*4f) {
                 DestroyAndRecount();
             }
         } 
-        // TODO: redo
-        if (visionTimer > 0) {
-            visionTimer -= Time.deltaTime;
+        
+        // Optimized vision check - reduced frequency
+        if (visionCheckTimer > 0) {
+            visionCheckTimer -= Time.deltaTime;
+            return false;
         } else {
-            visionTimer = 1f;
-            if (vision.peopleInDetection.Count > 0 && Array.IndexOf(hatesFactions, Util.TagToFaction(vision.peopleInDetection[0].tag)) > -1){
+            visionCheckTimer = visionCheckInterval;
+            if (vision.peopleInDetection.Count > 0 && 
+                Array.IndexOf(hatesFactions, Util.TagToFaction(vision.peopleInDetection[0].tag)) > -1) {
                 chaseTarget = vision.peopleInDetection[0];
-                Debug.Log("Huh?" + vision.peopleInDetection[0].name);
                 if (chaseTarget.tag == "Character") Player.Instance.Engage(gameObject);
                 return true;
             }
@@ -413,6 +426,7 @@ public class Combatant : Berkeley
 			Shot(collided);
 		}
 	}
+
     void OnTriggerStay2D(Collider2D collided)
 	{
         if (collided.CompareTag("Hitbox"))
@@ -440,7 +454,7 @@ public class Combatant : Berkeley
 		GameObject target = collided.gameObject;
 		HitBox hitter = target.GetComponent<HitBox>();
 		if (hitter.hitting && hitter.faction != faction && invincibleTimer < 0) {
-            if (defensive) {
+            if (defensive) { // defensive = skill where attackers take damage
                 if (hitter.friendlyOwner!=null) {
                     hitter.friendlyOwner.TakeDamage(defensiveDamage);
                     hitter.friendlyOwner.KnockedBack(gameObject, defensiveKnockback);
@@ -466,6 +480,9 @@ public class Combatant : Berkeley
                 if (hitter.recordHits) {
                     hitter.friendlyOwner.AddSkillHit(this);
                 }
+            }
+            if (IsNearCamera()) {
+                audioSource.clip = hitSound; audioSource.Play();
             }
 		}
 	}
@@ -499,7 +516,10 @@ public class Combatant : Berkeley
                 } catch (NullReferenceException) {
                     // TODO: search in the direction projectile came from
                 }
-            }    
+            }   
+            if (IsNearCamera()) {
+                audioSource.clip = hitSound; audioSource.Play();
+            }
 		}
 
 	}
@@ -531,7 +551,15 @@ public class Combatant : Berkeley
             DropLoot(drops[i]);
         }
         int exp = UnityEngine.Random.Range(minExpGiven, maxExpGiven);
-        Player.Instance.GainExperience(exp);
+        if (IsNearCamera()) {
+            Player.Instance.GainExperience(exp);
+        }
+        GameObject soundBox = GameObject.Instantiate(GameOverlord.Instance.soundBox,transform.position, Quaternion.Euler(0,0,0));
+        AudioSource audiSource = soundBox.GetComponent<AudioSource>();
+        if (IsNearCamera()) {
+            audiSource.clip = deathSound; audiSource.Play();
+        }
+
         // GameOverlord.Instance.nearbyMonsters.Remove( GameOverlord.Instance.nearbyMonsters.Single( s => s.name == transform.gameObject.name ) );
        gameObject.GetComponent<Berkeley>().DestroyAndRecount();
     }
@@ -567,4 +595,10 @@ public class Combatant : Berkeley
 			SwitchRoutine(Routine.Chasing);
 		}
 	}
+
+    private bool IsNearCamera(float maxDistance = 15f)
+    {
+        return Vector3.Distance(transform.position, Camera.main.transform.position) <= maxDistance;
+    }
+
 }

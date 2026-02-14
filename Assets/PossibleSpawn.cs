@@ -35,6 +35,7 @@ public class PossibleSpawn : MonoBehaviour
             if (randomValue <= spawnList[i].chance) {
                 GameObject spawn = Instantiate(spawnList[i].spawn, transform.position, transform.rotation);
                 spawn.GetComponent<Berkeley>().indistructible = true;
+                spawn.transform.parent = MapMaker.Instance.transform;
                 return;
             }
         }
