@@ -86,7 +86,7 @@ public class GameOverlord : MonoBehaviour
         }
         if (Input.GetKeyDown(KeyCode.L)) {
             Player.Instance.GainExperience(20);
-            Player.Instance.GainSkill(0, 2);
+            Player.Instance.GainSkill(0, 4);
              Player.Instance.AddEquipment(1);
             Player.Instance.AddEquipment(1);
             Player.Instance.AddEquipment(2);

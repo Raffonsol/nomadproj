@@ -40,7 +40,7 @@ public enum FittablePart
     Bowstring,
     Hand, // Leave this here, its for unarmed
     Fiber,
-    Fabric
+    Material
 }
 public enum PlatingMaterial
 {
@@ -111,6 +111,7 @@ public enum SkillType
     EnterDefensiveMode,
     TargetedStun,
     TargetedLifesteal,
+    Taunt,
 }
 [Serializable]
 public class PowerUp
@@ -536,6 +537,9 @@ public enum LineUsage
     OnEngage,
     OnRsrcExtract
 }
+
+
+
 [Serializable]
 public class PersonalityLine
 {
@@ -566,11 +570,15 @@ public class CombatSkill {
     public float healBase;
     public GameObject healCollision;
     // ---target ----
-    public int targetSystem; // 0 - nearest, 1 - random engaged, 2 - all engaged, 3 - self, 4 - enemy hit by skill collision, 5 - random distance
+    // (7 to 9 are for friendly target skills)
+    public int targetSystem; // 0 - nearest, 1 - random engaged, 2 - all engaged, 3 - self, 4 - enemy hit by skill collision, 5 - random distance, 6 - all nearby, 7 - nearest ally, 8 - random ally, 9 - lowest life ally
     // ---move ----
     public int moveSystem; // 0 - forward, 1 - backwards, 2 - towards target, 3 - tpToTarget, 4 - away from target
     public float offset;
     public float speed;
+    // ---dialogue ----
+    [SerializeField]
+    public PersonalityLine[] personalityLines;
 
     public AudioClip audioClip;
 }
@@ -595,7 +603,7 @@ public class CharSkill : CombatSkill {
     }
 }
 
-// --------------------Region ---------------
+// --------------------World ---------------
 
 [Serializable]
 public class Region
@@ -606,6 +614,43 @@ public class Region
     public Color floorColor;
     public Sprite groundTexture;
     public Sprite uiImage;
+}
+public enum EventType
+{
+    Ambush,
+    Trap,
+    Prisioner,
+    Trader
+}
+public enum TargetType {
+    MainChar,
+    RandomChar,
+    AllChars,
+    RandomEnemy,
+    AllNearbyEnemies,
+}
+[Serializable]
+public class Spawnable {
+    public GameObject monster;
+    public int chance;
+    public int minQuantity;
+    public int maxQuantity;
+}
+[Serializable]
+public class RandomEvent {
+    public int id;
+    public string name;
+    public string description;
+    public EventType[] eventTypes;
+    public Spawnable[] spawnables;
+    public GameObject visual;
+    public TargetType targetType;
+    public int chance;
+    public float checkInterval;
+    public float cooldown;
+    public int minLevel;
+    public int maxLevel;
+    
 }
 
 // ----------------- City ----------------------

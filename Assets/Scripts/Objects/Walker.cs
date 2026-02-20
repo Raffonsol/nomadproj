@@ -44,6 +44,12 @@ public class Walker : MonoBehaviour
             StopAnim();
         }
 	}
+    protected void Stay()
+    {
+        transform.GetComponent<Rigidbody2D>().MovePosition(transform.position);
+        transform.GetComponent<Rigidbody2D>().MoveRotation( Quaternion.Slerp (transform.rotation, 
+                                            Quaternion.Euler (0, 0, 0),0));
+    }
     protected virtual void StepAnim() {
 
     }

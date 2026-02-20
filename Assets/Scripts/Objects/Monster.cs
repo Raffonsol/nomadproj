@@ -8,6 +8,7 @@ using UnityEngine;
 public class Monster : Combatant
 {
 
+    public bool onlyMoveOnStep2 = false;
     public Sprite step1;
     public Sprite step2;
     public Sprite attack;
@@ -33,13 +34,6 @@ public class Monster : Combatant
     private bool hovering = false;
 
     private Vector2 skillTargetPosition;
-    
-    // Cached animation sprites
-    private Sprite currentDisplayedSprite = null;
-    private float stepAnimTimer = 0f;
-
-    private float stunTimer = 0f;
-    private bool isStunned = false;
 
     // Start is called before the first frame update
     protected override void ContinuedStart()
@@ -71,14 +65,24 @@ public class Monster : Combatant
         } else if (isStunned) {
             isStunned = false;
         }
+        if (tauntTimer > 0) {
+            tauntTimer -= Time.deltaTime;
+        } else if (isTaunted) {
+            isTaunted = false;
+        }
     }
     protected override void Move(Vector2 target, float speed, bool step=true)
     {
-        if (isStunned) {
+        if (isStunned ) {
             Stay();
             return;
         }
-        base.Move(target, speed, step);
+        if(step)StepAnim();
+        if (heavy) {
+            rb.constraints = RigidbodyConstraints2D.None;
+        }
+        if (onlyMoveOnStep2 && bodyRenderer.sprite != step2 && step) return;
+        rb.MovePosition(Vector3.Lerp(transform.position, target, speed * Time.deltaTime));
     }
     protected override void ResetPatrol()
     {
@@ -169,7 +173,6 @@ public class Monster : Combatant
             projectileGoing = false;
             
             bodyRenderer.sprite = step1;
-            currentDisplayedSprite = step1;
             
             cooldownTimer = attackCooldown;
             SwitchRoutine(Routine.Chasing);
@@ -224,7 +227,6 @@ public class Monster : Combatant
                     //Impact end
                     skillInImpact = false;
                     bodyRenderer.sprite = step1;
-                    currentDisplayedSprite = step1;
                
                     // stop damaging;
                     // damagingOnTouch = false;
@@ -242,7 +244,6 @@ public class Monster : Combatant
                 // impact start
                 skillInImpact = true;
                 bodyRenderer.sprite = skill.impact;
-                currentDisplayedSprite = skill.impact;
                 skillImpactingTimer = skill.impactTime;
                 audioSource.clip = skill.audioClip; audioSource.Play();
                 
@@ -313,31 +314,37 @@ public class Monster : Combatant
     }
     protected override void StepAnim()
 	{
-        stepAnimTimer -= Time.deltaTime;
-        
-        if (stepAnimTimer <= 0) {
-            // Determine which sprite to show
-            Sprite nextSprite = (routine == Routine.Chasing && chaseSteps) 
-                ? (moveTimer1 > 0 ? chaseStep1 : chaseStep2)
-                : (moveTimer1 > 0 ? step1 : step2);
-            
-            // Only update if changed (avoid redundant sprite assignments)
-            if (nextSprite != currentDisplayedSprite) {
-                bodyRenderer.sprite = nextSprite;
-                currentDisplayedSprite = nextSprite;
+        if (moveTimer1 > 0) {
+            if (chaseSteps && routine==Routine.Chasing){
+                bodyRenderer.sprite = chaseStep1;
+			    moveTimer2 = chasingFeetSpeed;
             }
-            
-            float speed = (routine == Routine.Chasing && chaseSteps) 
-                ? chasingFeetSpeed : feetSpeed;
-            stepAnimTimer = speed;
-        }
-        
-        moveTimer1 -= Time.deltaTime;
+			else {
+                bodyRenderer.sprite = step1;
+			    moveTimer2 = feetSpeed;
+            }
+			moveTimer1 -= Time.deltaTime;
+		} else {
+            if (chaseSteps && routine==Routine.Chasing){
+                bodyRenderer.sprite = chaseStep2;
+            }
+			else {
+                bodyRenderer.sprite = step2;
+            }
+
+			moveTimer2 -= Time.deltaTime;
+
+			if (moveTimer2 < 0) {
+                if (chaseSteps && routine==Routine.Chasing)moveTimer1 = chasingFeetSpeed;
+				else moveTimer1 = feetSpeed;
+			}
+		}
+
+      
 	}
 	protected override void StopAnim()
 	{
         bodyRenderer.sprite = step1;
-        currentDisplayedSprite = step1;
 	}
     
     void OnMouseOver()
@@ -361,6 +368,12 @@ public class Monster : Combatant
     public void Stun(float duration) {
         stunTimer = duration;
         isStunned = true;
+    }
+    public void Taunt(float duration, GameObject source) {
+        tauntTimer = duration;
+        chaseTarget = source;
+         if (routine!=Routine.Chasing && routine!=Routine.Attacking && routine!=Routine.UsingSkill) SwitchRoutine(Routine.Chasing);
+        isTaunted = true;
     }
 }
     

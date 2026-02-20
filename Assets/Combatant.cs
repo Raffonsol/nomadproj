@@ -109,6 +109,12 @@ public class Combatant : Berkeley
     protected float pathFindTimer = 0f;
     protected Vector2 lastFoundPath;
 
+    
+    protected float stunTimer = 0f;
+    protected bool isStunned = false;
+    protected float tauntTimer = 0f;
+    protected bool isTaunted = false;
+
     // Component caching for performance
     protected Rigidbody2D rb;
     protected SpriteRenderer bodyRenderer;
@@ -290,6 +296,10 @@ public class Combatant : Berkeley
         }
     }
     protected virtual void Move(Vector2 target, float speed, bool step=true) {
+        if (isStunned) {
+            Stay();
+            return;
+        }
         if(step)StepAnim();
         if (heavy) {
             rb.constraints = RigidbodyConstraints2D.None;
@@ -470,7 +480,7 @@ public class Combatant : Berkeley
                     engaged = true;
                 }
                 // attention
-                if (distractable || chaseTarget == null){
+                if (!isTaunted && (distractable || chaseTarget == null)){
                     chaseTarget = collided.transform.gameObject;
                     HitBox box = chaseTarget.GetComponent<HitBox>();
                     if (box != null && box.friendlyOwner != null) chaseTarget = box.friendlyOwner.gameObject;
@@ -509,7 +519,7 @@ public class Combatant : Berkeley
                 }
                 Destroy(target); // deestroying arrow proj
 
-                if (distractable || chaseTarget == null)
+                if (!isTaunted &&( distractable || chaseTarget == null))
                 try {
                     chaseTarget = hitter.shooter;
                     if (routine!=Routine.Chasing && routine!=Routine.Attacking && routine!=Routine.UsingSkill) SwitchRoutine(Routine.Chasing);
@@ -581,7 +591,13 @@ public class Combatant : Berkeley
         itemObj.GetComponent<SpriteRenderer>().sprite = GameLib.Instance.GetItemByType(dropId, dropType).icon;
 
     }
-
+    public void Engage(GameObject target) {
+        chaseTarget = target;
+        if (routine!=Routine.Chasing && routine!=Routine.Attacking && routine!=Routine.UsingSkill) {
+            SwitchRoutine(Routine.Chasing);
+            Debug.Log(name+" is engaging "+target.name);
+        }
+    }
     public void KnockedBack(GameObject source, float amount) {
         if (amount <0.1f) return;
         knockBackLandPosition = Vector3.MoveTowards(transform.position,source.transform.position, amount*-2f);

@@ -64,7 +64,7 @@ public class BerkeleyManager : MonoBehaviour
     public void DoStart()
     {
         // TODO replace with glboal settings
-        berkeleyMax = 250;
+        berkeleyMax = 350;
         monsterMax = 10;
         rsrcMax = 200;
         npcMax = 5;

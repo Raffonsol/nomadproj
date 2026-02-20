@@ -64,6 +64,7 @@ public class ZombieController : Walker {
 	private CharSkill castingSkill = null;
 	private Vector2 skillMoveTarget;
 	private GameObject skillTargetTarget;
+	private List<GameObject> skillMultipleTargets;
 	private float skillKnockBack = 0f;
 	private float knockTimer = 0f;
 	private float stunTimer = 0f;
@@ -257,14 +258,19 @@ public class ZombieController : Walker {
 		nextPoint = leader ? lastClick : GameOverlord.Instance.Pathfind(currentPosition, lastClick);
 		
 		if (!leader)PerformAi(self.personality);
-		else if (isLClickHeld || boredTimer > 0) {
+		else if (isLClickHeld) {
 			Walk(
 				leader ? moveSpeed : moveSpeed + 0.1f*(float)Math.Pow(Vector2.Distance(currentPosition, (Vector2)Player.Instance.controller.transform.position)- Math.Abs(self.formation.x), 2),
 				nextPoint
 			);
-		} else {
-			PerformAi(self.personality);
+		} else
+		{
+			Stay();
 		}
+		// else if ( boredTimer < 0) {
+		// 	// controversial
+		// 	PerformAi(self.personality);
+		// }
 	}
 
 	void Attack()
@@ -327,11 +333,12 @@ public class ZombieController : Walker {
 			return;
 		}
 		Debug.Log(self.name+ " is casting "+castSkill.name);
-		// skill start
+
+		// skill check start, target first
 		skillHits = new List<Combatant>();
 		Player.Instance.GetCharById(charId).hitbox.recordHits=true;
 		if ((castSkill.skillTypes.Contains(SkillType.Move)&&castSkill.moveSystem>=2) 
-			||castSkill.skillTypes.Contains(SkillType.TargetedDamage)||castSkill.skillTypes.Contains(SkillType.TargetedStun)) {
+			||castSkill.skillTypes.Contains(SkillType.TargetedDamage)||castSkill.skillTypes.Contains(SkillType.TargetedStun)||castSkill.skillTypes.Contains(SkillType.Taunt)) {
 			switch (castSkill.targetSystem) {
 				case 0: {
 					skillTargetTarget =GameOverlord.Instance.nearbyMonsters[0];// TODO proximity calculator
@@ -342,8 +349,39 @@ public class ZombieController : Walker {
 					skillTargetTarget = GameOverlord.Instance.nearbyMonsters[UnityEngine.Random.Range(0, GameOverlord.Instance.nearbyMonsters.Count-1)];
 					break;
 				}
+				case 6:
+					{
+						List<GameObject> nearby = GameOverlord.Instance.nearbyMonsters.ToList();
+						if (nearby.Count < 1) return;
+						skillTargetTarget = nearby[UnityEngine.Random.Range(0, nearby.Count-1)];// pick a random for main target
+						skillMultipleTargets = nearby;
+						break;
+					}
+				case 7:
+					{
+						List<FriendlyChar> allies = Player.Instance.characters;
+						if (allies.Count < 2) return;
+						// pick closest target that is not self
+						skillTargetTarget = allies.Where(m => m != self).OrderBy(m => Vector2.Distance(transform.position, m.hitbox.transform.position)).First().controller.gameObject;
+						break;
+					}
+				case 9:
+					{
+						List<FriendlyChar> allies = Player.Instance.characters;
+						if (allies.Count < 2) return;
+						skillTargetTarget = allies.Where(m => m != self).OrderBy(m => m.life).First().controller.gameObject;// pick lowest life target that is not self
+						break;
+					}
 			}
 		}
+		// distance check
+		if ( (castSkill.skillTypes.Contains(SkillType.TargetedDamage) || castSkill.skillTypes.Contains(SkillType.TargetedStun) || castSkill.skillTypes.Contains(SkillType.TargetedHeal))
+			&&
+			(skillTargetTarget == null || Vector2.Distance(transform.position, skillTargetTarget.transform.position) > castSkill.npcCastRange)) {
+			// Debug.Log("Target out of range");
+			return;
+		}
+		// get movement
 		if (castSkill.skillTypes.Contains(SkillType.Move)) {
 			switch (castSkill.moveSystem) {
 				case 0: {
@@ -367,24 +405,59 @@ public class ZombieController : Walker {
 			} 
 			skillMoveLocked = true;
 		}
+		
 		// TODO: villagers cant get targeted by skills that require targets
+
 		if (castSkill.skillTypes.Contains(SkillType.TargetedDamage)) {
 			Monster monster = skillTargetTarget.GetComponent<Monster>();
 			monster.TakeDamage(castSkill.damageBase);
             monster.KnockedBack(gameObject, castSkill.knockBack);
 		}
+		if (castSkill.skillTypes.Contains(SkillType.TargetedHeal)) {
+			FriendlyChar friendly = skillTargetTarget.GetComponent<ZombieController>().self;
+			friendly.controller.Heal(castSkill.healBase);
+		}
 		if (castSkill.skillTypes.Contains(SkillType.TargetedStun)) {
 			if (skillTargetTarget == null) return;
-			GameObject aoe = Instantiate(castSkill.impactCollision, skillTargetTarget.transform.position, transform.rotation);
-			PlayDeath anim = aoe.GetComponent<PlayDeath>();
-			if (anim != null) {
-				anim.stickTarget = skillTargetTarget;
-				anim.sticky = true;
+			if (castSkill.impactCollision != null) {
+				GameObject aoe = Instantiate(castSkill.impactCollision, skillTargetTarget.transform.position, transform.rotation);
+				PlayDeath anim = aoe.GetComponent<PlayDeath>();
+				
+				if (anim != null) {
+					anim.stickTarget = skillTargetTarget;
+					anim.sticky = true;
+				}
 			}
 
 			Monster tar = skillTargetTarget.GetComponent<Monster>();
 			if (tar != null) {
 				tar.Stun(castSkill.impactTime);
+			}
+
+		}
+		if (castSkill.skillTypes.Contains(SkillType.Taunt)) {
+			if (skillTargetTarget == null) return;
+			if (castSkill.impactCollision != null) {
+				GameObject aoe = Instantiate(castSkill.impactCollision, skillTargetTarget.transform.position, transform.rotation);
+				PlayDeath anim = aoe.GetComponent<PlayDeath>();
+				
+				if (anim != null) {
+					anim.stickTarget = skillTargetTarget;
+					anim.sticky = true;
+				}
+			}
+			if (castSkill.targetSystem == 6) {
+				foreach (GameObject target in skillMultipleTargets) {
+					Monster tar = target.GetComponent<Monster>();
+					if (tar != null) {
+						tar.Taunt(castSkill.impactTime, this.gameObject);
+					}
+				}
+			} else {
+				Monster tar = skillTargetTarget.GetComponent<Monster>();
+				if (tar != null) {
+					tar.Taunt(castSkill.impactTime, this.gameObject);
+				}
 			}
 
 		}
@@ -406,6 +479,23 @@ public class ZombieController : Walker {
 			arrow.gameObject.GetComponent<ProjectileItem>().consumableId = 800000;
 			arrow.gameObject.GetComponent<ProjectileItem>().Go();
 		}
+		// line if there are any
+		if (castSkill.personalityLines.Length > 0) {
+		 	castSkill.personalityLines.Shuffle();
+			int i = 0;
+			PersonalityLine goWith = castSkill.personalityLines[0];
+
+			while ((goWith.personalities.Length>0 && !goWith.personalities.Contains(this.self.personality))  ) {
+				i++;
+				if (i >= castSkill.personalityLines.Length) break;
+				goWith = castSkill.personalityLines[i];
+			}
+			if (UnityEngine.Random.Range(0, 101) < goWith.chance) {
+				
+				SaySomething(goWith.value);
+			}
+		}
+
 		skillTimer = castSkill.speed;
 		skillRunTime = castSkill.maxRunTime;
 		skillKnockBack+= castSkill.knockBack;
@@ -450,7 +540,9 @@ public class ZombieController : Walker {
 				audioSource.clip = weapon.attackSound;audioSource.Play();
 			} else if (attackDamageType == DamageType.Ranged) {
 				// turn towards mouse
-				Vector2 moveTowards = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+				Vector2 moveTowards = leader? Camera.main.ScreenToWorldPoint(Input.mousePosition) 
+					// npcs aim torwards target
+					: engage!=null ? engage.transform.position : Player.Instance.controller.transform.position;
 				moveDirection = moveTowards - (Vector2)transform.position;
 				moveDirection.Normalize();
 				float targetAngle = Mathf.Atan2 (moveDirection.y, moveDirection.x) * Mathf.Rad2Deg;
@@ -596,6 +688,7 @@ public class ZombieController : Walker {
 		skillKnockBack-= castingSkill.knockBack;
 		Player.Instance.GetCharById(charId).hitbox.knockBack-= castingSkill.knockBack;
 		usingSkill = false;
+		audioSource.Stop();
 		Player.Instance.GetCharById(charId).hitbox.hitting = false;
 		GetComponent<CircleCollider2D>().isTrigger = false;
 		if (attackDamageType == DamageType.Melee) hitBox.isTrigger = true;
@@ -930,6 +1023,21 @@ public class ZombieController : Walker {
 				nextPoint = GameOverlord.Instance.Pathfind(currentPosition, lastClick);
 				intention="Just following";
 			}
+			// check if friendly target skills could be good
+			if (self.skills != null)for (int i = 0; i < self.skills.Count; i++)
+			{
+				CharSkill caste = self.skills[i];
+				if (caste.targetSystem < 7 || caste.targetSystem > 9) continue; // not friendly target skills not used here
+				
+				if (caste.skillTypes.Contains(SkillType.TargetedHeal))
+				{
+					// lowest health 
+					FriendlyChar target = Player.Instance.characters.Where(c => c.id != self.id).OrderBy(c => c.life/c.stats[0].value).FirstOrDefault();
+					if (target.life/target.stats[0].value < 0.7f) {
+						AttemptSkill(i);
+					}
+				}
+			}
 			Walk(speed,nextPoint);
 		}
 	}
@@ -987,6 +1095,7 @@ public class ZombieController : Walker {
 		if(self.skills!=null)for (int i = 0; i < self.skills.Count; i++)
 		{
 			CharSkill caste = self.skills[i];
+			if (caste.targetSystem >= 7 && caste.targetSystem <= 9) continue; // friendly target skills not used here
 			if (caste.id == 0) {
 				// weapon skill
 				caste=GameLib.Instance.getWeaponsSkill(self.equipped.primaryWeapon.id);
